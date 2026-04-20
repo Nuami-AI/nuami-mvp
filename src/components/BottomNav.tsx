@@ -1,18 +1,26 @@
 "use client";
 
+// Design Ref: §5.5 — md:hidden (PC에서 TopNav로 대체).
+
+import Link from "next/link";
+import { useLanguage } from "@/lib/i18n";
+
 type TabId = "home" | "content" | "videoai" | "bookmark" | "mypage";
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: "home", label: "Home" },
-  { id: "content", label: "Content" },
-  { id: "videoai", label: "Video AI" },
-  { id: "bookmark", label: "Bookmarks" },
-  { id: "mypage", label: "My Page" },
+const TABS: { id: TabId; labelKey: "nav.home" | "nav.content" | "nav.videoai" | "nav.bookmarks" | "nav.mypage"; href: string }[] = [
+  { id: "home",     labelKey: "nav.home",      href: "/" },
+  { id: "content",  labelKey: "nav.content",   href: "/content" },
+  { id: "videoai",  labelKey: "nav.videoai",   href: "/" },
+  { id: "bookmark", labelKey: "nav.bookmarks", href: "/" },
+  { id: "mypage",   labelKey: "nav.mypage",    href: "/mypage" },
 ];
 
+const ACTIVE_COLOR   = "#8651F2";
+const INACTIVE_COLOR = "#A9A9A2";
+
 function TabIcon({ id, active }: { id: TabId; active: boolean }) {
-  const stroke = active ? "#6D28D9" : "#9CA3AF";
-  const fill = active ? "#6D28D9" : "none";
+  const stroke = active ? ACTIVE_COLOR : INACTIVE_COLOR;
+  const fill   = active ? ACTIVE_COLOR : "none";
 
   if (id === "home")
     return (
@@ -24,16 +32,16 @@ function TabIcon({ id, active }: { id: TabId; active: boolean }) {
   if (id === "content")
     return (
       <svg width="20" height="20" fill="none" stroke={stroke} strokeWidth="2" viewBox="0 0 24 24">
-        <rect x="3" y="3" width="7" height="7" rx="1.5" />
-        <rect x="14" y="3" width="7" height="7" rx="1.5" />
-        <rect x="3" y="14" width="7" height="7" rx="1.5" />
+        <rect x="3"  y="3"  width="7" height="7" rx="1.5" />
+        <rect x="14" y="3"  width="7" height="7" rx="1.5" />
+        <rect x="3"  y="14" width="7" height="7" rx="1.5" />
         <rect x="14" y="14" width="7" height="7" rx="1.5" />
       </svg>
     );
   if (id === "videoai")
     return (
       <svg width="20" height="20" fill="none" stroke={stroke} strokeWidth="2" viewBox="0 0 24 24">
-        <rect x="2" y="6" width="14" height="12" rx="2" fill={active ? "#EDE9FE" : "none"} stroke={stroke} />
+        <rect x="2" y="6" width="14" height="12" rx="2" fill={active ? "#F2EBFF" : "none"} stroke={stroke} />
         <path d="m16 10 5-3v10l-5-3V10z" fill={fill} stroke={stroke} />
       </svg>
     );
@@ -52,20 +60,23 @@ function TabIcon({ id, active }: { id: TabId; active: boolean }) {
 }
 
 export default function BottomNav({ active = "videoai" }: { active?: TabId }) {
+  const { t } = useLanguage();
+
   return (
-    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[390px] bg-white border-t border-gray-100 flex z-20">
-      {TABS.map(({ id, label }) => {
+    <nav className="fixed bottom-0 left-0 w-full bg-background border-t border-line-neutral flex z-20 md:hidden">
+      {TABS.map(({ id, labelKey, href }) => {
         const isActive = active === id;
         return (
-          <button
+          <Link
             key={id}
+            href={href}
             className={`flex-1 flex flex-col items-center pt-2 pb-3 gap-0.5 text-[10px] font-medium ${
-              isActive ? "text-violet-700" : "text-gray-400"
+              isActive ? "text-accent-700" : "text-text-disabled"
             }`}
           >
             <TabIcon id={id} active={isActive} />
-            <span>{label}</span>
-          </button>
+            <span>{t(labelKey)}</span>
+          </Link>
         );
       })}
     </nav>

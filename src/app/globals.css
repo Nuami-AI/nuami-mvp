@@ -1,8 +1,74 @@
 @import "tailwindcss";
 
+@theme {
+  /* ── Gray — Warm Gray (NUAMI) ── */
+  --color-gray-50: #F9F9F8;
+  --color-gray-100: #F0F0EE;
+  --color-gray-200: #E2E2DE;
+  --color-gray-300: #D3D3CD;
+  --color-gray-400: #A9A9A2;
+  --color-gray-500: #8A8981;
+  --color-gray-600: #706F69;
+  --color-gray-700: #575652;
+  --color-gray-800: #3D3D3A;
+  --color-gray-900: #242422;
+  --color-gray-950: #1B1A19;
+
+  /* ── Accent (Lavender) — Primary CTA ── */
+  --color-accent-50: #FBF8FF;
+  --color-accent-100: #F2EBFF;
+  --color-accent-200: #E8D9FF;
+  --color-accent-300: #D4B5FF;
+  --color-accent-400: #C39EFF;
+  --color-accent-500: #B186FF;
+  --color-accent-700: #8651F2;
+  --color-accent-800: #703AD9;
+  --color-accent-900: #5E29B3;
+
+  /* ── Brand (Calm Coral Pink) ── */
+  --color-brand-50: #FFF6F5;
+  --color-brand-100: #FFE5E3;
+  --color-brand-500: #F97E6D;
+  --color-brand-600: #E96A58;
+
+  /* ── Danger ── */
+  --color-danger: #de3412;
+  --color-danger-50: #fdefec;
+  --color-danger-100: #fcdfd9;
+  --color-danger-200: #f7afa1;
+  --color-danger-600: #bd2c0f;
+  --color-danger-700: #8a240f;
+  --color-danger-800: #5c180a;
+
+  /* ── Semantic Background ── */
+  --color-background: #F9F9F8;
+  --color-card: #F9F9F8;
+  --color-popover: #ffffff;
+  --color-muted: #E2E2DE;
+  --color-infoBox: #F0F0EE;
+
+  /* ── Semantic Border ── */
+  --color-line-normal: #E2E2DE;
+  --color-line-neutral: #F0F0EE;
+
+  /* ── Semantic Text ── */
+  --color-text-strong: #1B1A19;
+  --color-text-primary: #242422;
+  --color-text-secondary: #575652;
+  --color-text-tertiary: #8A8981;
+  --color-text-disabled: #A9A9A2;
+  --color-text-foreground: #F9F9F8;
+
+  /* ── Button ── */
+  --color-button-primary: #8651F2;
+  --color-button-hover: #703AD9;
+  --color-button-disabled: #D3D3CD;
+}
+
 body {
-  background: #F3F4F6;
-  color: #111827;
+  background-color: #F9F9F8;
+  color: #242422;
   font-family: var(--font-geist-sans), -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+  word-break: auto-phrase;
 }

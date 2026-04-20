@@ -1,0 +1,24 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model ContentPost {
+  id         String   @id @default(cuid())
+  title      String
+  summary    String   @db.Text
+  body       String   @db.LongText
+  country    String
+  category   String
+  tags       String   @db.Text
+  language   String   @default("ko")
+  visibility String   @default("PUBLIC")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([country, category, visibility])
+  @@index([createdAt])
+}
