@@ -180,54 +180,76 @@ Output format: { title, summary, body (markdown), tags[] }
 
 ## 4. Page Design
 
-### 4.1 /content — List Page
+> **Reference**: `/Users/jay/Downloads/390 .2.png` — 2026-04-21 디자인 업데이트
+
+### 4.1 /content — List Page (모바일 390px 기준)
 
 ```
 ┌──────────────────────────────────────────┐
-│  TopNav (md+ only)                       │
+│  PageHeader: "콘텐츠"         [🔍]        │  ← sticky, md:hidden
 ├──────────────────────────────────────────┤
-│  [KR]  [JP]          ← CountryTabs       │
+│  한국에 방문했나요?       지금 장소 변경 > │  ← CountryTabs (location bar)
 ├──────────────────────────────────────────┤
-│  [All] [Culture] [Action] [Food] [Trans] │
-│                       ← CategoryFilter   │
+│  [🌏전체] [🏛️문화] [🗺️행동] [🍜음식] [🚆교통] │  ← 아이콘 탭 수평 스크롤
 ├──────────────────────────────────────────┤
-│  ┌──────┐ ┌──────┐ ┌──────┐             │
-│  │Card  │ │Card  │ │Card  │  ← grid     │
-│  │      │ │      │ │      │             │
-│  └──────┘ └──────┘ └──────┘             │
-│  ┌──────┐ ┌──────┐ ┌──────┐             │
-│  │      │ │      │ │      │             │
-│  └──────┘ └──────┘ └──────┘             │
+│  한국의 행동 가이드          모두 보기    │  ← section header
+│  ┌──────────┐ ┌──────────┐              │
+│  │ [image]  │ │ [image]  │  →  scroll   │  ← landscape card w-[200px]
+│  │          │ │          │              │
+│  │ 제목 2줄 │ │ 제목 2줄 │              │
+│  │ 날짜 · [카테고리] [KR]│              │
+│  └──────────┘ └──────────┘              │
 ├──────────────────────────────────────────┤
-│  BottomNav (mobile only)                 │
+│  한국의 리얼팁               모두 보기    │  ← transport section
+│  ┌────┬─────────────────────────────┐   │
+│  │img │ 제목 2줄                    │   │  ← compact list (thumbnail left)
+│  │    │ 요약 1줄                    │   │
+│  │    │ 날짜 · [카테고리] [KR]      │   │
+│  └────┴─────────────────────────────┘   │
+│  ─────────────────────────────────────  │
+│  ┌────┬─────────────────────────────┐   │
+│  │img │ ...                         │   │
+│  └────┴─────────────────────────────┘   │
+├──────────────────────────────────────────┤
+│  BottomNav                               │
 └──────────────────────────────────────────┘
 ```
 
 **NUAMI 토큰 적용**:
-- Container: `max-w-[390px] md:max-w-3xl lg:max-w-5xl mx-auto bg-background`
-- Country tab active: `bg-accent-700 text-text-foreground`
-- Country tab inactive: `bg-infoBox text-text-secondary`
-- Category filter: `rounded-full px-3 py-1 text-[12px]`
-- Card: `bg-card rounded-2xl p-4 border border-line-neutral shadow-sm`
+- PageHeader trailing: Search icon (lucide-react)
+- Location bar: `text-accent-700 font-semibold` / `text-text-tertiary text-[12px]`
+- Category tab active: `bg-accent-700 text-white` (circle 44px) / `text-accent-700 font-semibold`
+- Category tab inactive: `bg-infoBox` (circle 44px) / `text-text-secondary opacity-50`
+- Section title: `text-[16px] font-bold text-text-primary`
+- "모두 보기": `text-[13px] text-accent-700 font-medium`
 
-### 4.2 ContentCard Component
+### 4.2 ContentCardCompact — Landscape (기본 카드)
+
+카드 너비 `w-[200px]`, 가로 스크롤 행에 배치:
 
 ```
-┌─────────────────────────────────────┐
-│ [Culture]  KR            ← badges   │
-│                                     │
-│ 한국 지하철 에티켓 완전 가이드        │
-│ ← title (text-[15px] font-bold)     │
-│                                     │
-│ 외국인이 꼭 알아야 할 지하철 에티켓  │
-│ ← summary (text-[13px] line-clamp-2)│
-│                                     │
-│ #에티켓 #지하철 #서울                │
-│ ← tags (bg-infoBox rounded-full)    │
-└─────────────────────────────────────┘
+┌──────────────────────┐
+│  [gradient image]    │  h-[120px] rounded-2xl
+│  큰 이모지 (희미)    │
+└──────────────────────┘
+  제목 (13px bold, 2줄)
+  날짜 · [카테고리] [KR]   ← badges h-4 text-[10px]
 ```
 
-### 4.3 /content/[id] — Detail Page
+### 4.3 ContentCardCompact — Compact (리얼팁 리스트)
+
+transport 섹션에만 적용, `compact={true}` prop:
+
+```
+┌────────┬──────────────────────────────┐
+│ 64×64  │ 제목 (13px bold, 2줄)        │
+│ thumb  │ 요약 (12px, 1줄)             │
+│        │ 날짜 · [카테고리] [KR]        │
+└────────┴──────────────────────────────┘
+```
+`divide-y divide-line-neutral` 로 구분선, padding `py-3`
+
+### 4.4 /content/[id] — Detail Page
 
 - Server Component (SSR), `getContentById(id)`
 - `body` → markdown render (`react-markdown` 또는 단순 `<p>` split)

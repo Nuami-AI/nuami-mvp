@@ -4,7 +4,7 @@ import { buildSystemPrompt, buildUserMessage, type PromptInput } from "./prompt"
 
 const MAX_TRANSCRIPT_CHARS = 32_000;
 const DEFAULT_MODEL = "gpt-4o-mini";
-const MAX_OUTPUT_TOKENS = 2048;
+const MAX_OUTPUT_TOKENS = 3000;
 
 export interface ClaudeExtractResult {
   rawJson: string;
@@ -46,11 +46,13 @@ export async function claudeExtract(input: PromptInput): Promise<ClaudeExtractRe
   const client = getClient();
   const model = process.env.OPENAI_MODEL || DEFAULT_MODEL;
 
-  const systemPrompt = buildSystemPrompt(input.userLanguage);
+  const systemPrompt = buildSystemPrompt(input.userLanguage, input.toneStyle, input.lifeStage);
 
   const response = await client.chat.completions.create({
     model,
     max_tokens: MAX_OUTPUT_TOKENS,
+    temperature: 0.2,  // low temperature for consistent, repeatable extraction
+    seed: 42,
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: buildUserMessage(input) },

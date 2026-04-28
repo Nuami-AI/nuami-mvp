@@ -3,6 +3,7 @@ import { getContentById } from "@/lib/content/queries";
 import PageShell from "@/components/PageShell";
 import BackButton from "@/components/BackButton";
 import ContentBadges from "@/components/ContentBadges";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function ContentDetailPage({
   params,
@@ -36,14 +37,18 @@ export default async function ContentDetailPage({
 
   return (
     <PageShell topNav="content" bottomNav="content">
-      <div className="max-w-[390px] md:max-w-3xl lg:max-w-5xl mx-auto">
-        {/* Mobile header */}
-        <div className="px-4 pt-14 pb-3 flex items-center gap-3 md:pt-6 md:px-6">
-          <BackButton href={backHref} />
-          <ContentBadges category={post.category} country={post.country} />
-        </div>
+      <PageHeader
+        leading={<BackButton href={backHref} />}
+        trailing={<ContentBadges category={post.category} country={post.country} />}
+      />
 
-        <article className="px-4 md:px-6 pb-8">
+      {/* Desktop: inline back + badges */}
+      <div className="hidden md:flex items-center gap-3 px-6 pt-6 pb-2">
+        <BackButton href={backHref} />
+        <ContentBadges category={post.category} country={post.country} />
+      </div>
+
+      <article className="px-4 md:px-6 pb-8">
           <h1 className="text-[20px] md:text-[24px] font-bold text-text-primary leading-snug mb-2">
             {post.title}
           </h1>
@@ -93,7 +98,6 @@ export default async function ContentDetailPage({
             </div>
           )}
         </article>
-      </div>
     </PageShell>
   );
 }

@@ -3,13 +3,15 @@
 // Design Ref: §5.5 — hidden md:flex 상단 네브. 데스크탑 전용.
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/i18n";
 
-type TabId = "videoai" | "content" | "saved" | "history";
+type TabId = "videoai" | "content" | "guide" | "saved" | "history";
 
-const LINKS: { id: TabId; labelKey: "nav.videoai" | "nav.content" | "nav.saved" | "nav.history"; href: string }[] = [
+const LINKS: { id: TabId; labelKey: "nav.videoai" | "nav.content" | "nav.guide" | "nav.saved" | "nav.history"; href: string }[] = [
   { id: "videoai", labelKey: "nav.videoai", href: "/" },
   { id: "content", labelKey: "nav.content", href: "/content" },
+  { id: "guide",   labelKey: "nav.guide",   href: "/guide" },
   { id: "saved",   labelKey: "nav.saved",   href: "/" },
   { id: "history", labelKey: "nav.history", href: "/" },
 ];
@@ -23,8 +25,14 @@ function NuamiLogo() {
   );
 }
 
-export default function TopNav({ active = "videoai" }: { active?: TabId }) {
+export default function TopNav({ active }: { active?: TabId }) {
   const { t } = useLanguage();
+  const router = useRouter();
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    router.push("/login");
+  }
 
   return (
     <nav className="hidden md:flex w-full bg-background border-b border-line-neutral sticky top-0 z-20">
@@ -50,10 +58,17 @@ export default function TopNav({ active = "videoai" }: { active?: TabId }) {
           ))}
         </div>
 
-        {/* 아바타 → 마이페이지 */}
-        <Link href="/mypage" className="w-8 h-8 rounded-full bg-accent-100 flex items-center justify-center text-[13px] font-semibold text-accent-700 hover:bg-accent-200 transition-colors">
-          J
-        </Link>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleLogout}
+            className="text-[12px] text-text-tertiary hover:text-text-secondary transition-colors"
+          >
+            로그아웃
+          </button>
+          <Link href="/mypage" className="w-8 h-8 rounded-full bg-accent-100 flex items-center justify-center text-[13px] font-semibold text-accent-700 hover:bg-accent-200 transition-colors">
+            J
+          </Link>
+        </div>
       </div>
     </nav>
   );

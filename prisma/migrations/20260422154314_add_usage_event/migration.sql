@@ -1,0 +1,12 @@
+-- CreateTable
+CREATE TABLE `UsageEvent` (
+    `id` VARCHAR(191) NOT NULL,
+    `userEmail` VARCHAR(191) NOT NULL,
+    `action` VARCHAR(191) NOT NULL,
+    `metadata` TEXT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `UsageEvent_userEmail_action_idx`(`userEmail`, `action`),
+    INDEX `UsageEvent_createdAt_idx`(`createdAt`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

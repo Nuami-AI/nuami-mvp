@@ -42,11 +42,25 @@ export const tipSchema = z.object({
   cat: tipCategorySchema,
 });
 
+export const actionStepSchema = z.object({
+  step: z.number().int().positive(),
+  action: z.string().min(1),
+  detail: z.string().optional(),
+});
+
+export const contextCardSchema = z.object({
+  theme: z.string().min(1),
+  explanation: z.string().min(1),
+  example: z.string().optional(),
+});
+
 export const extractionSchema = z.object({
   video: videoMetaSchema,
+  actions: z.array(actionStepSchema).default([]),
   places: z.array(placeSchema),
   phrases: z.array(phraseSchema),
   tips: z.array(tipSchema),
+  contexts: z.array(contextCardSchema).default([]),
 });
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

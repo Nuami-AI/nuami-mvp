@@ -35,11 +35,25 @@ export interface Tip {
   cat: TipCategory;
 }
 
+export interface ActionStep {
+  step: number;
+  action: string;
+  detail?: string;
+}
+
+export interface ContextCard {
+  theme: string;       // short cultural theme label
+  explanation: string; // why this behavior/norm exists culturally
+  example?: string;    // concrete real-world example
+}
+
 export interface ExtractionResult {
   video: VideoMeta;
+  actions: ActionStep[];
   places: Place[];
   phrases: Phrase[];
   tips: Tip[];
+  contexts: ContextCard[];
 }
 
 export type ExtractErrorCode =
@@ -49,6 +63,8 @@ export type ExtractErrorCode =
   | "TRANSCRIPT_TOO_SHORT"
   | "CLAUDE_PARSE_FAILED"
   | "RATE_LIMITED"
+  | "UNAUTHORIZED"
+  | "LIMIT_EXCEEDED"
   | "INTERNAL";
 
 export interface ExtractError {
@@ -56,6 +72,8 @@ export interface ExtractError {
   message: string;
   hint?: string;
   requestId: string;
+  used?: number;
+  limit?: number;
 }
 
 export type ExtractResponse =
