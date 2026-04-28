@@ -5,8 +5,8 @@
 import TopNav from "./TopNav";
 import BottomNav from "./BottomNav";
 
-type TopTabId = "videoai" | "content" | "saved" | "history";
-type BottomTabId = "home" | "content" | "videoai" | "bookmark" | "mypage";
+type TopTabId = "videoai" | "content" | "guide" | "saved" | "history";
+type BottomTabId = "home" | "content" | "guide" | "bookmark" | "mypage";
 
 interface Props {
   topNav?: TopTabId;

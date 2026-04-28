@@ -5,6 +5,7 @@ export const ko = {
   "nav.home":      "홈",
   "nav.content":   "콘텐츠",
   "nav.videoai":   "Video AI",
+  "nav.guide":     "가이드",
   "nav.bookmarks": "북마크",
   "nav.mypage":    "마이페이지",
   "nav.saved":     "저장됨",
@@ -12,8 +13,8 @@ export const ko = {
 
   // ── InputScreen ─────────────────────────────────────────────────────────────
   "input.welcome":         "안녕하세요!",
-  "input.hero.title":      "영상에서 여행 정보를\n추출해드려요",
-  "input.hero.desc":       "YouTube · Shorts · TikTok 링크를 입력하면 저장 가능한 카드로 정리해드려요. 지도 링크 · 현지 표현 · 맛집 · 장소 등",
+  "input.hero.title":      "영상에서 현지 생활 정보를\n정리해드려요",
+  "input.hero.desc":       "YouTube 링크를 입력하면 행동 카드·장소 카드·맥락 카드로 정리해드려요. 일본·한국·태국 등 어느 나라든 현지 일상 상황에 바로 활용하세요.",
   "input.url.label":       "Video URL",
   "input.url.placeholder": "https://www.youtube.com/watch?v=...",
   "input.cta.extract":     "추출하기",
@@ -32,6 +33,8 @@ export const ko = {
 
   // ── ResultsScreen ────────────────────────────────────────────────────────────
   "results.reExtract":       "다시 추출",
+  "results.actions.title":   "행동 카드",
+  "results.contexts.title":  "맥락 카드",
   "results.places.title":    "장소",
   "results.places.empty":    "감지된 장소가 없습니다. 장소 설명이 더 많은 영상을 시도해보세요.",
   "results.phrases.title":   "현지 표현",
@@ -44,10 +47,12 @@ export const ko = {
   "results.culture":         "주변 문화행사",
   "results.banner.detected": "개 장소 감지됨",
   "results.banner.resultsIn":"로 결과 표시",
+  "results.banner.contentAbout": "관련 현지 생활 정보를 정리했습니다",
+  "results.banner.placesFound": "곳의 장소 감지됨",
 
   // ── Content Page ─────────────────────────────────────────────────────────────
-  "content.title":        "여행 가이드",
-  "content.subtitle":     "현지에서 꼭 알아야 할 정보",
+  "content.title":        "현지 생활 가이드",
+  "content.subtitle":     "일상에서 꼭 알아야 할 현지 정보",
   "content.empty":        "콘텐츠가 없습니다.",
   "content.back":         "뒤로",
   "content.cat.all":      "전체",
@@ -62,6 +67,26 @@ export const ko = {
   "mypage.title":     "마이페이지",
   "mypage.lang.title":"언어 설정",
   "mypage.lang.desc": "앱 표시 언어를 선택하세요",
+
+  "mypage.tone.title":       "말투 유형",
+  "mypage.tone.desc":        "AI가 정보를 전달하는 방식을 선택하세요",
+  "mypage.tone.default":     "기본",
+  "mypage.tone.defaultDesc": "명확하고 중립적인 설명",
+  "mypage.tone.casual":      "친근",
+  "mypage.tone.casualDesc":  "친구처럼 편하게",
+  "mypage.tone.concise":     "간결",
+  "mypage.tone.conciseDesc": "핵심만 짧게",
+  "mypage.tone.expert":      "전문가형",
+  "mypage.tone.expertDesc":  "상세하고 정확하게",
+
+  "mypage.stage.title":            "한국 생활 단계",
+  "mypage.stage.desc":             "현재 한국 생활 경험을 선택하세요",
+  "mypage.stage.arrived":          "막 도착",
+  "mypage.stage.arrivedDesc":      "한국 생활 3개월 미만",
+  "mypage.stage.settling":         "적응 중",
+  "mypage.stage.settlingDesc":     "3개월 ~ 1년",
+  "mypage.stage.established":      "생활 안정기",
+  "mypage.stage.establishedDesc":  "1년 이상",
 
   // ── Common ───────────────────────────────────────────────────────────────────
   "common.back":    "뒤로",

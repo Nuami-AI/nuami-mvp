@@ -5,12 +5,15 @@
 // md+: TopNav, inline CTA, wider container.
 // lg+: 2-col Hero (left) + Input (right) layout.
 
+import { useRouter } from "next/navigation";
 import PageShell from "./PageShell";
 import { Button } from "./ui/button";
 import { Alert, AlertTitle, AlertDescription } from "./ui/alert";
+import { PageHeader } from "./ui/page-header";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/i18n";
 import type { ExtractError } from "@/types/extraction";
+import type { UsageInfo } from "@/app/page";
 
 interface Props {
   url: string;
@@ -19,6 +22,7 @@ interface Props {
   isLoading?: boolean;
   error?: ExtractError | null;
   onDismissError?: () => void;
+  usageInfo?: UsageInfo;
 }
 
 // ── Icons ────────────────────────────────────────────────────────────────────
@@ -96,9 +100,24 @@ export default function InputScreen({
   isLoading = false,
   error = null,
   onDismissError,
+  usageInfo,
 }: Props) {
   const { t } = useLanguage();
+  const router = useRouter();
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    router.push("/login");
+  }
   const canExtract = url.trim().length > 0 && !isLoading;
+
+  // Plan SC: FR-07 — show remaining count badge for tester
+  const remainingBadge =
+    usageInfo?.role === "tester" && usageInfo.remaining !== null ? (
+      <span className="ml-2 inline-flex items-center rounded-full bg-infoBox px-2 py-0.5 text-[11px] font-medium text-accent-700">
+        {usageInfo.remaining}회 남음
+      </span>
+    ) : null;
 
   // Plan SC: FR-07 — error messages via i18n
   function friendlyError(err: ExtractError): { title: string; hint?: string } {
@@ -149,18 +168,29 @@ export default function InputScreen({
   return (
     <PageShell
       topNav="videoai"
-      bottomNav="videoai"
-      className="px-4 md:px-6 pb-44 md:pb-16 lg:pb-20"
+      bottomNav="home"
+      className="pb-44 md:pb-16 lg:pb-20"
     >
-      {/* Mobile greeting header — pt-14 = header token(56px) */}
-      <div className="flex items-center justify-between pt-14 pb-3 md:hidden">
-        <span className="text-[15px] font-bold text-text-primary">👋 {t("input.welcome")}</span>
-        <button className="text-text-tertiary p-1" aria-label="검색">
-          <SearchIcon />
-        </button>
-      </div>
+      <PageHeader
+        title={`👋 ${t("input.welcome")}`}
+        trailing={
+          <div className="flex items-center gap-2">
+            {remainingBadge}
+            <button className="text-text-tertiary p-1" aria-label="검색">
+              <SearchIcon />
+            </button>
+            <button
+              onClick={handleLogout}
+              className="text-[12px] text-text-tertiary hover:text-text-secondary transition-colors px-1 md:hidden"
+              aria-label="로그아웃"
+            >
+              로그아웃
+            </button>
+          </div>
+        }
+      />
 
-      <div className="lg:grid lg:grid-cols-[1fr_1.2fr] lg:gap-16 lg:items-center lg:py-16">
+      <div className="px-4 md:px-6 lg:grid lg:grid-cols-[1fr_1.2fr] lg:gap-16 lg:items-center lg:py-16">
 
         {/* ── Hero ── */}
         <div className="flex flex-col items-center lg:items-start">

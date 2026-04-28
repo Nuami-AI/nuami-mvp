@@ -1,8 +1,7 @@
 "use client";
 
-// Design Ref: §2 — content/[id] 카테고리·국가 뱃지. i18n 적용.
-
 import { useLanguage } from "@/lib/i18n";
+import { Badge } from "@/components/ui/badge";
 
 interface Props {
   category: string;
@@ -17,12 +16,8 @@ export default function ContentBadges({ category, country }: Props) {
 
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-[11px] font-medium bg-accent-100 text-accent-700 rounded-full px-2 py-0.5">
-        {t(catKey) ?? category}
-      </span>
-      <span className="text-[11px] font-medium bg-infoBox text-text-secondary rounded-full px-2 py-0.5">
-        {t(countryKey) ?? country}
-      </span>
+      <Badge variant="accent">{t(catKey) ?? category}</Badge>
+      <Badge variant="info">{t(countryKey) ?? country}</Badge>
     </div>
   );
 }

@@ -60,7 +60,7 @@ function getPoolConfig(): Record<string, unknown> {
     );
   }
   const config = parseDatabaseUrl(url);
-  config.database = process.env.DB_DATABASE ?? "nuami";
+  if (process.env.DB_DATABASE) config.database = process.env.DB_DATABASE;
   return config;
 }
 

@@ -25,6 +25,8 @@ import type {
   ExtractionResult,
   Place,
 } from "@/types/extraction";
+import { getSessionFromRequest } from "@/lib/auth/session";
+import { checkGate, logEvent as logUsageEvent } from "@/lib/usage/tracker";
 
 export const runtime = "nodejs"; // Anthropic SDK requires Node
 export const dynamic = "force-dynamic"; // never cache — every call hits Claude
@@ -39,8 +41,10 @@ export async function POST(request: Request): Promise<Response> {
   // --- 1. Parse body ---------------------------------------------------------
   let url = "";
   let bodyUserLang: string | undefined;
+  let bodyToneStyle: string | undefined;
+  let bodyLifeStage: string | undefined;
   try {
-    const body = (await request.json()) as { url?: unknown; userLang?: unknown };
+    const body = (await request.json()) as { url?: unknown; userLang?: unknown; toneStyle?: unknown; lifeStage?: unknown };
     if (typeof body.url !== "string" || body.url.trim().length === 0) {
       return emitError(requestId, url, "unparsed", startedAt, {
         code: "INVALID_URL",
@@ -50,6 +54,8 @@ export async function POST(request: Request): Promise<Response> {
     }
     url = body.url.trim();
     if (typeof body.userLang === "string") bodyUserLang = body.userLang;
+    if (typeof body.toneStyle === "string") bodyToneStyle = body.toneStyle;
+    if (typeof body.lifeStage === "string") bodyLifeStage = body.lifeStage;
   } catch {
     return emitError(requestId, "", "unparsed", startedAt, {
       code: "INVALID_URL",
@@ -57,7 +63,33 @@ export async function POST(request: Request): Promise<Response> {
     });
   }
 
-  // --- 2. Rate limit ---------------------------------------------------------
+  // --- 2. Usage gate (market-validation) ------------------------------------
+  // Plan SC: FR-05 — admin passes freely; tester blocked at limit
+  const session = await getSessionFromRequest(request);
+  if (!session) {
+    return emitError(requestId, url, "unparsed", startedAt, {
+      code: "UNAUTHORIZED",
+      message: "로그인이 필요합니다.",
+    });
+  }
+  if (session.role === "tester") {
+    const gate = await checkGate(session.email);
+    if (!gate.allowed) {
+      await logUsageEvent(session.email, "paywall_shown", { url });
+      const body: ExtractResponse = {
+        error: {
+          code: "LIMIT_EXCEEDED",
+          message: "무료 체험 횟수를 모두 사용했습니다.",
+          requestId,
+          used: gate.used,
+          limit: gate.limit,
+        },
+      };
+      return NextResponse.json(body, { status: 402 });
+    }
+  }
+
+  // --- 3. Rate limit ---------------------------------------------------------
   const limit = checkRateLimit(ip);
   if (!limit.allowed) {
     const errResp = emitError(requestId, url, "unparsed", startedAt, {
@@ -138,6 +170,8 @@ export async function POST(request: Request): Promise<Response> {
       language: transcriptData.language,
       userLanguage,
       truncated,
+      toneStyle: bodyToneStyle,
+      lifeStage: bodyLifeStage,
     });
   } catch (err) {
     const code: ExtractErrorCode = err instanceof ClaudeParseError ? "CLAUDE_PARSE_FAILED" : "INTERNAL";
@@ -204,12 +238,19 @@ export async function POST(request: Request): Promise<Response> {
       userLanguage,
       videoId: parsed.videoId,
     },
+    actions: zodResult.data.actions,
     places: kept,
     phrases: zodResult.data.phrases,
     tips: zodResult.data.tips,
+    contexts: zodResult.data.contexts,
   };
 
-  // --- 8. Log + respond ------------------------------------------------------
+  // --- 8. Log usage event for tester ----------------------------------------
+  if (session.role === "tester") {
+    await logUsageEvent(session.email, "video_ai_use", { url });
+  }
+
+  // --- 9. Log + respond ------------------------------------------------------
   logEvent({
     requestId,
     url,
@@ -274,6 +315,10 @@ function statusForCode(code: ExtractErrorCode): number {
       return 422;
     case "RATE_LIMITED":
       return 429;
+    case "UNAUTHORIZED":
+      return 401;
+    case "LIMIT_EXCEEDED":
+      return 402;
     case "CLAUDE_PARSE_FAILED":
       return 502;
     case "INTERNAL":

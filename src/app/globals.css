@@ -72,3 +72,17 @@ body {
   -webkit-font-smoothing: antialiased;
   word-break: auto-phrase;
 }
+
+button {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

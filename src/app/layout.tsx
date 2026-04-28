@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NUAMI — 여행 영상 분석",
-  description: "YouTube 영상에서 여행 정보를 추출해드려요",
+  title: "NUAMI — 현지 생활 가이드",
+  description: "영상에서 현지 생활 정보를 추출하고, 유학생 적응 가이드를 제공합니다",
 };
 
 export default function RootLayout({

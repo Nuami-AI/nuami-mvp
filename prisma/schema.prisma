@@ -22,3 +22,14 @@ model ContentPost {
   @@index([country, category, visibility])
   @@index([createdAt])
 }
+
+model UsageEvent {
+  id        String   @id @default(cuid())
+  userEmail String
+  action    String   // "video_ai_use" | "paywall_shown" | "paywall_cta_click" | "paywall_dismiss"
+  metadata  String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([userEmail, action])
+  @@index([createdAt])
+}

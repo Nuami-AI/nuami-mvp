@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 
 import type { CulturalEvent } from "@/lib/culture/types";
 import { useLanguage } from "@/lib/i18n";
+import { getCountryName } from "@/lib/countries";
 
 import TopNav from "./TopNav";
 import BottomNav from "./BottomNav";
@@ -85,6 +86,23 @@ function LightbulbIcon() {
   return (
     <svg width="16" height="16" fill="#8651F2" viewBox="0 0 24 24">
       <path d="M9 21h6M12 3a6 6 0 0 1 6 6c0 2.22-1.21 4.16-3 5.2V17H9v-2.8A6 6 0 0 1 6 9a6 6 0 0 1 6-6z" />
+    </svg>
+  );
+}
+
+function ActionIcon() {
+  return (
+    <svg width="16" height="16" fill="#8651F2" viewBox="0 0 24 24">
+      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+    </svg>
+  );
+}
+
+function ContextIcon() {
+  return (
+    <svg width="16" height="16" fill="none" stroke="#8651F2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 16v-4M12 8h.01" />
     </svg>
   );
 }
@@ -169,7 +187,7 @@ function CultureEvents({ placeName }: { placeName: string }) {
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function ResultsScreen({ data, onBack }: Props) {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const placeBookmarks  = useBookmarkSet();
   const phraseBookmarks = useBookmarkSet();
   const tipBookmarks    = useBookmarkSet();
@@ -227,18 +245,43 @@ export default function ResultsScreen({ data, onBack }: Props) {
           <div className="mt-0.5 flex-shrink-0">
             <StarIcon />
           </div>
-          <p className="text-[12px] text-accent-900 leading-relaxed">
-            <span className="font-semibold">
-              {data.places.length}{t("results.banner.detected")}
-              {data.video.destinationCountry ? ` (${data.video.destinationCountry})` : ""}
-            </span>
-            {data.video.userLanguage && (
-              <span className="ml-1 text-accent-700">
-                {data.video.userLanguage.toUpperCase()}{t("results.banner.resultsIn")}
-              </span>
-            )}
-          </p>
+          <div className="flex flex-col gap-0.5">
+            {data.video.destinationCountry && (() => {
+              const countryName = getCountryName(data.video.destinationCountry, lang);
+              const display = countryName ?? data.video.destinationCountry;
+              return (
+                <p className="text-[12px] font-semibold text-accent-900 leading-snug">
+                  {display} {t("results.banner.contentAbout")}
+                </p>
+              );
+            })()}
+            <p className="text-[12px] text-accent-700 leading-snug">
+              {data.places.length}{t("results.banner.placesFound")}
+            </p>
+          </div>
         </div>
+
+        {/* ── Action Card ── */}
+        {data.actions && data.actions.length > 0 && (
+          <section className="mt-5 px-4 lg:px-0">
+            <SectionHeader icon={<ActionIcon />} title={t("results.actions.title")} count={data.actions.length} />
+            <div className="bg-card rounded-2xl border border-line-neutral shadow-sm divide-y divide-line-neutral overflow-hidden">
+              {data.actions.map((item, idx) => (
+                <div key={idx} className="flex items-start gap-3 px-4 py-3.5">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-accent-700 text-white text-[11px] font-bold flex items-center justify-center mt-0.5">
+                    {item.step}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-semibold text-text-primary leading-snug">{item.action}</p>
+                    {item.detail && (
+                      <p className="text-[12px] text-text-secondary mt-0.5 leading-relaxed">{item.detail}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* ── Places ── */}
         <section className="mt-5 px-4 lg:px-0">
@@ -328,6 +371,26 @@ export default function ResultsScreen({ data, onBack }: Props) {
           </div>
         </section>
 
+        {/* ── Context Cards ── */}
+        {data.contexts && data.contexts.length > 0 && (
+          <section className="mt-5 px-4 lg:px-0">
+            <SectionHeader icon={<ContextIcon />} title={t("results.contexts.title")} count={data.contexts.length} />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {data.contexts.map((ctx, idx) => (
+                <div key={idx} className="bg-accent-50 rounded-2xl p-4 border border-accent-100">
+                  <p className="text-[13px] font-bold text-accent-900 mb-2">{ctx.theme}</p>
+                  <p className="text-[13px] text-accent-800 leading-relaxed">{ctx.explanation}</p>
+                  {ctx.example && (
+                    <p className="mt-2 text-[12px] text-accent-700 italic leading-relaxed border-t border-accent-200 pt-2">
+                      {ctx.example}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* ── Insider Tips ── */}
         <section className="mt-5 px-4 lg:px-0 mb-8">
           <SectionHeader icon={<LightbulbIcon />} title={t("results.tips.title")} count={data.tips.length} />
@@ -350,7 +413,7 @@ export default function ResultsScreen({ data, onBack }: Props) {
 
       </div>
 
-      <BottomNav active="videoai" />
+      <BottomNav active="home" />
     </div>
   );
 }

@@ -2,12 +2,14 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useLanguage } from "@/lib/i18n";
+
 import type { TranslationKey } from "@/lib/i18n/ko";
 
-const COUNTRIES: { code: string; labelKey: TranslationKey }[] = [
-  { code: "KR", labelKey: "content.country.kr" },
-  { code: "JP", labelKey: "content.country.jp" },
-];
+const COUNTRIES = ["KR", "JP"] as const;
+const COUNTRY_LABELS: Record<string, TranslationKey> = {
+  KR: "content.country.kr",
+  JP: "content.country.jp",
+};
 
 export default function CountryTabs() {
   const router = useRouter();
@@ -15,31 +17,29 @@ export default function CountryTabs() {
   const current = searchParams.get("country") ?? "KR";
   const { t } = useLanguage();
 
-  function handleSelect(code: string) {
-    const next = new URLSearchParams(searchParams.toString());
-    next.set("country", code);
-    next.delete("page");
-    router.push(`/content?${next.toString()}`);
+  function handleChange() {
+    const idx = COUNTRIES.indexOf(current as typeof COUNTRIES[number]);
+    const next = COUNTRIES[(idx + 1) % COUNTRIES.length];
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("country", next);
+    params.delete("page");
+    router.push(`/content?${params.toString()}`);
   }
 
+  const countryName = t(COUNTRY_LABELS[current] as TranslationKey) ?? current;
+
   return (
-    <div className="flex gap-2 px-4">
-      {COUNTRIES.map(({ code, labelKey }) => {
-        const isActive = current === code;
-        return (
-          <button
-            key={code}
-            onClick={() => handleSelect(code)}
-            className={`px-4 py-1.5 rounded-full text-[13px] font-semibold transition-colors ${
-              isActive
-                ? "bg-accent-700 text-text-foreground"
-                : "bg-infoBox text-text-secondary hover:bg-gray-200"
-            }`}
-          >
-            {t(labelKey)}
-          </button>
-        );
-      })}
+    <div className="flex items-center justify-between px-4 py-2.5">
+      <p className="text-[14px] font-semibold text-accent-700">
+        {countryName}에 방문했나요?
+      </p>
+      <button
+        onClick={handleChange}
+        className="flex items-center gap-0.5 text-[12px] text-text-tertiary hover:text-text-secondary transition-colors"
+      >
+        지금 장소 변경
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
     </div>
   );
 }

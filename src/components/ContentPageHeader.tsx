@@ -1,13 +1,27 @@
 "use client";
 
 import { useLanguage } from "@/lib/i18n";
+import { PageHeader } from "@/components/ui/page-header";
+
+function SearchIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  );
+}
 
 export default function ContentPageHeader() {
   const { t } = useLanguage();
   return (
-    <div className="pt-14 pb-3 px-4 md:pt-6 md:px-6">
-      <h1 className="text-[18px] md:text-[22px] font-bold text-text-primary">{t("content.title")}</h1>
-      <p className="text-[13px] text-text-secondary mt-0.5">{t("content.subtitle")}</p>
-    </div>
+    <PageHeader
+      title={t("content.title")}
+      trailing={
+        <button className="p-1.5 -mr-1 text-text-secondary hover:text-text-primary transition-colors">
+          <SearchIcon />
+        </button>
+      }
+    />
   );
 }

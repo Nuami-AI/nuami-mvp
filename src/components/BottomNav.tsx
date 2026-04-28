@@ -5,12 +5,12 @@
 import Link from "next/link";
 import { useLanguage } from "@/lib/i18n";
 
-type TabId = "home" | "content" | "videoai" | "bookmark" | "mypage";
+type TabId = "home" | "content" | "guide" | "bookmark" | "mypage";
 
-const TABS: { id: TabId; labelKey: "nav.home" | "nav.content" | "nav.videoai" | "nav.bookmarks" | "nav.mypage"; href: string }[] = [
+const TABS: { id: TabId; labelKey: "nav.home" | "nav.content" | "nav.guide" | "nav.bookmarks" | "nav.mypage"; href: string }[] = [
   { id: "home",     labelKey: "nav.home",      href: "/" },
   { id: "content",  labelKey: "nav.content",   href: "/content" },
-  { id: "videoai",  labelKey: "nav.videoai",   href: "/" },
+  { id: "guide",    labelKey: "nav.guide",     href: "/guide" },
   { id: "bookmark", labelKey: "nav.bookmarks", href: "/" },
   { id: "mypage",   labelKey: "nav.mypage",    href: "/mypage" },
 ];
@@ -38,11 +38,11 @@ function TabIcon({ id, active }: { id: TabId; active: boolean }) {
         <rect x="14" y="14" width="7" height="7" rx="1.5" />
       </svg>
     );
-  if (id === "videoai")
+  if (id === "guide")
     return (
       <svg width="20" height="20" fill="none" stroke={stroke} strokeWidth="2" viewBox="0 0 24 24">
-        <rect x="2" y="6" width="14" height="12" rx="2" fill={active ? "#F2EBFF" : "none"} stroke={stroke} />
-        <path d="m16 10 5-3v10l-5-3V10z" fill={fill} stroke={stroke} />
+        <rect x="4" y="3" width="16" height="18" rx="2" fill={active ? "#F2EBFF" : "none"} stroke={stroke} />
+        <path d="M8 8h8M8 12h8M8 16h5" strokeLinecap="round" />
       </svg>
     );
   if (id === "bookmark")
@@ -59,7 +59,7 @@ function TabIcon({ id, active }: { id: TabId; active: boolean }) {
   );
 }
 
-export default function BottomNav({ active = "videoai" }: { active?: TabId }) {
+export default function BottomNav({ active = "home" }: { active?: TabId }) {
   const { t } = useLanguage();
 
   return (

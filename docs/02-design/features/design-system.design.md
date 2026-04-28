@@ -188,7 +188,7 @@ Server Component이므로 Client Component로 분리 필요.
 <div className="pt-5 pb-3 px-4">
 
 // 변경
-<div className="pt-14 pb-3 px-4 md:pt-6 md:px-6">
+<div className="px-4 h-14 flex items-center md:hidden">
 ```
 
 ---
@@ -200,7 +200,7 @@ Server Component이므로 Client Component로 분리 필요.
 <div className="px-5 pt-14 pb-2 md:hidden">
 
 // 변경 (px-5 → px-4)
-<div className="px-4 pt-14 pb-2 md:hidden">
+<div className="px-4 h-14 flex items-center md:hidden">
 
 // LanguageSelector 현재
 <div className="px-5 mt-6">
