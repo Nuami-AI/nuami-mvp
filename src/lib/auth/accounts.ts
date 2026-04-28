@@ -21,6 +21,11 @@ function getAccounts(): Array<Account & { password: string }> {
       password: process.env.TESTER2_PASSWORD ?? "",
       role: "tester",
     },
+    {
+      email: process.env.TESTER3_EMAIL ?? "",
+      password: process.env.TESTER3_PASSWORD ?? "",
+      role: "tester",
+    },
   ];
 }
 
