@@ -10,7 +10,7 @@ const CATEGORY_META: Record<
   string,
   { sectionTitle: (country: string) => string; sectionLabelKey: TranslationKey; compact?: boolean }
 > = {
-  culture:   { sectionTitle: (c) => `${c}의 문화 가이드`,   sectionLabelKey: "content.cat.culture" },
+  culture:   { sectionTitle: (c) => `${c}의 여가활동 가이드`,   sectionLabelKey: "content.cat.culture" },
   action:    { sectionTitle: (c) => `${c}의 행동 가이드`,   sectionLabelKey: "content.cat.action" },
   food:      { sectionTitle: (c) => `${c}의 음식 가이드`,   sectionLabelKey: "content.cat.food" },
   transport: { sectionTitle: (c) => `${c}의 리얼팁`,        sectionLabelKey: "content.cat.transport", compact: true },

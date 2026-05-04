@@ -56,7 +56,7 @@ export const ko = {
   "content.empty":        "콘텐츠가 없습니다.",
   "content.back":         "뒤로",
   "content.cat.all":      "전체",
-  "content.cat.culture":  "문화",
+  "content.cat.culture":  "여가활동",
   "content.cat.action":   "행동",
   "content.cat.food":     "음식",
   "content.cat.transport":"이동",

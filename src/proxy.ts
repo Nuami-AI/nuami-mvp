@@ -5,7 +5,14 @@ import { type NextRequest, NextResponse } from "next/server";
 import { COOKIE_NAME, verifySession } from "@/lib/auth/session";
 
 export const config = {
-  matcher: ["/video-ai/:path*", "/admin/:path*"],
+  matcher: [
+    "/",
+    "/content/:path*",
+    "/mypage/:path*",
+    "/guide/:path*",
+    "/video-ai/:path*",
+    "/admin/:path*",
+  ],
 };
 
 export async function proxy(request: NextRequest) {

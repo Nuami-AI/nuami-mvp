@@ -7,7 +7,7 @@ const client = new Anthropic();
 
 const COUNTRY_LABELS: Record<string, string> = { KR: "한국", JP: "일본" };
 const CATEGORY_LABELS: Record<string, string> = {
-  culture: "문화/예절",
+  culture: "여가활동",
   action: "행동 가이드",
   food: "음식",
   transport: "이동/교통",

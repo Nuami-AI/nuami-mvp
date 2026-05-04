@@ -2,12 +2,12 @@
   "version": "1.0",
   "enabled": false,
   "teamName": "",
-  "feature": "place-video-enrichment",
-  "pdcaPhase": "completed",
+  "feature": "market-validation",
+  "pdcaPhase": "design",
   "orchestrationPattern": "leader",
   "ctoAgent": "opus",
-  "startedAt": "2026-04-19T16:24:23.803Z",
-  "lastUpdated": "2026-04-30T07:00:14.468Z",
+  "startedAt": "2026-05-04T05:13:50.781Z",
+  "lastUpdated": "2026-05-04T05:38:52.288Z",
   "teammates": [],
   "progress": {
     "totalTasks": 0,
@@ -17,5 +17,5 @@
     "pendingTasks": 0
   },
   "recentMessages": [],
-  "sessionId": "44650206-d869-4690-bd06-d32e64febd74"
+  "sessionId": "b5acd2aa-899a-4685-a39f-721cbbabf036"
 }
