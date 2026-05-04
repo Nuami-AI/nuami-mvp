@@ -26,6 +26,7 @@ export const phraseSchema = z.object({
   meaning: z.string().min(1),        // user language translation
   pronunciation: z.string().min(1),  // destination local language phrase
   context: z.string().optional(),
+  source: z.string().optional(),     // XAI: verbatim transcript quote
 });
 
 export const tipCategorySchema = z.enum([
@@ -40,12 +41,14 @@ export const tipSchema = z.object({
   title: z.string().min(1),
   desc: z.string().min(1),
   cat: tipCategorySchema,
+  source: z.string().optional(), // XAI: verbatim transcript quote
 });
 
 export const actionStepSchema = z.object({
   step: z.number().int().positive(),
   action: z.string().min(1),
   detail: z.string().optional(),
+  source: z.string().optional(), // XAI: verbatim transcript quote
 });
 
 export const contextCardSchema = z.object({

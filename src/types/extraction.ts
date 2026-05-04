@@ -25,6 +25,7 @@ export interface Phrase {
   meaning: string;        // translation in user's language
   pronunciation: string;  // phrase in destination local language
   context?: string;
+  source?: string;        // XAI: verbatim transcript quote grounding this phrase
 }
 
 export type TipCategory = "Time" | "Price" | "Etiquette" | "Transport" | "Other";
@@ -33,12 +34,14 @@ export interface Tip {
   title: string;
   desc: string;
   cat: TipCategory;
+  source?: string; // XAI: verbatim transcript quote grounding this tip
 }
 
 export interface ActionStep {
   step: number;
   action: string;
   detail?: string;
+  source?: string; // XAI: verbatim transcript quote grounding this action
 }
 
 export interface ContextCard {

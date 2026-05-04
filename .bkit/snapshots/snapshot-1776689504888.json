@@ -1,0 +1,144 @@
+{
+  "timestamp": "2026-04-20T12:51:44.887Z",
+  "reason": "compaction",
+  "status": {
+    "version": "3.0",
+    "lastUpdated": "2026-04-19T07:30:00.000Z",
+    "activeFeatures": [
+      "cultural-action-service",
+      "place-video-enrichment",
+      "content-hub"
+    ],
+    "primaryFeature": "content-hub",
+    "features": {
+      "place-video-enrichment": {
+        "phase": "completed",
+        "matchRate": 94.4,
+        "iterationCount": 0,
+        "startedAt": "2026-04-20T00:00:00.000Z",
+        "completedAt": "2026-04-20T09:00:00.000Z",
+        "docs": {
+          "plan": "docs/01-plan/features/place-video-enrichment.plan.md",
+          "analysis": "docs/03-analysis/place-video-enrichment.analysis.md",
+          "report": "docs/04-report/place-video-enrichment.report.md"
+        }
+      },
+      "content-hub": {
+        "phase": "design",
+        "matchRate": null,
+        "iterationCount": 0,
+        "startedAt": "2026-04-20T10:00:00.000Z",
+        "docs": {
+          "plan": "docs/01-plan/features/content-hub.plan.md",
+          "design": "docs/02-design/features/content-hub.design.md"
+        }
+      },
+      "cultural-action-service": {
+        "phase": "completed",
+        "matchRate": 97.2,
+        "iterationCount": 0,
+        "startedAt": "2026-04-19T07:15:00.000Z",
+        "completedAt": "2026-04-19T07:45:00.000Z",
+        "docs": {
+          "prd": "docs/00-pm/cultural-action-service.prd.md",
+          "plan": "docs/01-plan/features/cultural-action-service.plan.md",
+          "design": "docs/02-design/features/cultural-action-service.design.md",
+          "analysis": "docs/03-analysis/cultural-action-service.analysis.md",
+          "report": "docs/04-report/cultural-action-service.report.md"
+        }
+      }
+    },
+    "pipeline": {
+      "currentPhase": 1,
+      "level": "Dynamic",
+      "phaseHistory": [
+        {
+          "phase": "plan",
+          "completedAt": "2026-04-19T07:18:00.000Z"
+        },
+        {
+          "phase": "design",
+          "completedAt": "2026-04-19T07:22:00.000Z"
+        },
+        {
+          "phase": "do",
+          "completedAt": "2026-04-19T07:29:00.000Z"
+        },
+        {
+          "phase": "check",
+          "completedAt": "2026-04-19T07:40:00.000Z",
+          "matchRate": 97.2
+        },
+        {
+          "phase": "report",
+          "completedAt": "2026-04-19T07:45:00.000Z"
+        }
+      ]
+    },
+    "session": {
+      "startedAt": "2026-04-19T07:04:28.131Z",
+      "onboardingCompleted": false,
+      "lastActivity": "2026-04-19T07:30:00.000Z"
+    },
+    "history": [
+      {
+        "event": "plan_complete",
+        "feature": "cultural-action-service",
+        "at": "2026-04-19T07:18:00.000Z"
+      },
+      {
+        "event": "design_complete",
+        "feature": "cultural-action-service",
+        "at": "2026-04-19T07:22:00.000Z"
+      },
+      {
+        "event": "do_complete",
+        "feature": "cultural-action-service",
+        "at": "2026-04-19T07:29:00.000Z"
+      },
+      {
+        "event": "check_complete",
+        "feature": "cultural-action-service",
+        "at": "2026-04-19T07:40:00.000Z",
+        "matchRate": 97.2
+      },
+      {
+        "event": "report_complete",
+        "feature": "cultural-action-service",
+        "at": "2026-04-19T07:45:00.000Z"
+      },
+      {
+        "event": "do_complete",
+        "feature": "place-video-enrichment",
+        "at": "2026-04-20T08:00:00.000Z"
+      },
+      {
+        "event": "check_complete",
+        "feature": "place-video-enrichment",
+        "at": "2026-04-20T08:30:00.000Z",
+        "matchRate": 94.4
+      },
+      {
+        "event": "report_complete",
+        "feature": "place-video-enrichment",
+        "at": "2026-04-20T09:00:00.000Z"
+      }
+    ],
+    "stateMachine": {
+      "defaultWorkflow": "default",
+      "activeWorkflows": {},
+      "totalTransitions": 0
+    },
+    "automation": {
+      "globalLevel": 2,
+      "trustScore": 40,
+      "pendingApprovals": 0,
+      "lastGateResult": null
+    },
+    "team": {
+      "enabled": true,
+      "stateFile": ".bkit/runtime/agent-state.json",
+      "eventsFile": ".bkit/runtime/agent-events.jsonl"
+    }
+  }
+}

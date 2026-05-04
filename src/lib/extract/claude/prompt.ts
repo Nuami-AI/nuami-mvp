@@ -124,7 +124,8 @@ Return STRICT JSON matching this exact shape:
   "actions": Array<{
     "step": number,    // 1-based sequential step number
     "action": string,  // short imperative sentence IN [A] ${langName} (≤15 words)
-    "detail"?: string  // optional 1-sentence clarification IN [A] ${langName}
+    "detail"?: string, // optional 1-sentence clarification IN [A] ${langName}
+    "source"?: string  // verbatim transcript substring this action is grounded in (XAI)
   }>,
   "places": Array<{
     "name": string,      // place name in local script or Romanized
@@ -136,12 +137,14 @@ Return STRICT JSON matching this exact shape:
   "phrases": Array<{
     "meaning": string,       // what this phrase means / when to use it IN [A] ${langName}
     "pronunciation": string, // phrase written in the destination's LOCAL SCRIPT (e.g. Japanese → 「いらっしゃいませ」, Korean → 「주문할게요」)
-    "context"?: string       // which daily life situation to use this IN [A] ${langName}
+    "context"?: string,      // which daily life situation to use this IN [A] ${langName}
+    "source"?: string        // verbatim transcript substring where this phrase appears (XAI)
   }>,
   "tips": Array<{
-    "title": string, // IN [A] ${langName}
-    "desc": string,  // IN [A] ${langName}
-    "cat": "Time" | "Price" | "Etiquette" | "Transport" | "Other"
+    "title": string,  // IN [A] ${langName}
+    "desc": string,   // IN [A] ${langName}
+    "cat": "Time" | "Price" | "Etiquette" | "Transport" | "Other",
+    "source"?: string // verbatim transcript substring this tip is grounded in (XAI)
   }>,
   "contexts": Array<{
     "theme": string,       // short cultural theme label IN [A] ${langName} (≤6 words)
@@ -170,7 +173,10 @@ RULES:
 9.  Phrases must be practical local expressions for daily life — not tourist phrases.
 10. Tips must be actionable for residents of the destination (admin procedures, timing, costs, etiquette).
 11. Contexts explain WHY locals in the destination country behave certain ways — cultural/social background, not tips.
-12. Do not invent facts. Extract only what is clearly stated or implied in the transcript.`;
+12. Do not invent facts. Extract only what is clearly stated or implied in the transcript.
+13. For every action, tip, and phrase: include a "source" field with the verbatim transcript
+    substring that directly grounds it. "source" must be an exact substring of the transcript.
+    If no specific substring can be identified, omit "source" rather than paraphrasing.`;
 }
 
 export function buildUserMessage(input: PromptInput): string {

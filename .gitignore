@@ -41,7 +41,7 @@ yarn-error.log*
 next-env.d.ts
 
 
-.bkit
-.claude
-.gemini
+bkit
+claude
+gemini
 .jun_memo

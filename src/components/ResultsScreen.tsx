@@ -276,6 +276,11 @@ export default function ResultsScreen({ data, onBack }: Props) {
                     {item.detail && (
                       <p className="text-[12px] text-text-secondary mt-0.5 leading-relaxed">{item.detail}</p>
                     )}
+                    {item.source && (
+                      <p className="text-[11px] text-text-disabled italic mt-1.5 leading-relaxed border-l-2 border-line-normal pl-2">
+                        &ldquo;{item.source}&rdquo;
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -403,6 +408,11 @@ export default function ResultsScreen({ data, onBack }: Props) {
                   <BookmarkBtn filled={tipBookmarks.has(idx)} onToggle={() => tipBookmarks.toggle(idx)} />
                 </div>
                 <p className="text-[13px] text-text-secondary mt-1.5 leading-relaxed">{tip.desc}</p>
+                {tip.source && (
+                  <p className="text-[11px] text-text-disabled italic mt-2 leading-relaxed border-l-2 border-line-normal pl-2">
+                    &ldquo;{tip.source}&rdquo;
+                  </p>
+                )}
                 <span className="inline-block mt-3 text-[11px] bg-infoBox text-text-tertiary rounded-full px-2.5 py-1">
                   {tip.cat}
                 </span>

@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "feature": "cultural-action-service",
+  "phase": "completed",
+  "matchRate": 97.2,
+  "decisions": {
+    "architecture": "Option C (Pragmatic Balance) — module-per-concern under src/lib/extract/",
+    "transcript": "youtube-transcript (npm) — no API key, swappable via TranscriptFetcher interface",
+    "model": "claude-haiku-4-5 (cost-bound per PRD NFR)",
+    "runtime": "nodejs (required by Anthropic SDK — confirmed against Next.js 16.2.4 docs)",
+    "state": "local useState in page.tsx (no store — single flow)",
+    "rateLimit": "in-memory Map per IP (10/hr, 3/min) — cold-start caveat documented"
+  },
+  "lastUpdated": "2026-04-19T07:30:00.000Z"
+}

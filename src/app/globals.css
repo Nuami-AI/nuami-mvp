@@ -73,7 +73,8 @@ body {
   word-break: auto-phrase;
 }
 
-button {
+button,
+a {
   cursor: pointer;
   touch-action: manipulation;
 }
