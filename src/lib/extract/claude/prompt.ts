@@ -3,8 +3,10 @@
 // Target users: foreign residents living in ANY destination country — NOT tourists.
 // The AI detects destination country and language from video content.
 
+// Design Ref: §4.2 platform-pivot — situation required, transcript optional (empty when no URL).
 export interface PromptInput {
-  transcript: string;
+  situation: string;    // user's life situation (required)
+  transcript: string;   // empty string when no URL provided
   videoTitle: string;
   videoChannel: string;
   language: string;
@@ -121,6 +123,13 @@ Return STRICT JSON matching this exact shape:
     "destinationCountry": string,    // [C] ISO 3166-1 alpha-2 of the country the video is about (e.g. "JP", "KR", "TH")
     "destinationLanguage": string    // [C] ISO 639-1 of the destination's local language (e.g. "ja", "ko", "th")
   },
+  "situation": {
+    "summary": string,              // 1-2 sentence summary of the situation IN [A] ${langName}
+    "documents": string[],          // required documents (2-5 items) IN [A] ${langName} (e.g. ["Passport", "ARC card"])
+    "whereTo": string[],            // specific places/departments to visit (1-3 items) IN [A] ${langName}
+    "checklist": string[],          // preparation checklist before going (3-6 items) IN [A] ${langName}
+    "estimatedMinutes": number      // estimated total time in minutes (optional, include wait time)
+  },
   "actions": Array<{
     "step": number,    // 1-based sequential step number
     "action": string,  // short imperative sentence IN [A] ${langName} (≤15 words)
@@ -155,6 +164,10 @@ Return STRICT JSON matching this exact shape:
 
 RULES:
 1.  Return ONLY the JSON object. No preamble, no code fences, no trailing text.
+1a. situation.documents: list only genuinely required documents. Always include "ARC card (외국인등록증)" for Korea-related situations unless clearly irrelevant.
+1b. situation.whereTo: use specific institution names + department (e.g. "KB Kookmin Bank — Foreign Customer Desk") not vague descriptions.
+1c. situation.checklist: actionable pre-visit checks (reservation required?, hours, what to bring, language prep).
+1d. situation.estimatedMinutes: realistic total including waiting time; omit if genuinely unknown.
 2.  Every place's "quote" MUST be a verbatim substring of the provided transcript.
 3.  Aim for 3-6 action steps, 2-5 places, 4-10 phrases, 3-6 tips, 2-4 context cards.
 4.  video.language = the creator's speaking language detected from transcript text — NOT the hint.
@@ -189,11 +202,10 @@ export function buildUserMessage(input: PromptInput): string {
     `⚠️  DESTINATION DETECTION — read carefully before extracting:`,
     `    User output language [A]: ${input.userLanguage}  ← write all text in this language`,
     `    Transcript language [B]: detect from transcript  ← creator's speaking language`,
-    `    Destination country [C]: detect from VIDEO CONTENT (title, places, context) ← NOT from [A] or [B]`,
+    `    Destination country [C]: detect from USER SITUATION + VIDEO CONTENT ← NOT from [A] or [B]`,
     `    Video title: "${input.videoTitle}"`,
-    `    Hint: city/country names in the title are strong signals for destination.`,
-    `    Example: title contains "Istanbul" → destinationCountry: "TR", destinationLanguage: "tr"`,
-    `    Example: title contains "Tokyo" → destinationCountry: "JP", destinationLanguage: "ja"`,
+    `    Hint: city/country names in the situation or title are strong signals for destination.`,
+    `    Example: situation mentions "bank in Korea" → destinationCountry: "KR", destinationLanguage: "ko"`,
     `    CRITICAL: phrases.pronunciation must be in the DESTINATION's local script, NOT the user's language.`,
   ].join("\n");
 
@@ -207,7 +219,12 @@ export function buildUserMessage(input: PromptInput): string {
     .filter(Boolean)
     .join("\n");
 
-  return `${destinationReminder}\n\n${meta}\n\nTranscript:\n"""\n${input.transcript}\n"""\n\nReturn the JSON now.`;
+  // Plan SC: FR-05 — situation text is the primary input; transcript enriches when available.
+  const transcriptSection = input.transcript.trim()
+    ? `Transcript:\n"""\n${input.transcript}\n"""`
+    : `Transcript:\n(none — generate the action guide from the user situation only. For places, return an empty array.)`;
+
+  return `${destinationReminder}\n\n[USER SITUATION]\nThe user needs help with: "${input.situation}"\n\n${meta}\n\n${transcriptSection}\n\nReturn the JSON now.`;
 }
 
 export { LANG_NAMES };

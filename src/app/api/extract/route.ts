@@ -39,27 +39,30 @@ export async function POST(request: Request): Promise<Response> {
   const ip = getClientIp(request);
 
   // --- 1. Parse body ---------------------------------------------------------
+  // Design Ref: §4.1 platform-pivot — situation required, url optional.
+  let situation = "";
   let url = "";
   let bodyUserLang: string | undefined;
   let bodyToneStyle: string | undefined;
   let bodyLifeStage: string | undefined;
   try {
-    const body = (await request.json()) as { url?: unknown; userLang?: unknown; toneStyle?: unknown; lifeStage?: unknown };
-    if (typeof body.url !== "string" || body.url.trim().length === 0) {
-      return emitError(requestId, url, "unparsed", startedAt, {
-        code: "INVALID_URL",
-        message: "Request body must include a non-empty string `url`.",
-        hint: "Paste a full YouTube URL like https://www.youtube.com/watch?v=...",
+    const body = (await request.json()) as { situation?: unknown; url?: unknown; userLang?: unknown; toneStyle?: unknown; lifeStage?: unknown };
+    if (typeof body.situation !== "string" || body.situation.trim().length === 0) {
+      return emitError(requestId, "", "unparsed", startedAt, {
+        code: "INVALID_SITUATION",
+        message: "Request body must include a non-empty string `situation`.",
+        hint: "Describe what you need help with, e.g. 'I want to open a bank account'.",
       });
     }
-    url = body.url.trim();
+    situation = body.situation.trim();
+    if (typeof body.url === "string" && body.url.trim().length > 0) url = body.url.trim();
     if (typeof body.userLang === "string") bodyUserLang = body.userLang;
     if (typeof body.toneStyle === "string") bodyToneStyle = body.toneStyle;
     if (typeof body.lifeStage === "string") bodyLifeStage = body.lifeStage;
   } catch {
     return emitError(requestId, "", "unparsed", startedAt, {
-      code: "INVALID_URL",
-      message: "Request body must be valid JSON with a `url` field.",
+      code: "INVALID_SITUATION",
+      message: "Request body must be valid JSON with a `situation` field.",
     });
   }
 
@@ -101,73 +104,90 @@ export async function POST(request: Request): Promise<Response> {
     return errResp;
   }
 
-  // --- 3. Parse URL ----------------------------------------------------------
-  let parsed;
-  try {
-    parsed = parseUrl(url);
-  } catch {
-    return emitError(requestId, url, "unparsed", startedAt, {
-      code: "INVALID_URL",
-      message: "Could not parse the provided URL.",
-      hint: "Paste a full YouTube URL like https://www.youtube.com/watch?v=...",
-    });
-  }
-
-  if (parsed.platform === "tiktok") {
-    return emitError(requestId, url, "tiktok", startedAt, {
-      code: "UNSUPPORTED_PLATFORM",
-      message: "TikTok support is coming soon.",
-      hint: "Try a YouTube URL for now.",
-    });
-  }
-  if (parsed.platform !== "youtube") {
-    return emitError(requestId, url, "unknown", startedAt, {
-      code: "UNSUPPORTED_PLATFORM",
-      message: "Only YouTube URLs are supported right now.",
-      hint: "Paste a YouTube watch, Shorts, or youtu.be link.",
-    });
-  }
-
-  // --- 4. Fetch transcript ---------------------------------------------------
-  let transcriptData;
-  try {
-    transcriptData = await youtubeTranscriptFetcher.fetch(parsed.videoId);
-  } catch (err) {
-    if (err instanceof TranscriptUnavailableError) {
-      return emitError(requestId, url, "youtube", startedAt, {
-        code: "TRANSCRIPT_UNAVAILABLE",
-        message: "This video has no captions we can read.",
-        hint: "Try another video with auto-captions or manual subtitles.",
-      });
-    }
-    return emitError(requestId, url, "youtube", startedAt, {
-      code: "INTERNAL",
-      message: "Failed to fetch transcript.",
-    });
-  }
-
-  if (transcriptData.text.length < MIN_TRANSCRIPT_CHARS) {
-    return emitError(requestId, url, "youtube", startedAt, {
-      code: "TRANSCRIPT_TOO_SHORT",
-      message: "This video is too short to extract from.",
-      hint: "Try a video that's at least 1 minute long.",
-    });
-  }
-
-  // --- 5. Truncate + call Claude --------------------------------------------
-  const { text: truncatedText, truncated } = truncateTranscript(transcriptData.text);
-
   const acceptLang = request.headers.get("accept-language") ?? "ko";
   const browserLang = acceptLang.split(",")[0]?.split(";")[0]?.split("-")[0]?.trim() ?? "ko";
   const userLanguage = bodyUserLang ?? browserLang;
 
+  // Design Ref: §2.1 platform-pivot — two paths: text-only vs text+URL.
+  let transcriptText = "";
+  let videoTitle = situation;
+  let videoChannel = "NUAMI";
+  let videoLanguage = "und";
+  let truncated = false;
+  let parsedVideoId: string | undefined;
+
+  if (url) {
+    // --- 3. Parse URL --------------------------------------------------------
+    let parsed;
+    try {
+      parsed = parseUrl(url);
+    } catch {
+      return emitError(requestId, url, "unparsed", startedAt, {
+        code: "INVALID_URL",
+        message: "Could not parse the provided URL.",
+        hint: "Paste a full YouTube URL like https://www.youtube.com/watch?v=...",
+      });
+    }
+
+    if (parsed.platform === "tiktok") {
+      return emitError(requestId, url, "tiktok", startedAt, {
+        code: "UNSUPPORTED_PLATFORM",
+        message: "TikTok support is coming soon.",
+        hint: "Try a YouTube URL for now.",
+      });
+    }
+    if (parsed.platform !== "youtube") {
+      return emitError(requestId, url, "unknown", startedAt, {
+        code: "UNSUPPORTED_PLATFORM",
+        message: "Only YouTube URLs are supported right now.",
+        hint: "Paste a YouTube watch, Shorts, or youtu.be link.",
+      });
+    }
+
+    // --- 4. Fetch transcript -------------------------------------------------
+    let transcriptData;
+    try {
+      transcriptData = await youtubeTranscriptFetcher.fetch(parsed.videoId);
+    } catch (err) {
+      if (err instanceof TranscriptUnavailableError) {
+        return emitError(requestId, url, "youtube", startedAt, {
+          code: "TRANSCRIPT_UNAVAILABLE",
+          message: "This video has no captions we can read.",
+          hint: "Try another video with auto-captions or manual subtitles.",
+        });
+      }
+      return emitError(requestId, url, "youtube", startedAt, {
+        code: "INTERNAL",
+        message: "Failed to fetch transcript.",
+      });
+    }
+
+    if (transcriptData.text.length < MIN_TRANSCRIPT_CHARS) {
+      return emitError(requestId, url, "youtube", startedAt, {
+        code: "TRANSCRIPT_TOO_SHORT",
+        message: "This video is too short to extract from.",
+        hint: "Try a video that's at least 1 minute long.",
+      });
+    }
+
+    const truncateResult = truncateTranscript(transcriptData.text);
+    transcriptText = truncateResult.text;
+    truncated = truncateResult.truncated;
+    videoTitle = transcriptData.title;
+    videoChannel = transcriptData.channel;
+    videoLanguage = transcriptData.language;
+    parsedVideoId = parsed.videoId;
+  }
+
+  // --- 5. Call Claude -------------------------------------------------------
   let claudeResult;
   try {
     claudeResult = await claudeExtract({
-      transcript: truncatedText,
-      videoTitle: transcriptData.title,
-      videoChannel: transcriptData.channel,
-      language: transcriptData.language,
+      situation,
+      transcript: transcriptText,
+      videoTitle,
+      videoChannel,
+      language: videoLanguage,
       userLanguage,
       truncated,
       toneStyle: bodyToneStyle,
@@ -175,7 +195,7 @@ export async function POST(request: Request): Promise<Response> {
     });
   } catch (err) {
     const code: ExtractErrorCode = err instanceof ClaudeParseError ? "CLAUDE_PARSE_FAILED" : "INTERNAL";
-    return emitError(requestId, url, "youtube", startedAt, {
+    return emitError(requestId, url || situation, url ? "youtube" : "unknown", startedAt, {
       code,
       message: "Extraction service is temporarily unavailable.",
       hint: "Please try again in a moment.",
@@ -219,25 +239,29 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
-  // --- 7. Hallucination guard: drop places whose quote isn't in transcript ---
-  // Plan FR-05 — substring match is case-insensitive to survive the whitespace
-  // normalization we did during fetch.
-  const normalizedTranscript = transcriptData.text.toLowerCase();
-  const kept: Place[] = zodResult.data.places.filter((p) =>
-    normalizedTranscript.includes(p.quote.toLowerCase())
-  );
+  // --- 7. Hallucination guard: only when URL provided (transcript exists) ---
+  // Design Ref: §2.1 platform-pivot — text-only path skips guard, places = [].
+  let kept: Place[];
+  if (transcriptText) {
+    const normalizedTranscript = transcriptText.toLowerCase();
+    kept = zodResult.data.places.filter((p) =>
+      normalizedTranscript.includes(p.quote.toLowerCase())
+    );
+  } else {
+    kept = [];
+  }
 
   const result: ExtractionResult = {
     video: {
-      // Prefer Claude's detected language; fall back to library value.
-      title: zodResult.data.video.title || transcriptData.title,
-      channel: zodResult.data.video.channel || transcriptData.channel,
-      language: zodResult.data.video.language || transcriptData.language,
+      title: zodResult.data.video.title || videoTitle,
+      channel: zodResult.data.video.channel || videoChannel,
+      language: zodResult.data.video.language || videoLanguage,
       destinationCountry: zodResult.data.video.destinationCountry,
       destinationLanguage: zodResult.data.video.destinationLanguage,
       userLanguage,
-      videoId: parsed.videoId,
+      videoId: parsedVideoId,
     },
+    situation: zodResult.data.situation,
     actions: zodResult.data.actions,
     places: kept,
     phrases: zodResult.data.phrases,
@@ -247,14 +271,14 @@ export async function POST(request: Request): Promise<Response> {
 
   // --- 8. Log usage event for tester ----------------------------------------
   if (session.role === "tester") {
-    await logUsageEvent(session.email, "video_ai_use", { url });
+    await logUsageEvent(session.email, "video_ai_use", { situation, url: url || undefined });
   }
 
   // --- 9. Log + respond ------------------------------------------------------
   logEvent({
     requestId,
-    url,
-    platform: "youtube",
+    url: url || situation,
+    platform: url ? "youtube" : "unknown",
     durationMs: Date.now() - startedAt,
     tokensIn: claudeResult.tokensIn,
     tokensOut: claudeResult.tokensOut,
@@ -306,6 +330,7 @@ function emitError(
 
 function statusForCode(code: ExtractErrorCode): number {
   switch (code) {
+    case "INVALID_SITUATION":
     case "INVALID_URL":
     case "UNSUPPORTED_PLATFORM":
       return 400;

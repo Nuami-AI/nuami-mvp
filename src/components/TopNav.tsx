@@ -6,12 +6,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/i18n";
 
-type TabId = "videoai" | "content" | "guide" | "saved" | "history";
+// Design Ref: §6.1 platform-pivot — "Video AI" tab renamed to "Guide".
+type TabId = "guide" | "content" | "saved" | "history";
 
-const LINKS: { id: TabId; labelKey: "nav.videoai" | "nav.content" | "nav.guide" | "nav.saved" | "nav.history"; href: string }[] = [
-  { id: "videoai", labelKey: "nav.videoai", href: "/" },
+const LINKS: { id: TabId; labelKey: "nav.guide" | "nav.content" | "nav.saved" | "nav.history"; href: string }[] = [
+  { id: "guide",   labelKey: "nav.guide",   href: "/" },
   { id: "content", labelKey: "nav.content", href: "/content" },
-  { id: "guide",   labelKey: "nav.guide",   href: "/guide" },
   { id: "saved",   labelKey: "nav.saved",   href: "/" },
   { id: "history", labelKey: "nav.history", href: "/" },
 ];
@@ -25,7 +25,7 @@ function NuamiLogo() {
   );
 }
 
-export default function TopNav({ active }: { active?: TabId }) {
+export default function TopNav({ active = "guide" }: { active?: TabId }) {
   const { t } = useLanguage();
   const router = useRouter();
 

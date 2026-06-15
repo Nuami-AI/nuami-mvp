@@ -6,6 +6,15 @@ import { z } from "zod";
 
 import type { ExtractionResult } from "@/types/extraction";
 
+// Design Ref: §3.3 platform-pivot — SituationCard required in extraction output.
+export const situationCardSchema = z.object({
+  summary: z.string().min(1),
+  documents: z.array(z.string()).default([]),
+  whereTo: z.array(z.string()).default([]),
+  checklist: z.array(z.string()).default([]),
+  estimatedMinutes: z.number().int().positive().optional(),
+});
+
 export const videoMetaSchema = z.object({
   title: z.string().min(1),
   channel: z.string().min(1),
@@ -59,6 +68,7 @@ export const contextCardSchema = z.object({
 
 export const extractionSchema = z.object({
   video: videoMetaSchema,
+  situation: situationCardSchema,
   actions: z.array(actionStepSchema).default([]),
   places: z.array(placeSchema),
   phrases: z.array(phraseSchema),

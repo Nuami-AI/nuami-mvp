@@ -1,6 +1,6 @@
 "use client";
 
-// Design Ref: §5.6 ResultsScreen v2 — NUAMI tokens + responsive card grid.
+// Design Ref: §6.2 platform-pivot — Situation-first card order, VideoEmbed removed.
 
 import { useState, useEffect } from "react";
 
@@ -10,12 +10,12 @@ import { getCountryName } from "@/lib/countries";
 
 import TopNav from "./TopNav";
 import BottomNav from "./BottomNav";
-import VideoEmbed from "./VideoEmbed";
 import type { ExtractionResult } from "@/types/extraction";
 
 interface Props {
   data: ExtractionResult;
   onBack: () => void;
+  situation?: string;
 }
 
 // ── Icons ────────────────────────────────────────────────────────────────────
@@ -57,10 +57,10 @@ function SpeakerIcon() {
   );
 }
 
-function StarIcon() {
+function CheckIcon() {
   return (
-    <svg width="15" height="15" fill="#8651F2" viewBox="0 0 24 24">
-      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+    <svg width="16" height="16" fill="none" stroke="#8651F2" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+      <polyline points="20 6 9 17 4 12" />
     </svg>
   );
 }
@@ -107,6 +107,15 @@ function ContextIcon() {
   );
 }
 
+function GlanceIcon() {
+  return (
+    <svg width="16" height="16" fill="none" stroke="#8651F2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M3 9h18M9 4v5" />
+    </svg>
+  );
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function useBookmarkSet() {
@@ -131,12 +140,14 @@ function EmptyState({ message }: { message: string }) {
 
 // ── Section header ─────────────────────────────────────────────────────────────
 
-function SectionHeader({ icon, title, count }: { icon: React.ReactNode; title: string; count: number }) {
+function SectionHeader({ icon, title, count }: { icon: React.ReactNode; title: string; count?: number }) {
   return (
     <div className="flex items-center gap-2 mb-3">
       {icon}
-      <h2 className="text-[15px] font-bold text-text-primary">{title}</h2>
-      <span className="text-[13px] text-text-disabled">({count})</span>
+      <h2 className="text-[16px] font-bold text-text-primary">{title}</h2>
+      {count !== undefined && count > 0 && (
+        <span className="text-[13px] text-text-disabled">({count})</span>
+      )}
     </div>
   );
 }
@@ -186,15 +197,18 @@ function CultureEvents({ placeName }: { placeName: string }) {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export default function ResultsScreen({ data, onBack }: Props) {
+export default function ResultsScreen({ data, onBack, situation }: Props) {
   const { t, lang } = useLanguage();
   const placeBookmarks  = useBookmarkSet();
   const phraseBookmarks = useBookmarkSet();
   const tipBookmarks    = useBookmarkSet();
 
+  const sc = data.situation;
+  const heroText = situation?.trim() || sc.summary;
+
   return (
     <div className="relative flex flex-col min-h-screen bg-background">
-      <TopNav active="videoai" />
+      <TopNav active="guide" />
 
       {/* Sticky sub-header */}
       <div className="sticky top-0 md:top-14 z-10 bg-background border-b border-line-neutral">
@@ -211,70 +225,114 @@ export default function ResultsScreen({ data, onBack }: Props) {
 
       <div className="w-full max-w-[1200px] mx-auto pb-24 md:pb-16">
 
-        {/* Video card */}
-        <div className="bg-card md:mx-4 lg:mx-0 md:mt-4 md:rounded-2xl md:overflow-hidden md:border md:border-line-neutral">
-          {data.video.videoId ? (
-            <VideoEmbed videoId={data.video.videoId} title={data.video.title} />
-          ) : (
-            <div className="w-full aspect-video bg-gray-900 relative flex items-center justify-center">
-              <div className="w-14 h-14 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
-                <svg width="22" height="22" fill="#8651F2" viewBox="0 0 24 24">
-                  <polygon points="5 3 19 12 5 21 5 3" />
-                </svg>
-              </div>
-              <div className="absolute bottom-2 right-3 bg-red-600 rounded px-1.5 py-0.5">
-                <span className="text-white text-[10px] font-bold tracking-wide">▶ YouTube</span>
-              </div>
-            </div>
-          )}
-          <div className="px-4 py-3">
-            <p className="text-[14px] font-semibold text-text-primary leading-snug line-clamp-2">
-              {data.video.title}
-            </p>
-            <p className="text-[12px] text-text-tertiary mt-1.5 flex items-center gap-1.5">
-              <span className="w-4 h-4 bg-muted rounded-full inline-flex items-center justify-center text-[8px] text-text-secondary font-semibold">
-                {data.video.channel.charAt(0).toUpperCase() || "?"}
+        {/* ── Hero banner ── */}
+        <div className="mx-4 md:mx-4 lg:mx-0 mt-4 bg-gradient-to-br from-[#6B35D9] to-[#8651F2] rounded-2xl px-5 py-5">
+          <p className="text-[12px] font-medium text-purple-200 mb-1.5 tracking-wide">
+            {t("results.hero.ready")}
+          </p>
+          <p className="text-[17px] font-bold text-white leading-snug line-clamp-2">
+            {heroText}
+          </p>
+          <div className="flex items-center gap-3 mt-3">
+            {data.places.length > 0 && (
+              <span className="inline-flex items-center gap-1 text-[12px] text-purple-200">
+                <PinIcon />
+                <span className="text-white font-semibold">{data.places.length}</span>
+                <span>{t("results.banner.placesFound")}</span>
               </span>
-              {data.video.channel}
-            </p>
-          </div>
-        </div>
-
-        {/* Analysis banner */}
-        <div className="mx-4 md:mx-4 lg:mx-0 mt-3 bg-accent-50 rounded-xl px-4 py-3 flex items-start gap-2.5">
-          <div className="mt-0.5 flex-shrink-0">
-            <StarIcon />
-          </div>
-          <div className="flex flex-col gap-0.5">
+            )}
             {data.video.destinationCountry && (() => {
-              const countryName = getCountryName(data.video.destinationCountry, lang);
-              const display = countryName ?? data.video.destinationCountry;
-              return (
-                <p className="text-[12px] font-semibold text-accent-900 leading-snug">
-                  {display} {t("results.banner.contentAbout")}
-                </p>
-              );
+              const name = getCountryName(data.video.destinationCountry, lang);
+              return name ? (
+                <span className="text-[12px] text-purple-200">
+                  <span className="text-white font-semibold">{name}</span> {t("results.banner.contentAbout")}
+                </span>
+              ) : null;
             })()}
-            <p className="text-[12px] text-accent-700 leading-snug">
-              {data.places.length}{t("results.banner.placesFound")}
-            </p>
           </div>
         </div>
 
-        {/* ── Action Card ── */}
+        {/* ── Phrases: 이렇게 말해봐요 ── */}
+        {data.phrases.length > 0 && (
+          <section className="mt-6 px-4 lg:px-0">
+            <SectionHeader icon={<ChatIcon />} title={t("results.phrases.title")} />
+            <div className="bg-card rounded-2xl border border-line-neutral shadow-sm overflow-hidden">
+              {data.phrases.map((ph, idx) => (
+                <div key={idx} className={`flex items-start gap-3 px-4 py-3.5 ${idx > 0 ? "border-t border-line-neutral" : ""}`}>
+                  <span className="flex-shrink-0 mt-0.5">
+                    <CheckIcon />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[15px] font-bold text-text-primary leading-snug">{ph.pronunciation}</p>
+                    <p className="text-[13px] text-text-secondary mt-0.5">{ph.meaning}</p>
+                    {ph.context && (
+                      <p className="text-[11px] text-text-disabled mt-1 italic">{ph.context}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button className="flex items-center gap-1 text-[11px] text-text-tertiary font-medium">
+                      <SpeakerIcon />
+                    </button>
+                    <BookmarkBtn filled={phraseBookmarks.has(idx)} onToggle={() => phraseBookmarks.toggle(idx)} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+        {data.phrases.length === 0 && (
+          <section className="mt-6 px-4 lg:px-0">
+            <SectionHeader icon={<ChatIcon />} title={t("results.phrases.title")} />
+            <EmptyState message={t("results.phrases.empty")} />
+          </section>
+        )}
+
+        {/* ── Tips: 이미 알았나요? ── */}
+        {data.tips.length > 0 && (
+          <section className="mt-6 px-4 lg:px-0">
+            <SectionHeader icon={<LightbulbIcon />} title={t("results.tips.title")} />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {data.tips.map((tip, idx) => (
+                <div key={idx} className="bg-accent-50 rounded-2xl p-4 border border-accent-100">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <p className="text-[14px] font-bold text-accent-900 flex-1 leading-snug">{tip.title}</p>
+                    <BookmarkBtn filled={tipBookmarks.has(idx)} onToggle={() => tipBookmarks.toggle(idx)} />
+                  </div>
+                  <p className="text-[13px] text-accent-800 leading-relaxed">{tip.desc}</p>
+                  {tip.source && (
+                    <p className="text-[11px] text-accent-600 italic mt-2 leading-relaxed border-l-2 border-accent-200 pl-2">
+                      &ldquo;{tip.source}&rdquo;
+                    </p>
+                  )}
+                  <span className="inline-block mt-3 text-[11px] bg-white text-accent-700 border border-accent-200 rounded-full px-2.5 py-1 font-medium">
+                    {tip.cat}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+        {data.tips.length === 0 && (
+          <section className="mt-6 px-4 lg:px-0">
+            <SectionHeader icon={<LightbulbIcon />} title={t("results.tips.title")} />
+            <EmptyState message={t("results.tips.empty")} />
+          </section>
+        )}
+
+        {/* ── Actions: 지금 해야 할 것 ── */}
         {data.actions && data.actions.length > 0 && (
-          <section className="mt-5 px-4 lg:px-0">
+          <section className="mt-6 px-4 lg:px-0">
             <SectionHeader icon={<ActionIcon />} title={t("results.actions.title")} count={data.actions.length} />
             <div className="bg-card rounded-2xl border border-line-neutral shadow-sm divide-y divide-line-neutral overflow-hidden">
               {data.actions.map((item, idx) => (
-                <div key={idx} className="flex items-start gap-3 px-4 py-3.5">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-accent-700 text-white text-[11px] font-bold flex items-center justify-center mt-0.5">
+                <div key={idx} className="flex items-start gap-3 px-4 py-4">
+                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-accent-700 text-white text-[12px] font-bold flex items-center justify-center mt-0.5">
                     {item.step}
                   </span>
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] font-semibold text-text-primary leading-snug">{item.action}</p>
                     {item.detail && (
-                      <p className="text-[12px] text-text-secondary mt-0.5 leading-relaxed">{item.detail}</p>
+                      <p className="text-[13px] text-text-secondary mt-1 leading-relaxed">{item.detail}</p>
                     )}
                     {item.source && (
                       <p className="text-[11px] text-text-disabled italic mt-1.5 leading-relaxed border-l-2 border-line-normal pl-2">
@@ -288,105 +346,77 @@ export default function ResultsScreen({ data, onBack }: Props) {
           </section>
         )}
 
-        {/* ── Places ── */}
-        <section className="mt-5 px-4 lg:px-0">
-          <SectionHeader icon={<PinIcon />} title={t("results.places.title")} count={data.places.length} />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {data.places.length === 0 && (
-              <EmptyState message={t("results.places.empty")} />
-            )}
-            {data.places.map((p, idx) => (
-              <div key={idx} className="bg-card rounded-2xl p-4 border border-line-neutral shadow-sm">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="text-[15px] font-bold text-text-primary">{p.name}</p>
-                    {p.nameKo && <p className="text-[12px] text-text-disabled mt-0.5">{p.nameKo}</p>}
-                  </div>
-                  <BookmarkBtn filled={placeBookmarks.has(idx)} onToggle={() => placeBookmarks.toggle(idx)} />
-                </div>
-                <p className="text-[13px] text-text-secondary mt-2 leading-relaxed">{p.desc}</p>
-                <p className="text-[12px] text-text-disabled italic mt-2 leading-relaxed">
-                  &ldquo;{p.quote}&rdquo;
-                </p>
-                <div className="flex items-center gap-2 mt-3">
-                  <a
-                    href={`https://map.kakao.com/link/search/${encodeURIComponent(p.name)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`${p.name} 카카오맵`}
-                    className="flex items-center gap-1 bg-yellow-50 border border-yellow-200 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-yellow-700"
-                  >
-                    <svg width="10" height="10" viewBox="0 0 20 20" fill="#F59E0B">
-                      <circle cx="10" cy="10" r="10" fill="#FDE68A" />
-                      <text x="5" y="14" fontSize="9" fontWeight="bold" fill="#92400E">k</text>
-                    </svg>
-                    {t("results.mapKakao")}
-                  </a>
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`${p.name} 구글맵`}
-                    className="flex items-center gap-1 bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-blue-700"
-                  >
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="#4285F4">
-                      <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                    </svg>
-                    {t("results.mapGoogle")}
-                  </a>
-                </div>
-                {p.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-3">
-                    {p.tags.map((tag) => (
-                      <span key={tag} className="text-[11px] bg-infoBox text-text-tertiary rounded-full px-2.5 py-1">
-                        {tag}
+        {/* ── Situation: 한눈에 보기 ── */}
+        <section className="mt-6 px-4 lg:px-0">
+          <SectionHeader icon={<GlanceIcon />} title={t("results.situation.title")} />
+          <div className="bg-card rounded-2xl border border-line-neutral shadow-sm overflow-hidden">
+            <div className="px-4 py-4 border-b border-line-neutral">
+              <p className="text-[14px] text-text-primary leading-relaxed">{sc.summary}</p>
+            </div>
+            <div className="divide-y divide-line-neutral">
+              {sc.documents.length > 0 && (
+                <div className="px-4 py-3.5">
+                  <p className="text-[11px] font-semibold text-text-disabled uppercase tracking-wide mb-2">{t("results.situation.documents")}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {sc.documents.map((doc, i) => (
+                      <span key={i} className="text-[12px] bg-infoBox text-text-secondary rounded-full px-3 py-1">
+                        {doc}
                       </span>
                     ))}
                   </div>
-                )}
-                {CULTURE_ENABLED && <CultureEvents placeName={p.name} />}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ── Local Phrases ── */}
-        <section className="mt-5 px-4 lg:px-0">
-          <SectionHeader icon={<ChatIcon />} title={t("results.phrases.title")} count={data.phrases.length} />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {data.phrases.length === 0 && <EmptyState message={t("results.phrases.empty")} />}
-            {data.phrases.map((ph, idx) => (
-              <div key={idx} className="bg-card rounded-2xl px-4 pt-4 pb-3 border border-line-neutral shadow-sm">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-semibold text-text-primary leading-snug">{ph.pronunciation}</p>
-                    <p className="text-[12px] text-text-secondary mt-0.5">{ph.meaning}</p>
-                    {ph.context && (
-                      <p className="text-[11px] text-text-disabled mt-1 italic">{ph.context}</p>
-                    )}
-                  </div>
-                  <BookmarkBtn filled={phraseBookmarks.has(idx)} onToggle={() => phraseBookmarks.toggle(idx)} />
                 </div>
-                <button className="mt-2.5 flex items-center gap-1.5 text-[12px] text-text-tertiary font-medium">
-                  <SpeakerIcon />
-                  {t("results.phrases.listen")}
-                </button>
-              </div>
-            ))}
+              )}
+              {sc.whereTo.length > 0 && (
+                <div className="px-4 py-3.5">
+                  <p className="text-[11px] font-semibold text-text-disabled uppercase tracking-wide mb-2">{t("results.situation.whereTo")}</p>
+                  <ul className="space-y-1">
+                    {sc.whereTo.map((place, i) => (
+                      <li key={i} className="flex items-start gap-2 text-[13px] text-text-primary">
+                        <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-accent-700 shrink-0" />
+                        {place}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {sc.checklist.length > 0 && (
+                <div className="px-4 py-3.5">
+                  <p className="text-[11px] font-semibold text-text-disabled uppercase tracking-wide mb-2">{t("results.situation.checklist")}</p>
+                  <ul className="space-y-2">
+                    {sc.checklist.map((item, i) => (
+                      <li key={i} className="flex items-start gap-2 text-[13px] text-text-primary">
+                        <span className="mt-0.5 flex-shrink-0">
+                          <CheckIcon />
+                        </span>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {sc.estimatedMinutes !== undefined && (
+                <div className="px-4 py-3">
+                  <p className="text-[11px] font-semibold text-text-disabled uppercase tracking-wide mb-1">{t("results.situation.estimatedTime")}</p>
+                  <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-accent-700 bg-accent-50 rounded-full px-3 py-1">
+                    {t("results.situation.minutes").replace("{n}", String(sc.estimatedMinutes))}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </section>
 
-        {/* ── Context Cards ── */}
+        {/* ── Contexts: 알아두면 좋아요 ── */}
         {data.contexts && data.contexts.length > 0 && (
-          <section className="mt-5 px-4 lg:px-0">
+          <section className="mt-6 px-4 lg:px-0">
             <SectionHeader icon={<ContextIcon />} title={t("results.contexts.title")} count={data.contexts.length} />
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {data.contexts.map((ctx, idx) => (
-                <div key={idx} className="bg-accent-50 rounded-2xl p-4 border border-accent-100">
-                  <p className="text-[13px] font-bold text-accent-900 mb-2">{ctx.theme}</p>
-                  <p className="text-[13px] text-accent-800 leading-relaxed">{ctx.explanation}</p>
+                <div key={idx} className="bg-card rounded-2xl p-4 border border-line-neutral shadow-sm">
+                  <p className="text-[13px] font-bold text-text-primary mb-2">{ctx.theme}</p>
+                  <p className="text-[13px] text-text-secondary leading-relaxed">{ctx.explanation}</p>
                   {ctx.example && (
-                    <p className="mt-2 text-[12px] text-accent-700 italic leading-relaxed border-t border-accent-200 pt-2">
+                    <p className="mt-2 text-[12px] text-text-tertiary italic leading-relaxed border-t border-line-neutral pt-2">
                       {ctx.example}
                     </p>
                   )}
@@ -396,30 +426,66 @@ export default function ResultsScreen({ data, onBack }: Props) {
           </section>
         )}
 
-        {/* ── Insider Tips ── */}
-        <section className="mt-5 px-4 lg:px-0 mb-8">
-          <SectionHeader icon={<LightbulbIcon />} title={t("results.tips.title")} count={data.tips.length} />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {data.tips.length === 0 && <EmptyState message={t("results.tips.empty")} />}
-            {data.tips.map((tip, idx) => (
-              <div key={idx} className="bg-card rounded-2xl p-4 border border-line-neutral shadow-sm">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-[14px] font-bold text-text-primary flex-1 leading-snug">{tip.title}</p>
-                  <BookmarkBtn filled={tipBookmarks.has(idx)} onToggle={() => tipBookmarks.toggle(idx)} />
-                </div>
-                <p className="text-[13px] text-text-secondary mt-1.5 leading-relaxed">{tip.desc}</p>
-                {tip.source && (
-                  <p className="text-[11px] text-text-disabled italic mt-2 leading-relaxed border-l-2 border-line-normal pl-2">
-                    &ldquo;{tip.source}&rdquo;
+        {/* ── Places: 가야 할 곳 ── */}
+        {data.places.length > 0 && (
+          <section className="mt-6 px-4 lg:px-0 mb-8">
+            <SectionHeader icon={<PinIcon />} title={t("results.places.title")} count={data.places.length} />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {data.places.map((p, idx) => (
+                <div key={idx} className="bg-card rounded-2xl p-4 border border-line-neutral shadow-sm">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-[15px] font-bold text-text-primary">{p.name}</p>
+                      {p.nameKo && <p className="text-[12px] text-text-disabled mt-0.5">{p.nameKo}</p>}
+                    </div>
+                    <BookmarkBtn filled={placeBookmarks.has(idx)} onToggle={() => placeBookmarks.toggle(idx)} />
+                  </div>
+                  <p className="text-[13px] text-text-secondary mt-2 leading-relaxed">{p.desc}</p>
+                  <p className="text-[12px] text-text-disabled italic mt-2 leading-relaxed">
+                    &ldquo;{p.quote}&rdquo;
                   </p>
-                )}
-                <span className="inline-block mt-3 text-[11px] bg-infoBox text-text-tertiary rounded-full px-2.5 py-1">
-                  {tip.cat}
-                </span>
-              </div>
-            ))}
-          </div>
-        </section>
+                  <div className="flex items-center gap-2 mt-3">
+                    <a
+                      href={`https://map.kakao.com/link/search/${encodeURIComponent(p.name)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${p.name} 카카오맵`}
+                      className="flex items-center gap-1 bg-yellow-50 border border-yellow-200 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-yellow-700"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 20 20" fill="#F59E0B">
+                        <circle cx="10" cy="10" r="10" fill="#FDE68A" />
+                        <text x="5" y="14" fontSize="9" fontWeight="bold" fill="#92400E">k</text>
+                      </svg>
+                      {t("results.mapKakao")}
+                    </a>
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${p.name} 구글맵`}
+                      className="flex items-center gap-1 bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-blue-700"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="#4285F4">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                      </svg>
+                      {t("results.mapGoogle")}
+                    </a>
+                  </div>
+                  {p.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                      {p.tags.map((tag) => (
+                        <span key={tag} className="text-[11px] bg-infoBox text-text-tertiary rounded-full px-2.5 py-1">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {CULTURE_ENABLED && <CultureEvents placeName={p.name} />}
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
       </div>
 

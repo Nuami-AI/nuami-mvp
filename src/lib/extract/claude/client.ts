@@ -6,6 +6,7 @@ const MAX_TRANSCRIPT_CHARS = 32_000;
 const DEFAULT_MODEL = "gpt-4o-mini";
 const MAX_OUTPUT_TOKENS = 3000;
 
+// Design Ref: §4.2 platform-pivot — situation added to PromptInput (required).
 export interface ClaudeExtractResult {
   rawJson: string;
   tokensIn: number;

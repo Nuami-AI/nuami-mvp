@@ -23,6 +23,8 @@ export interface UsageInfo {
 }
 
 export default function Home() {
+  // Design Ref: §8.1 platform-pivot — situation required, url optional.
+  const [situation, setSituation] = useState("");
   const [url, setUrl] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [data, setData] = useState<ExtractionResult | null>(null);
@@ -55,7 +57,7 @@ export default function Home() {
   };
 
   const handleExtract = async () => {
-    if (!url.trim() || status === "loading") return;
+    if (!situation.trim() || status === "loading") return;
 
     setStatus("loading");
     setError(null);
@@ -65,8 +67,10 @@ export default function Home() {
       const res = await fetch("/api/extract", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        // Plan SC: FR-04 — situation required, url optional.
         body: JSON.stringify({
-          url: url.trim(),
+          situation: situation.trim(),
+          url: url.trim() || undefined,
           userLang: lang,
           toneStyle: prefs.toneStyle,
           lifeStage: prefs.lifeStage,
@@ -117,6 +121,8 @@ export default function Home() {
     setStatus("idle");
     setData(null);
     setError(null);
+    setSituation("");
+    setUrl("");
   };
 
   const handleSubscribe = async () => {
@@ -130,14 +136,16 @@ export default function Home() {
   };
 
   if (status === "success" && data) {
-    return <ResultsScreen data={data} onBack={handleBack} />;
+    return <ResultsScreen data={data} onBack={handleBack} situation={situation} />;
   }
 
   return (
     <>
       <InputScreen
+        situation={situation}
         url={url}
-        onChange={setUrl}
+        onSituationChange={setSituation}
+        onUrlChange={setUrl}
         onExtract={handleExtract}
         isLoading={status === "loading"}
         error={status === "error" ? error : null}

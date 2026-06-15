@@ -1,7 +1,16 @@
 // Design Ref: §3.1 — single source of truth for extraction types, shared by
 // the Zod schema (server) and the React props (client).
+// Design Ref: §3.1 platform-pivot — SituationCard added as required field.
 
 export type Platform = "youtube" | "tiktok" | "unknown";
+
+export interface SituationCard {
+  summary: string;
+  documents: string[];
+  whereTo: string[];
+  checklist: string[];
+  estimatedMinutes?: number;
+}
 
 export interface VideoMeta {
   title: string;
@@ -52,6 +61,7 @@ export interface ContextCard {
 
 export interface ExtractionResult {
   video: VideoMeta;
+  situation: SituationCard;
   actions: ActionStep[];
   places: Place[];
   phrases: Phrase[];
@@ -60,6 +70,7 @@ export interface ExtractionResult {
 }
 
 export type ExtractErrorCode =
+  | "INVALID_SITUATION"
   | "INVALID_URL"
   | "UNSUPPORTED_PLATFORM"
   | "TRANSCRIPT_UNAVAILABLE"
