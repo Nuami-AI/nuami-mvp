@@ -9,6 +9,8 @@ import { ko, type TranslationKey } from "./ko";
 import { en } from "./en";
 import { ja } from "./ja";
 
+export type { TranslationKey };
+
 export type Language = "ko" | "en" | "ja";
 
 export const SUPPORTED_LANGUAGES: Language[] = ["ko", "en", "ja"];

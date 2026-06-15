@@ -29,6 +29,8 @@ export const placeSchema = z.object({
   desc: z.string().min(1),
   quote: z.string().min(1),
   tags: z.array(z.string()).max(5).default([]),
+  branchType: z.string().optional(),
+  status: z.enum(["open", "closed"]).optional(),
 });
 
 export const phraseSchema = z.object({

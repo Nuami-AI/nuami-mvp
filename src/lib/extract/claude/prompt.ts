@@ -140,8 +140,10 @@ Return STRICT JSON matching this exact shape:
     "name": string,      // place name in local script or Romanized
     "nameKo"?: string,   // Romanized / alternative name (if "name" is in non-Latin script)
     "desc": string,      // 1-2 sentences IN [A] ${langName} — what this place is, how to use it
-    "quote": string,     // VERBATIM substring from the transcript
-    "tags": string[]     // 1-3 short labels IN [A] ${langName}
+    "quote": string,     // VERBATIM substring from the transcript (use situation text if no transcript)
+    "tags": string[],     // 1-3 short labels IN [A] ${langName}
+    "branchType"?: string, // e.g. "Foreign Customer Center" / "외국인 고객센터" IN [A] ${langName}
+    "status"?: "open" | "closed"  // estimated current status based on typical business hours
   }>,
   "phrases": Array<{
     "meaning": string,       // what this phrase means / when to use it IN [A] ${langName}
@@ -168,6 +170,9 @@ RULES:
 1b. situation.whereTo: use specific institution names + department (e.g. "KB Kookmin Bank — Foreign Customer Desk") not vague descriptions.
 1c. situation.checklist: actionable pre-visit checks (reservation required?, hours, what to bring, language prep).
 1d. situation.estimatedMinutes: realistic total including waiting time; omit if genuinely unknown.
+1e. contexts[0] should be a broad system overview (e.g. "Korean Banking System") explaining how the local system works for foreigners.
+1f. places.branchType: include for banks/offices with dedicated foreigner desks when relevant.
+1g. places.status: estimate "open" or "closed" based on typical weekday business hours; omit if unknown.
 2.  Every place's "quote" MUST be a verbatim substring of the provided transcript.
 3.  Aim for 3-6 action steps, 2-5 places, 4-10 phrases, 3-6 tips, 2-4 context cards.
 4.  video.language = the creator's speaking language detected from transcript text — NOT the hint.

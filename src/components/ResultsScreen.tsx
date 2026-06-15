@@ -1,16 +1,13 @@
 "use client";
 
-// Design Ref: §6.2 platform-pivot — Situation-first card order, VideoEmbed removed.
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 import type { CulturalEvent } from "@/lib/culture/types";
-import { useLanguage } from "@/lib/i18n";
-import { getCountryName } from "@/lib/countries";
+import { useLanguage, type TranslationKey } from "@/lib/i18n";
+import type { ActionStep, ContextCard, ExtractionResult, Place, Tip } from "@/types/extraction";
 
 import TopNav from "./TopNav";
 import BottomNav from "./BottomNav";
-import type { ExtractionResult } from "@/types/extraction";
 
 interface Props {
   data: ExtractionResult;
@@ -28,22 +25,31 @@ function ArrowLeft() {
   );
 }
 
-function RefreshIcon() {
+function ShareIcon() {
   return (
-    <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-      <path d="M23 4v6h-6M1 20v-6h6" />
-      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+      <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+      <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98" />
     </svg>
   );
 }
 
-function BookmarkBtn({ filled, onToggle }: { filled: boolean; onToggle: () => void }) {
+function BookmarkBtn({ filled, onToggle, size = 20 }: { filled: boolean; onToggle: () => void; size?: number }) {
   return (
     <button onClick={onToggle} className="flex-shrink-0 p-0.5" aria-label={filled ? "Remove bookmark" : "Add bookmark"}>
-      <svg width="20" height="20" fill={filled ? "#8651F2" : "none"} stroke={filled ? "#8651F2" : "#E2E2DE"} strokeWidth="2" viewBox="0 0 24 24">
+      <svg width={size} height={size} fill={filled ? "#8651F2" : "none"} stroke={filled ? "#8651F2" : "currentColor"} strokeWidth="2" viewBox="0 0 24 24">
         <path d="M19 21 12 16l-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
       </svg>
     </button>
+  );
+}
+
+function InfoIcon() {
+  return (
+    <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 16v-4M12 8h.01" />
+    </svg>
   );
 }
 
@@ -52,24 +58,6 @@ function SpeakerIcon() {
     <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
       <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
       <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-      <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg width="16" height="16" fill="none" stroke="#8651F2" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
-}
-
-function PinIcon() {
-  return (
-    <svg width="16" height="16" fill="#8651F2" viewBox="0 0 24 24">
-      <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z" />
-      <circle cx="12" cy="10" r="3" fill="white" />
     </svg>
   );
 }
@@ -90,29 +78,38 @@ function LightbulbIcon() {
   );
 }
 
-function ActionIcon() {
+function PinIcon() {
   return (
     <svg width="16" height="16" fill="#8651F2" viewBox="0 0 24 24">
-      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+      <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z" />
+      <circle cx="12" cy="10" r="3" fill="white" />
     </svg>
   );
 }
 
-function ContextIcon() {
+function RefreshIcon() {
   return (
-    <svg width="16" height="16" fill="none" stroke="#8651F2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="10" />
-      <path d="M12 16v-4M12 8h.01" />
+    <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+      <path d="M23 4v6h-6M1 20v-6h6" />
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
     </svg>
   );
 }
 
-function GlanceIcon() {
+function CheckCircle({ done, active }: { done: boolean; active: boolean }) {
+  if (done) {
+    return (
+      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-accent-700 flex items-center justify-center">
+        <svg width="14" height="14" fill="none" stroke="white" strokeWidth="2.5" viewBox="0 0 24 24">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      </span>
+    );
+  }
   return (
-    <svg width="16" height="16" fill="none" stroke="#8651F2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <path d="M3 9h18M9 4v5" />
-    </svg>
+    <span className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center ${active ? "border-accent-700 bg-accent-50" : "border-line-normal bg-white"}`}>
+      {active && <span className="w-2 h-2 rounded-full bg-accent-700" />}
+    </span>
   );
 }
 
@@ -130,31 +127,249 @@ function useBookmarkSet() {
   return { has: (idx: number) => set.has(idx), toggle };
 }
 
-function EmptyState({ message }: { message: string }) {
+function interpolate(template: string, vars: Record<string, string>) {
+  return Object.entries(vars).reduce((s, [k, v]) => s.replace(`{${k}}`, v), template);
+}
+
+function tipEmoji(cat: Tip["cat"]) {
+  const map: Record<Tip["cat"], string> = {
+    Time: "⏰", Price: "💰", Etiquette: "🙏", Transport: "🚇", Other: "💡",
+  };
+  return map[cat] ?? "💡";
+}
+
+const CULTURE_ENABLED = process.env.NEXT_PUBLIC_CULTURE_ENABLED === "true";
+
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function SectionHeader({ icon, title, count, trailing }: {
+  icon: React.ReactNode;
+  title: string;
+  count?: number;
+  trailing?: React.ReactNode;
+}) {
   return (
-    <div className="bg-infoBox rounded-2xl p-4 text-[13px] text-text-tertiary text-center col-span-full">
-      {message}
+    <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-2">
+        {icon}
+        <h2 className="text-[16px] font-bold text-text-primary">{title}</h2>
+        {count !== undefined && count > 0 && (
+          <span className="text-[13px] text-text-disabled">({count})</span>
+        )}
+      </div>
+      {trailing}
     </div>
   );
 }
 
-// ── Section header ─────────────────────────────────────────────────────────────
-
-function SectionHeader({ icon, title, count }: { icon: React.ReactNode; title: string; count?: number }) {
+function DocumentChips({ documents }: { documents: string[] }) {
+  if (documents.length === 0) return null;
   return (
-    <div className="flex items-center gap-2 mb-3">
-      {icon}
-      <h2 className="text-[16px] font-bold text-text-primary">{title}</h2>
-      {count !== undefined && count > 0 && (
-        <span className="text-[13px] text-text-disabled">({count})</span>
+    <div className="flex flex-wrap gap-2 mt-4">
+      {documents.map((doc, i) => (
+        <span
+          key={i}
+          className="inline-flex items-center gap-1.5 text-[13px] font-medium text-text-primary bg-white border border-line-neutral rounded-full px-3.5 py-2 shadow-sm"
+        >
+          {doc}
+          <span className="text-text-disabled"><InfoIcon /></span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function MapPlaceholder({ query }: { query: string }) {
+  const mapUrl = `https://map.kakao.com/link/search/${encodeURIComponent(query)}`;
+  return (
+    <a
+      href={mapUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block relative w-full h-44 rounded-xl overflow-hidden bg-gradient-to-br from-[#E8F4FD] to-[#D4E9F7] border border-line-neutral"
+    >
+      <div className="absolute inset-0 opacity-30"
+        style={{ backgroundImage: "repeating-linear-gradient(0deg, #94A3B8 0px, transparent 1px, transparent 20px), repeating-linear-gradient(90deg, #94A3B8 0px, transparent 1px, transparent 20px)" }}
+      />
+      {[
+        { top: "30%", left: "25%" },
+        { top: "45%", left: "55%" },
+        { top: "60%", left: "35%" },
+        { top: "35%", left: "70%" },
+      ].map((pos, i) => (
+        <span
+          key={i}
+          className="absolute w-7 h-7 -translate-x-1/2 -translate-y-full"
+          style={{ top: pos.top, left: pos.left }}
+        >
+          <svg width="28" height="36" viewBox="0 0 28 36" fill="none">
+            <path d="M14 0C6.268 0 0 6.268 0 14c0 10.5 14 22 14 22s14-11.5 14-22C28 6.268 21.732 0 14 0z" fill="#8651F2" />
+            <circle cx="14" cy="14" r="5" fill="white" />
+          </svg>
+        </span>
+      ))}
+      <div className="absolute bottom-2 right-2 bg-white/90 rounded-lg px-2 py-1 text-[10px] font-semibold text-accent-700 shadow">
+        Kakao Map →
+      </div>
+    </a>
+  );
+}
+
+function PlaceRow({ place, t }: { place: Place; t: (k: TranslationKey) => string }) {
+  const isOpen = place.status !== "closed";
+  return (
+    <div className="flex items-center justify-between py-3.5 border-b border-line-neutral last:border-0">
+      <div className="flex-1 min-w-0 pr-3">
+        <p className="text-[14px] font-semibold text-text-primary leading-snug">{place.name}</p>
+        {(place.branchType || place.nameKo) && (
+          <p className="text-[12px] text-text-disabled mt-0.5">
+            {place.branchType ?? place.nameKo}
+          </p>
+        )}
+      </div>
+      {place.status && (
+        <span className={`flex-shrink-0 text-[11px] font-semibold rounded-full px-2.5 py-1 ${isOpen ? "bg-accent-50 text-accent-700" : "bg-muted text-text-disabled"}`}>
+          {isOpen ? t("results.places.open") : t("results.places.closed")}
+        </span>
       )}
     </div>
   );
 }
 
-// ── Culture Events (FR-07) ─────────────────────────────────────────────────────
+function ActionStepper({ actions, t }: { actions: ActionStep[]; t: (k: TranslationKey) => string }) {
+  const [completed, setCompleted] = useState<Set<number>>(() => new Set());
+  const [activeIdx, setActiveIdx] = useState(0);
 
-const CULTURE_ENABLED = process.env.NEXT_PUBLIC_CULTURE_ENABLED === "true";
+  const toggleStep = (idx: number) => {
+    setCompleted((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
+    setActiveIdx(idx);
+  };
+
+  const doneCount = completed.size;
+  const progressLabel = interpolate(t("results.actions.progress"), {
+    current: String(Math.max(1, doneCount || (activeIdx + 1))),
+    total: String(actions.length),
+  });
+
+  return (
+    <section className="mt-8 px-4 lg:px-0">
+      <div className="flex items-start justify-between mb-1">
+        <h2 className="text-[16px] font-bold text-text-primary leading-snug flex-1 pr-4">
+          {t("results.actions.title")}
+        </h2>
+        <span className="text-[13px] font-semibold text-accent-700 flex-shrink-0">{progressLabel}</span>
+      </div>
+      <p className="text-[12px] text-text-disabled mb-4">{t("results.actions.hint")}</p>
+      <div className="space-y-2">
+        {actions.map((item, idx) => {
+          const done = completed.has(idx);
+          const active = idx === activeIdx && !done;
+          return (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => toggleStep(idx)}
+              className={`w-full text-left flex items-start gap-3 px-4 py-3.5 rounded-2xl border transition-colors ${
+                active
+                  ? "border-accent-700 bg-accent-50 shadow-sm"
+                  : done
+                    ? "border-line-neutral bg-white opacity-60"
+                    : "border-line-neutral bg-white"
+              }`}
+            >
+              <CheckCircle done={done} active={active} />
+              <div className="flex-1 min-w-0">
+                <p className={`text-[14px] leading-snug ${done ? "text-text-disabled line-through" : "text-text-primary font-medium"}`}>
+                  {item.action}
+                </p>
+                {item.detail && !done && (
+                  <p className="text-[12px] text-text-secondary mt-1 leading-relaxed">{item.detail}</p>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function TipsCarousel({ tips, t, bookmarks }: {
+  tips: Tip[];
+  t: (k: TranslationKey) => string;
+  bookmarks: ReturnType<typeof useBookmarkSet>;
+}) {
+  return (
+    <section className="mt-8">
+      <div className="px-4 lg:px-0">
+        <SectionHeader icon={<LightbulbIcon />} title={t("results.tips.title")} />
+      </div>
+      <div className="flex gap-3 overflow-x-auto px-4 lg:px-0 pb-1 snap-x snap-mandatory scrollbar-hide">
+        {tips.map((tip, idx) => (
+          <div
+            key={idx}
+            className="flex-shrink-0 w-[260px] snap-start bg-white rounded-2xl border border-line-neutral shadow-sm overflow-hidden"
+          >
+            <div className="h-28 bg-gradient-to-br from-accent-100 to-accent-50 flex items-center justify-center text-4xl">
+              {tipEmoji(tip.cat)}
+            </div>
+            <div className="p-4">
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <p className="text-[14px] font-bold text-text-primary leading-snug flex-1">{tip.title}</p>
+                <BookmarkBtn filled={bookmarks.has(idx)} onToggle={() => bookmarks.toggle(idx)} size={16} />
+              </div>
+              <p className="text-[12px] text-text-secondary leading-relaxed line-clamp-3">{tip.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ContextCallout({ ctx, t }: { ctx: ContextCard; t: (k: TranslationKey) => string }) {
+  return (
+    <div className="bg-infoBox rounded-2xl p-4 border border-line-neutral">
+      <p className="text-[13px] font-bold text-text-primary mb-2">
+        {ctx.theme || t("results.contexts.system")}
+      </p>
+      <p className="text-[13px] text-text-secondary leading-relaxed">{ctx.explanation}</p>
+      {ctx.example && (
+        <p className="mt-2 text-[12px] text-text-tertiary leading-relaxed border-t border-line-neutral pt-2">
+          {ctx.example}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function InsiderTips({ items }: { items: ContextCard[] }) {
+  const { t } = useLanguage();
+  if (items.length === 0) return null;
+  return (
+    <section className="mt-8 px-4 lg:px-0 mb-8">
+      <SectionHeader icon={<ChatIcon />} title={t("results.insider.title")} count={items.length} />
+      <div className="space-y-3">
+        {items.map((item, idx) => (
+          <div key={idx} className="flex gap-3 bg-white rounded-2xl border border-line-neutral p-3 shadow-sm">
+            <div className="flex-shrink-0 w-16 h-16 rounded-xl bg-gradient-to-br from-accent-100 to-accent-50 flex items-center justify-center text-2xl">
+              📖
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[14px] font-bold text-text-primary leading-snug">{item.theme}</p>
+              <p className="text-[12px] text-text-secondary mt-1 leading-relaxed line-clamp-2">{item.explanation}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 function CultureEvents({ placeName }: { placeName: string }) {
   const { t } = useLanguage();
@@ -169,25 +384,15 @@ function CultureEvents({ placeName }: { placeName: string }) {
       .finally(() => setLoading(false));
   }, [placeName]);
 
-  if (loading) return null;
-  if (events.length === 0) return null;
+  if (loading || events.length === 0) return null;
 
   return (
-    <div className="mt-3 pt-3 border-t border-line-neutral">
-      <p className="text-[11px] font-semibold text-text-disabled mb-1.5">{t("results.culture")}</p>
+    <div className="mt-2 pt-2 border-t border-line-neutral">
+      <p className="text-[11px] font-semibold text-text-disabled mb-1">{t("results.culture")}</p>
       <ul className="space-y-1">
-        {events.slice(0, 3).map((ev, i) => (
-          <li key={i} className="text-[11px] text-text-secondary leading-snug">
-            {ev.url ? (
-              <a href={ev.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
-                {ev.title}
-              </a>
-            ) : (
-              <span>{ev.title}</span>
-            )}
-            {ev.startDate && (
-              <span className="text-text-disabled ml-1.5">{ev.startDate}</span>
-            )}
+        {events.slice(0, 2).map((ev, i) => (
+          <li key={i} className="text-[11px] text-text-secondary">
+            {ev.title}
           </li>
         ))}
       </ul>
@@ -198,294 +403,216 @@ function CultureEvents({ placeName }: { placeName: string }) {
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export default function ResultsScreen({ data, onBack, situation }: Props) {
-  const { t, lang } = useLanguage();
-  const placeBookmarks  = useBookmarkSet();
+  const { t } = useLanguage();
   const phraseBookmarks = useBookmarkSet();
-  const tipBookmarks    = useBookmarkSet();
+  const pageBookmarked = useBookmarkSet();
+  const tipBookmarks = useBookmarkSet();
+
+  const [displayName, setDisplayName] = useState<string | null>(null);
+  const [shareToast, setShareToast] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { displayName?: string } | null) => {
+        if (d?.displayName) setDisplayName(d.displayName);
+      })
+      .catch(() => {});
+  }, []);
 
   const sc = data.situation;
-  const heroText = situation?.trim() || sc.summary;
+  const situationLabel = situation?.trim() || sc.summary;
+  const heroTitle = displayName
+    ? interpolate(t("results.hero.title"), { name: displayName, situation: situationLabel })
+    : interpolate(t("results.hero.titleNoName"), { situation: situationLabel });
+
+  const systemContext = data.contexts?.[0];
+  const insiderContexts = data.contexts?.slice(1) ?? [];
+
+  const mapQuery = data.places[0]?.name ?? sc.whereTo[0] ?? situationLabel;
+  const hasPlaces = data.places.length > 0;
+
+  const handleShare = useCallback(async () => {
+    const text = `${heroTitle}\n${sc.summary}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "NUAMI Guide", text });
+      } else {
+        await navigator.clipboard.writeText(text);
+        setShareToast(true);
+        setTimeout(() => setShareToast(false), 2000);
+      }
+    } catch {
+      /* user cancelled */
+    }
+  }, [heroTitle, sc.summary]);
 
   return (
     <div className="relative flex flex-col min-h-screen bg-background">
       <TopNav active="guide" />
 
-      {/* Sticky sub-header */}
-      <div className="sticky top-0 md:top-14 z-10 bg-background border-b border-line-neutral">
+      {/* Sticky header */}
+      <div className="sticky top-0 md:top-14 z-20 bg-background/95 backdrop-blur-sm border-b border-line-neutral">
         <div className="w-full max-w-[1200px] mx-auto flex items-center justify-between px-4 py-3">
           <button onClick={onBack} className="text-text-secondary p-1 -ml-1" aria-label="Back">
             <ArrowLeft />
           </button>
-          <button onClick={onBack} className="flex items-center gap-1.5 text-[13px] font-medium text-text-secondary pr-1">
-            <RefreshIcon />
-            {t("results.reExtract")}
-          </button>
+          <div className="flex items-center gap-3">
+            <BookmarkBtn filled={pageBookmarked.has(0)} onToggle={() => pageBookmarked.toggle(0)} />
+            <button onClick={handleShare} className="text-text-secondary p-0.5" aria-label={t("results.share")}>
+              <ShareIcon />
+            </button>
+          </div>
         </div>
       </div>
 
+      {shareToast && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-text-primary text-white text-[13px] px-4 py-2 rounded-full shadow-lg">
+          {t("results.shareCopied")}
+        </div>
+      )}
+
       <div className="w-full max-w-[1200px] mx-auto pb-24 md:pb-16">
 
-        {/* ── Hero banner ── */}
-        <div className="mx-4 md:mx-4 lg:mx-0 mt-4 bg-gradient-to-br from-[#6B35D9] to-[#8651F2] rounded-2xl px-5 py-5">
-          <p className="text-[12px] font-medium text-purple-200 mb-1.5 tracking-wide">
-            {t("results.hero.ready")}
+        {/* ── Hero ── */}
+        <section className="px-4 lg:px-0 mt-5">
+          <h1 className="text-[20px] font-bold text-text-primary leading-snug">
+            {heroTitle}
+          </h1>
+          <p className="text-[13px] text-text-secondary mt-2 leading-relaxed">
+            {t("results.hero.subtitle")}
           </p>
-          <p className="text-[17px] font-bold text-white leading-snug line-clamp-2">
-            {heroText}
-          </p>
-          <div className="flex items-center gap-3 mt-3">
-            {data.places.length > 0 && (
-              <span className="inline-flex items-center gap-1 text-[12px] text-purple-200">
-                <PinIcon />
-                <span className="text-white font-semibold">{data.places.length}</span>
-                <span>{t("results.banner.placesFound")}</span>
+          <DocumentChips documents={sc.documents} />
+
+          {sc.estimatedMinutes !== undefined && (
+            <p className="mt-3 text-[12px] text-text-disabled">
+              {t("results.situation.estimatedTime")}:{" "}
+              <span className="font-semibold text-accent-700">
+                {t("results.situation.minutes").replace("{n}", String(sc.estimatedMinutes))}
               </span>
-            )}
-            {data.video.destinationCountry && (() => {
-              const name = getCountryName(data.video.destinationCountry, lang);
-              return name ? (
-                <span className="text-[12px] text-purple-200">
-                  <span className="text-white font-semibold">{name}</span> {t("results.banner.contentAbout")}
-                </span>
-              ) : null;
-            })()}
-          </div>
-        </div>
-
-        {/* ── Phrases: 이렇게 말해봐요 ── */}
-        {data.phrases.length > 0 && (
-          <section className="mt-6 px-4 lg:px-0">
-            <SectionHeader icon={<ChatIcon />} title={t("results.phrases.title")} />
-            <div className="bg-card rounded-2xl border border-line-neutral shadow-sm overflow-hidden">
-              {data.phrases.map((ph, idx) => (
-                <div key={idx} className={`flex items-start gap-3 px-4 py-3.5 ${idx > 0 ? "border-t border-line-neutral" : ""}`}>
-                  <span className="flex-shrink-0 mt-0.5">
-                    <CheckIcon />
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[15px] font-bold text-text-primary leading-snug">{ph.pronunciation}</p>
-                    <p className="text-[13px] text-text-secondary mt-0.5">{ph.meaning}</p>
-                    {ph.context && (
-                      <p className="text-[11px] text-text-disabled mt-1 italic">{ph.context}</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <button className="flex items-center gap-1 text-[11px] text-text-tertiary font-medium">
-                      <SpeakerIcon />
-                    </button>
-                    <BookmarkBtn filled={phraseBookmarks.has(idx)} onToggle={() => phraseBookmarks.toggle(idx)} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-        {data.phrases.length === 0 && (
-          <section className="mt-6 px-4 lg:px-0">
-            <SectionHeader icon={<ChatIcon />} title={t("results.phrases.title")} />
-            <EmptyState message={t("results.phrases.empty")} />
-          </section>
-        )}
-
-        {/* ── Tips: 이미 알았나요? ── */}
-        {data.tips.length > 0 && (
-          <section className="mt-6 px-4 lg:px-0">
-            <SectionHeader icon={<LightbulbIcon />} title={t("results.tips.title")} />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {data.tips.map((tip, idx) => (
-                <div key={idx} className="bg-accent-50 rounded-2xl p-4 border border-accent-100">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <p className="text-[14px] font-bold text-accent-900 flex-1 leading-snug">{tip.title}</p>
-                    <BookmarkBtn filled={tipBookmarks.has(idx)} onToggle={() => tipBookmarks.toggle(idx)} />
-                  </div>
-                  <p className="text-[13px] text-accent-800 leading-relaxed">{tip.desc}</p>
-                  {tip.source && (
-                    <p className="text-[11px] text-accent-600 italic mt-2 leading-relaxed border-l-2 border-accent-200 pl-2">
-                      &ldquo;{tip.source}&rdquo;
-                    </p>
-                  )}
-                  <span className="inline-block mt-3 text-[11px] bg-white text-accent-700 border border-accent-200 rounded-full px-2.5 py-1 font-medium">
-                    {tip.cat}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-        {data.tips.length === 0 && (
-          <section className="mt-6 px-4 lg:px-0">
-            <SectionHeader icon={<LightbulbIcon />} title={t("results.tips.title")} />
-            <EmptyState message={t("results.tips.empty")} />
-          </section>
-        )}
-
-        {/* ── Actions: 지금 해야 할 것 ── */}
-        {data.actions && data.actions.length > 0 && (
-          <section className="mt-6 px-4 lg:px-0">
-            <SectionHeader icon={<ActionIcon />} title={t("results.actions.title")} count={data.actions.length} />
-            <div className="bg-card rounded-2xl border border-line-neutral shadow-sm divide-y divide-line-neutral overflow-hidden">
-              {data.actions.map((item, idx) => (
-                <div key={idx} className="flex items-start gap-3 px-4 py-4">
-                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-accent-700 text-white text-[12px] font-bold flex items-center justify-center mt-0.5">
-                    {item.step}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-semibold text-text-primary leading-snug">{item.action}</p>
-                    {item.detail && (
-                      <p className="text-[13px] text-text-secondary mt-1 leading-relaxed">{item.detail}</p>
-                    )}
-                    {item.source && (
-                      <p className="text-[11px] text-text-disabled italic mt-1.5 leading-relaxed border-l-2 border-line-normal pl-2">
-                        &ldquo;{item.source}&rdquo;
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* ── Situation: 한눈에 보기 ── */}
-        <section className="mt-6 px-4 lg:px-0">
-          <SectionHeader icon={<GlanceIcon />} title={t("results.situation.title")} />
-          <div className="bg-card rounded-2xl border border-line-neutral shadow-sm overflow-hidden">
-            <div className="px-4 py-4 border-b border-line-neutral">
-              <p className="text-[14px] text-text-primary leading-relaxed">{sc.summary}</p>
-            </div>
-            <div className="divide-y divide-line-neutral">
-              {sc.documents.length > 0 && (
-                <div className="px-4 py-3.5">
-                  <p className="text-[11px] font-semibold text-text-disabled uppercase tracking-wide mb-2">{t("results.situation.documents")}</p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {sc.documents.map((doc, i) => (
-                      <span key={i} className="text-[12px] bg-infoBox text-text-secondary rounded-full px-3 py-1">
-                        {doc}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {sc.whereTo.length > 0 && (
-                <div className="px-4 py-3.5">
-                  <p className="text-[11px] font-semibold text-text-disabled uppercase tracking-wide mb-2">{t("results.situation.whereTo")}</p>
-                  <ul className="space-y-1">
-                    {sc.whereTo.map((place, i) => (
-                      <li key={i} className="flex items-start gap-2 text-[13px] text-text-primary">
-                        <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-accent-700 shrink-0" />
-                        {place}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {sc.checklist.length > 0 && (
-                <div className="px-4 py-3.5">
-                  <p className="text-[11px] font-semibold text-text-disabled uppercase tracking-wide mb-2">{t("results.situation.checklist")}</p>
-                  <ul className="space-y-2">
-                    {sc.checklist.map((item, i) => (
-                      <li key={i} className="flex items-start gap-2 text-[13px] text-text-primary">
-                        <span className="mt-0.5 flex-shrink-0">
-                          <CheckIcon />
-                        </span>
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {sc.estimatedMinutes !== undefined && (
-                <div className="px-4 py-3">
-                  <p className="text-[11px] font-semibold text-text-disabled uppercase tracking-wide mb-1">{t("results.situation.estimatedTime")}</p>
-                  <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-accent-700 bg-accent-50 rounded-full px-3 py-1">
-                    {t("results.situation.minutes").replace("{n}", String(sc.estimatedMinutes))}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
+            </p>
+          )}
         </section>
 
-        {/* ── Contexts: 알아두면 좋아요 ── */}
-        {data.contexts && data.contexts.length > 0 && (
+        {/* ── Map & nearby places ── */}
+        {(hasPlaces || sc.whereTo.length > 0) && (
+          <section className="mt-8 px-4 lg:px-0">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <PinIcon />
+                <h2 className="text-[16px] font-bold text-text-primary">{t("results.places.title")}</h2>
+              </div>
+              <button
+                onClick={onBack}
+                className="flex items-center gap-1 text-[12px] font-medium text-text-secondary"
+              >
+                <RefreshIcon />
+                {t("results.places.changeLocation")}
+              </button>
+            </div>
+
+            <MapPlaceholder query={mapQuery} />
+
+            <div className="mt-3 bg-white rounded-2xl border border-line-neutral shadow-sm px-4">
+              {hasPlaces ? (
+                data.places.map((p, idx) => (
+                  <div key={idx}>
+                    <PlaceRow place={p} t={t} />
+                    {CULTURE_ENABLED && idx === 0 && (
+                      <div className="pb-3"><CultureEvents placeName={p.name} /></div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                sc.whereTo.map((place, i) => (
+                  <div key={i} className="flex items-center py-3.5 border-b border-line-neutral last:border-0">
+                    <p className="text-[14px] font-medium text-text-primary">{place}</p>
+                  </div>
+                ))
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* ── Pre-visit checklist ── */}
+        {sc.checklist.length > 0 && (
           <section className="mt-6 px-4 lg:px-0">
-            <SectionHeader icon={<ContextIcon />} title={t("results.contexts.title")} count={data.contexts.length} />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {data.contexts.map((ctx, idx) => (
-                <div key={idx} className="bg-card rounded-2xl p-4 border border-line-neutral shadow-sm">
-                  <p className="text-[13px] font-bold text-text-primary mb-2">{ctx.theme}</p>
-                  <p className="text-[13px] text-text-secondary leading-relaxed">{ctx.explanation}</p>
-                  {ctx.example && (
-                    <p className="mt-2 text-[12px] text-text-tertiary italic leading-relaxed border-t border-line-neutral pt-2">
-                      {ctx.example}
-                    </p>
-                  )}
+            <p className="text-[12px] font-semibold text-text-disabled uppercase tracking-wide mb-2">
+              {t("results.situation.checklist")}
+            </p>
+            <div className="bg-white rounded-2xl border border-line-neutral shadow-sm divide-y divide-line-neutral">
+              {sc.checklist.map((item, i) => (
+                <div key={i} className="flex items-start gap-2.5 px-4 py-3 text-[13px] text-text-primary">
+                  <span className="mt-0.5 text-accent-700">✓</span>
+                  {item}
                 </div>
               ))}
             </div>
           </section>
         )}
 
-        {/* ── Places: 가야 할 곳 ── */}
-        {data.places.length > 0 && (
-          <section className="mt-6 px-4 lg:px-0 mb-8">
-            <SectionHeader icon={<PinIcon />} title={t("results.places.title")} count={data.places.length} />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {data.places.map((p, idx) => (
-                <div key={idx} className="bg-card rounded-2xl p-4 border border-line-neutral shadow-sm">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="text-[15px] font-bold text-text-primary">{p.name}</p>
-                      {p.nameKo && <p className="text-[12px] text-text-disabled mt-0.5">{p.nameKo}</p>}
-                    </div>
-                    <BookmarkBtn filled={placeBookmarks.has(idx)} onToggle={() => placeBookmarks.toggle(idx)} />
+        {/* ── Action stepper ── */}
+        {data.actions && data.actions.length > 0 && (
+          <ActionStepper actions={data.actions} t={t} />
+        )}
+
+        {/* ── Tips carousel ── */}
+        {data.tips.length > 0 ? (
+          <TipsCarousel tips={data.tips} t={t} bookmarks={tipBookmarks} />
+        ) : (
+          <section className="mt-8 px-4 lg:px-0">
+            <SectionHeader icon={<LightbulbIcon />} title={t("results.tips.title")} />
+            <div className="bg-infoBox rounded-2xl p-4 text-[13px] text-text-tertiary text-center">
+              {t("results.tips.empty")}
+            </div>
+          </section>
+        )}
+
+        {/* ── System context callout ── */}
+        {systemContext && (
+          <section className="mt-8 px-4 lg:px-0">
+            <ContextCallout ctx={systemContext} t={t} />
+          </section>
+        )}
+
+        {/* ── Useful phrases ── */}
+        {data.phrases.length > 0 ? (
+          <section className="mt-8 px-4 lg:px-0">
+            <SectionHeader icon={<ChatIcon />} title={t("results.phrases.title")} count={data.phrases.length} />
+            <div className="space-y-3">
+              {data.phrases.map((ph, idx) => (
+                <div key={idx} className="bg-white rounded-2xl border border-line-neutral shadow-sm p-4 relative">
+                  <div className="absolute top-3 right-3">
+                    <BookmarkBtn filled={phraseBookmarks.has(idx)} onToggle={() => phraseBookmarks.toggle(idx)} size={18} />
                   </div>
-                  <p className="text-[13px] text-text-secondary mt-2 leading-relaxed">{p.desc}</p>
-                  <p className="text-[12px] text-text-disabled italic mt-2 leading-relaxed">
-                    &ldquo;{p.quote}&rdquo;
-                  </p>
-                  <div className="flex items-center gap-2 mt-3">
-                    <a
-                      href={`https://map.kakao.com/link/search/${encodeURIComponent(p.name)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`${p.name} 카카오맵`}
-                      className="flex items-center gap-1 bg-yellow-50 border border-yellow-200 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-yellow-700"
-                    >
-                      <svg width="10" height="10" viewBox="0 0 20 20" fill="#F59E0B">
-                        <circle cx="10" cy="10" r="10" fill="#FDE68A" />
-                        <text x="5" y="14" fontSize="9" fontWeight="bold" fill="#92400E">k</text>
-                      </svg>
-                      {t("results.mapKakao")}
-                    </a>
-                    <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.name)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={`${p.name} 구글맵`}
-                      className="flex items-center gap-1 bg-blue-50 border border-blue-200 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold text-blue-700"
-                    >
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="#4285F4">
-                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                      </svg>
-                      {t("results.mapGoogle")}
-                    </a>
-                  </div>
-                  {p.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-3">
-                      {p.tags.map((tag) => (
-                        <span key={tag} className="text-[11px] bg-infoBox text-text-tertiary rounded-full px-2.5 py-1">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
+                  <p className="text-[15px] font-bold text-text-primary leading-snug pr-8">{ph.pronunciation}</p>
+                  <p className="text-[13px] text-text-secondary mt-1">{ph.meaning}</p>
+                  {ph.context && (
+                    <p className="text-[11px] text-text-disabled mt-1.5 italic">{ph.context}</p>
                   )}
-                  {CULTURE_ENABLED && <CultureEvents placeName={p.name} />}
+                  <button
+                    type="button"
+                    disabled
+                    className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-medium text-text-tertiary border border-line-neutral rounded-full px-3 py-1.5 opacity-60"
+                  >
+                    <SpeakerIcon />
+                    {t("results.phrases.listen")}
+                  </button>
                 </div>
               ))}
             </div>
           </section>
+        ) : (
+          <section className="mt-8 px-4 lg:px-0">
+            <SectionHeader icon={<ChatIcon />} title={t("results.phrases.title")} />
+            <div className="bg-infoBox rounded-2xl p-4 text-[13px] text-text-tertiary text-center">
+              {t("results.phrases.empty")}
+            </div>
+          </section>
         )}
+
+        {/* ── Insider tips ── */}
+        <InsiderTips items={insiderContexts} />
 
       </div>
 

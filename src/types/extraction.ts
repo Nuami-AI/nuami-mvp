@@ -28,6 +28,8 @@ export interface Place {
   desc: string; // 1–2 sentence English description
   quote: string; // verbatim transcript substring, original language
   tags: string[]; // 1–3 short labels
+  branchType?: string; // e.g. "외국인 고객센터"
+  status?: "open" | "closed";
 }
 
 export interface Phrase {
