@@ -3,8 +3,8 @@
 // Design Ref: §5.1 state machine — idle | loading | success | error.
 // Plan SC: FR-05, FR-07, FR-08, FR-09
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import InputScreen from "@/components/InputScreen";
 import PaywallModal from "@/components/PaywallModal";
@@ -22,8 +22,7 @@ export interface UsageInfo {
   role: "admin" | "tester" | null;
 }
 
-export default function Home() {
-  // Design Ref: §8.1 platform-pivot — situation required, url optional.
+function HomeContent() {
   const [situation, setSituation] = useState("");
   const [url, setUrl] = useState("");
   const [status, setStatus] = useState<Status>("idle");
@@ -33,8 +32,15 @@ export default function Home() {
   const [usageInfo, setUsageInfo] = useState<UsageInfo>({ used: null, limit: null, remaining: null, role: null });
   const { lang } = useLanguage();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // Plan SC: FR-06 — fetch remaining usage on mount
+  useEffect(() => {
+    const s = searchParams.get("situation");
+    const u = searchParams.get("url");
+    if (s) setSituation(s);
+    if (u) setUrl(u);
+  }, [searchParams]);
+
   useEffect(() => {
     fetch("/api/usage")
       .then((r) => {
@@ -67,7 +73,6 @@ export default function Home() {
       const res = await fetch("/api/extract", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // Plan SC: FR-04 — situation required, url optional.
         body: JSON.stringify({
           situation: situation.trim(),
           url: url.trim() || undefined,
@@ -77,14 +82,12 @@ export default function Home() {
         }),
       });
 
-      // Plan SC: FR-08 — 402 triggers PaywallModal
       if (res.status === 402) {
         setStatus("idle");
         setShowPaywall(true);
         return;
       }
 
-      // 401 — session expired
       if (res.status === 401) {
         router.push("/login");
         return;
@@ -98,7 +101,6 @@ export default function Home() {
         return;
       }
 
-      // Update remaining count optimistically
       setUsageInfo((prev) => ({
         ...prev,
         used: prev.used !== null ? prev.used + 1 : null,
@@ -123,6 +125,7 @@ export default function Home() {
     setError(null);
     setSituation("");
     setUrl("");
+    router.replace("/");
   };
 
   const handleSubscribe = async () => {
@@ -162,5 +165,13 @@ export default function Home() {
         />
       )}
     </>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={null}>
+      <HomeContent />
+    </Suspense>
   );
 }

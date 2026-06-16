@@ -3,7 +3,7 @@
 // Design Ref: §6.1 platform-pivot — situation-first input with QuickChips + optional URL toggle.
 // Plan SC: FR-01 — QuickChips, SituationTextarea, UrlToggle, "Generate Action Guide" CTA.
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import PageShell from "./PageShell";
 import { Button } from "./ui/button";
@@ -100,7 +100,7 @@ function Illustration({ className = "" }: { className?: string }) {
 
 // ── Quick Chips ───────────────────────────────────────────────────────────────
 
-type ChipKey = "input.chip.bank" | "input.chip.professor" | "input.chip.hospital" | "input.chip.transit" | "input.chip.dorm" | "input.chip.food";
+type ChipKey = "input.chip.bank" | "input.chip.professor" | "input.chip.hospital" | "input.chip.transit" | "input.chip.dorm" | "input.chip.food" | "input.chip.shopping";
 
 const CHIPS: { labelKey: ChipKey; icon: string }[] = [
   { labelKey: "input.chip.bank",      icon: "🏦" },
@@ -109,6 +109,7 @@ const CHIPS: { labelKey: ChipKey; icon: string }[] = [
   { labelKey: "input.chip.transit",   icon: "🚇" },
   { labelKey: "input.chip.dorm",      icon: "🏠" },
   { labelKey: "input.chip.food",      icon: "🍜" },
+  { labelKey: "input.chip.shopping",  icon: "🛍️" },
 ];
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -127,6 +128,10 @@ export default function InputScreen({
   const { t } = useLanguage();
   const router = useRouter();
   const [showUrl, setShowUrl] = useState(false);
+
+  useEffect(() => {
+    if (url.trim()) setShowUrl(true);
+  }, [url]);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});

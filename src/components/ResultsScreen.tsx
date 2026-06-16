@@ -4,7 +4,18 @@ import { useState, useEffect, useCallback } from "react";
 
 import type { CulturalEvent } from "@/lib/culture/types";
 import { useLanguage, type TranslationKey } from "@/lib/i18n";
-import type { ActionStep, ContextCard, ExtractionResult, Place, Tip } from "@/types/extraction";
+import type { ContextCard, ExtractionResult } from "@/types/extraction";
+
+import StoreResultsLayout from "@/components/StoreResultsLayout";
+import {
+  ActionStepper,
+  ContextCallout,
+  interpolate,
+  MapPlaceholder,
+  PlaceRow,
+  TipsCarousel,
+  useBookmarkSet,
+} from "@/components/results-shared";
 
 import TopNav from "./TopNav";
 import BottomNav from "./BottomNav";
@@ -13,6 +24,23 @@ interface Props {
   data: ExtractionResult;
   onBack: () => void;
   situation?: string;
+}
+
+type ResultVenue = "store" | "bank" | "hospital" | "default";
+
+function detectResultVenue(situation: string): ResultVenue {
+  const s = situation.toLowerCase();
+  if (/쇼핑|올리브영|올영|매장|드럭스토어|화장품|뷰티|k-?beauty|olive|shopping|cosmetic|ショッピング|オリーブ/.test(s)) {
+    return "store";
+  }
+  if (/은행|계좌|bank|account|銀行|口座/.test(s)) return "bank";
+  if (/병원|약국|hospital|clinic|pharmacy|病院|薬局/.test(s)) return "hospital";
+  return "default";
+}
+
+function venueKey(venue: ResultVenue, base: string): TranslationKey {
+  if (venue === "default") return base as TranslationKey;
+  return `${base}.${venue}` as TranslationKey;
 }
 
 // ── Icons ────────────────────────────────────────────────────────────────────
@@ -96,48 +124,6 @@ function RefreshIcon() {
   );
 }
 
-function CheckCircle({ done, active }: { done: boolean; active: boolean }) {
-  if (done) {
-    return (
-      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-accent-700 flex items-center justify-center">
-        <svg width="14" height="14" fill="none" stroke="white" strokeWidth="2.5" viewBox="0 0 24 24">
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-      </span>
-    );
-  }
-  return (
-    <span className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center ${active ? "border-accent-700 bg-accent-50" : "border-line-normal bg-white"}`}>
-      {active && <span className="w-2 h-2 rounded-full bg-accent-700" />}
-    </span>
-  );
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function useBookmarkSet() {
-  const [set, setSet] = useState<Set<number>>(() => new Set());
-  const toggle = (idx: number) =>
-    setSet((prev) => {
-      const next = new Set(prev);
-      if (next.has(idx)) next.delete(idx);
-      else next.add(idx);
-      return next;
-    });
-  return { has: (idx: number) => set.has(idx), toggle };
-}
-
-function interpolate(template: string, vars: Record<string, string>) {
-  return Object.entries(vars).reduce((s, [k, v]) => s.replace(`{${k}}`, v), template);
-}
-
-function tipEmoji(cat: Tip["cat"]) {
-  const map: Record<Tip["cat"], string> = {
-    Time: "⏰", Price: "💰", Etiquette: "🙏", Transport: "🚇", Other: "💡",
-  };
-  return map[cat] ?? "💡";
-}
-
 const CULTURE_ENABLED = process.env.NEXT_PUBLIC_CULTURE_ENABLED === "true";
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -175,175 +161,6 @@ function DocumentChips({ documents }: { documents: string[] }) {
           <span className="text-text-disabled"><InfoIcon /></span>
         </span>
       ))}
-    </div>
-  );
-}
-
-function MapPlaceholder({ query }: { query: string }) {
-  const mapUrl = `https://map.kakao.com/link/search/${encodeURIComponent(query)}`;
-  return (
-    <a
-      href={mapUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="block relative w-full h-44 rounded-xl overflow-hidden bg-gradient-to-br from-[#E8F4FD] to-[#D4E9F7] border border-line-neutral"
-    >
-      <div className="absolute inset-0 opacity-30"
-        style={{ backgroundImage: "repeating-linear-gradient(0deg, #94A3B8 0px, transparent 1px, transparent 20px), repeating-linear-gradient(90deg, #94A3B8 0px, transparent 1px, transparent 20px)" }}
-      />
-      {[
-        { top: "30%", left: "25%" },
-        { top: "45%", left: "55%" },
-        { top: "60%", left: "35%" },
-        { top: "35%", left: "70%" },
-      ].map((pos, i) => (
-        <span
-          key={i}
-          className="absolute w-7 h-7 -translate-x-1/2 -translate-y-full"
-          style={{ top: pos.top, left: pos.left }}
-        >
-          <svg width="28" height="36" viewBox="0 0 28 36" fill="none">
-            <path d="M14 0C6.268 0 0 6.268 0 14c0 10.5 14 22 14 22s14-11.5 14-22C28 6.268 21.732 0 14 0z" fill="#8651F2" />
-            <circle cx="14" cy="14" r="5" fill="white" />
-          </svg>
-        </span>
-      ))}
-      <div className="absolute bottom-2 right-2 bg-white/90 rounded-lg px-2 py-1 text-[10px] font-semibold text-accent-700 shadow">
-        Kakao Map →
-      </div>
-    </a>
-  );
-}
-
-function PlaceRow({ place, t }: { place: Place; t: (k: TranslationKey) => string }) {
-  const isOpen = place.status !== "closed";
-  return (
-    <div className="flex items-center justify-between py-3.5 border-b border-line-neutral last:border-0">
-      <div className="flex-1 min-w-0 pr-3">
-        <p className="text-[14px] font-semibold text-text-primary leading-snug">{place.name}</p>
-        {(place.branchType || place.nameKo) && (
-          <p className="text-[12px] text-text-disabled mt-0.5">
-            {place.branchType ?? place.nameKo}
-          </p>
-        )}
-      </div>
-      {place.status && (
-        <span className={`flex-shrink-0 text-[11px] font-semibold rounded-full px-2.5 py-1 ${isOpen ? "bg-accent-50 text-accent-700" : "bg-muted text-text-disabled"}`}>
-          {isOpen ? t("results.places.open") : t("results.places.closed")}
-        </span>
-      )}
-    </div>
-  );
-}
-
-function ActionStepper({ actions, t }: { actions: ActionStep[]; t: (k: TranslationKey) => string }) {
-  const [completed, setCompleted] = useState<Set<number>>(() => new Set());
-  const [activeIdx, setActiveIdx] = useState(0);
-
-  const toggleStep = (idx: number) => {
-    setCompleted((prev) => {
-      const next = new Set(prev);
-      if (next.has(idx)) next.delete(idx);
-      else next.add(idx);
-      return next;
-    });
-    setActiveIdx(idx);
-  };
-
-  const doneCount = completed.size;
-  const progressLabel = interpolate(t("results.actions.progress"), {
-    current: String(Math.max(1, doneCount || (activeIdx + 1))),
-    total: String(actions.length),
-  });
-
-  return (
-    <section className="mt-8 px-4 lg:px-0">
-      <div className="flex items-start justify-between mb-1">
-        <h2 className="text-[16px] font-bold text-text-primary leading-snug flex-1 pr-4">
-          {t("results.actions.title")}
-        </h2>
-        <span className="text-[13px] font-semibold text-accent-700 flex-shrink-0">{progressLabel}</span>
-      </div>
-      <p className="text-[12px] text-text-disabled mb-4">{t("results.actions.hint")}</p>
-      <div className="space-y-2">
-        {actions.map((item, idx) => {
-          const done = completed.has(idx);
-          const active = idx === activeIdx && !done;
-          return (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => toggleStep(idx)}
-              className={`w-full text-left flex items-start gap-3 px-4 py-3.5 rounded-2xl border transition-colors ${
-                active
-                  ? "border-accent-700 bg-accent-50 shadow-sm"
-                  : done
-                    ? "border-line-neutral bg-white opacity-60"
-                    : "border-line-neutral bg-white"
-              }`}
-            >
-              <CheckCircle done={done} active={active} />
-              <div className="flex-1 min-w-0">
-                <p className={`text-[14px] leading-snug ${done ? "text-text-disabled line-through" : "text-text-primary font-medium"}`}>
-                  {item.action}
-                </p>
-                {item.detail && !done && (
-                  <p className="text-[12px] text-text-secondary mt-1 leading-relaxed">{item.detail}</p>
-                )}
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-function TipsCarousel({ tips, t, bookmarks }: {
-  tips: Tip[];
-  t: (k: TranslationKey) => string;
-  bookmarks: ReturnType<typeof useBookmarkSet>;
-}) {
-  return (
-    <section className="mt-8">
-      <div className="px-4 lg:px-0">
-        <SectionHeader icon={<LightbulbIcon />} title={t("results.tips.title")} />
-      </div>
-      <div className="flex gap-3 overflow-x-auto px-4 lg:px-0 pb-1 snap-x snap-mandatory scrollbar-hide">
-        {tips.map((tip, idx) => (
-          <div
-            key={idx}
-            className="flex-shrink-0 w-[260px] snap-start bg-white rounded-2xl border border-line-neutral shadow-sm overflow-hidden"
-          >
-            <div className="h-28 bg-gradient-to-br from-accent-100 to-accent-50 flex items-center justify-center text-4xl">
-              {tipEmoji(tip.cat)}
-            </div>
-            <div className="p-4">
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <p className="text-[14px] font-bold text-text-primary leading-snug flex-1">{tip.title}</p>
-                <BookmarkBtn filled={bookmarks.has(idx)} onToggle={() => bookmarks.toggle(idx)} size={16} />
-              </div>
-              <p className="text-[12px] text-text-secondary leading-relaxed line-clamp-3">{tip.desc}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function ContextCallout({ ctx, t }: { ctx: ContextCard; t: (k: TranslationKey) => string }) {
-  return (
-    <div className="bg-infoBox rounded-2xl p-4 border border-line-neutral">
-      <p className="text-[13px] font-bold text-text-primary mb-2">
-        {ctx.theme || t("results.contexts.system")}
-      </p>
-      <p className="text-[13px] text-text-secondary leading-relaxed">{ctx.explanation}</p>
-      {ctx.example && (
-        <p className="mt-2 text-[12px] text-text-tertiary leading-relaxed border-t border-line-neutral pt-2">
-          {ctx.example}
-        </p>
-      )}
     </div>
   );
 }
@@ -422,6 +239,14 @@ export default function ResultsScreen({ data, onBack, situation }: Props) {
 
   const sc = data.situation;
   const situationLabel = situation?.trim() || sc.summary;
+  const venue = detectResultVenue(situationLabel);
+  const actionsTitle = t(venueKey(venue, "results.actions.title"));
+  const placesTitle = t(venueKey(venue, "results.places.title"));
+  const systemContextLabel = t(venueKey(venue, "results.contexts.system"));
+  const heroSubtitle =
+    venue === "store"
+      ? t("results.hero.subtitle.store" as TranslationKey)
+      : t("results.hero.subtitle");
   const heroTitle = displayName
     ? interpolate(t("results.hero.title"), { name: displayName, situation: situationLabel })
     : interpolate(t("results.hero.titleNoName"), { situation: situationLabel });
@@ -480,11 +305,11 @@ export default function ResultsScreen({ data, onBack, situation }: Props) {
             {heroTitle}
           </h1>
           <p className="text-[13px] text-text-secondary mt-2 leading-relaxed">
-            {t("results.hero.subtitle")}
+            {heroSubtitle}
           </p>
-          <DocumentChips documents={sc.documents} />
+          {venue !== "store" && <DocumentChips documents={sc.documents} />}
 
-          {sc.estimatedMinutes !== undefined && (
+          {venue !== "store" && sc.estimatedMinutes !== undefined && (
             <p className="mt-3 text-[12px] text-text-disabled">
               {t("results.situation.estimatedTime")}:{" "}
               <span className="font-semibold text-accent-700">
@@ -494,13 +319,27 @@ export default function ResultsScreen({ data, onBack, situation }: Props) {
           )}
         </section>
 
-        {/* ── Map & nearby places ── */}
-        {(hasPlaces || sc.whereTo.length > 0) && (
+        {venue === "store" && (
+          <StoreResultsLayout
+            data={data}
+            situationLabel={situationLabel}
+            placesTitle={placesTitle}
+            actionsTitle={actionsTitle}
+            systemContextLabel={systemContextLabel}
+            mapQuery={mapQuery}
+            hasPlaces={hasPlaces}
+            onBack={onBack}
+            t={t}
+          />
+        )}
+
+        {/* ── Map & nearby places (non-store) ── */}
+        {venue !== "store" && (hasPlaces || sc.whereTo.length > 0) && (
           <section className="mt-8 px-4 lg:px-0">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <PinIcon />
-                <h2 className="text-[16px] font-bold text-text-primary">{t("results.places.title")}</h2>
+                <h2 className="text-[16px] font-bold text-text-primary">{placesTitle}</h2>
               </div>
               <button
                 onClick={onBack}
@@ -534,8 +373,8 @@ export default function ResultsScreen({ data, onBack, situation }: Props) {
           </section>
         )}
 
-        {/* ── Pre-visit checklist ── */}
-        {sc.checklist.length > 0 && (
+        {/* ── Pre-visit checklist (non-store) ── */}
+        {venue !== "store" && sc.checklist.length > 0 && (
           <section className="mt-6 px-4 lg:px-0">
             <p className="text-[12px] font-semibold text-text-disabled uppercase tracking-wide mb-2">
               {t("results.situation.checklist")}
@@ -551,13 +390,15 @@ export default function ResultsScreen({ data, onBack, situation }: Props) {
           </section>
         )}
 
-        {/* ── Action stepper ── */}
-        {data.actions && data.actions.length > 0 && (
-          <ActionStepper actions={data.actions} t={t} />
+        {/* ── Action stepper (non-store) ── */}
+        {venue !== "store" && data.actions && data.actions.length > 0 && (
+          <section className="mt-8 px-4 lg:px-0">
+            <ActionStepper actions={data.actions} title={actionsTitle} t={t} />
+          </section>
         )}
 
-        {/* ── Tips carousel ── */}
-        {data.tips.length > 0 ? (
+        {/* ── Tips carousel (non-store) ── */}
+        {venue !== "store" && (data.tips.length > 0 ? (
           <TipsCarousel tips={data.tips} t={t} bookmarks={tipBookmarks} />
         ) : (
           <section className="mt-8 px-4 lg:px-0">
@@ -566,17 +407,17 @@ export default function ResultsScreen({ data, onBack, situation }: Props) {
               {t("results.tips.empty")}
             </div>
           </section>
-        )}
+        ))}
 
-        {/* ── System context callout ── */}
-        {systemContext && (
+        {/* ── System context callout (non-store) ── */}
+        {venue !== "store" && systemContext && (
           <section className="mt-8 px-4 lg:px-0">
-            <ContextCallout ctx={systemContext} t={t} />
+            <ContextCallout ctx={systemContext} systemLabel={systemContextLabel} />
           </section>
         )}
 
-        {/* ── Useful phrases ── */}
-        {data.phrases.length > 0 ? (
+        {/* ── Useful phrases (non-store) ── */}
+        {venue !== "store" && (data.phrases.length > 0 ? (
           <section className="mt-8 px-4 lg:px-0">
             <SectionHeader icon={<ChatIcon />} title={t("results.phrases.title")} count={data.phrases.length} />
             <div className="space-y-3">
@@ -609,10 +450,10 @@ export default function ResultsScreen({ data, onBack, situation }: Props) {
               {t("results.phrases.empty")}
             </div>
           </section>
-        )}
+        ))}
 
-        {/* ── Insider tips ── */}
-        <InsiderTips items={insiderContexts} />
+        {/* ── Insider tips (non-store) ── */}
+        {venue !== "store" && <InsiderTips items={insiderContexts} />}
 
       </div>
 
