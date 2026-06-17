@@ -11,7 +11,7 @@ const TABS: { id: TabId; labelKey: "nav.home" | "nav.content" | "nav.guide" | "n
   { id: "home",     labelKey: "nav.home",      href: "/" },
   { id: "content",  labelKey: "nav.content",   href: "/content" },
   { id: "guide",    labelKey: "nav.guide",     href: "/guide" },
-  { id: "bookmark", labelKey: "nav.bookmarks", href: "/" },
+  { id: "bookmark", labelKey: "nav.bookmarks", href: "/saved" },
   { id: "mypage",   labelKey: "nav.mypage",    href: "/mypage" },
 ];
 

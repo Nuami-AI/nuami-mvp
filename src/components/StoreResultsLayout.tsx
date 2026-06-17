@@ -5,6 +5,8 @@ import Link from "next/link";
 import type { TranslationKey } from "@/lib/i18n";
 import { K_BEAUTY_TRENDS } from "@/lib/shopping/video-research";
 import type { ExtractionResult } from "@/types/extraction";
+import ShoppingMemoPanel from "@/components/ShoppingMemoPanel";
+import OliveYoungProducts from "@/components/OliveYoungProducts";
 import VideoResearchPrompts from "@/components/VideoResearchPrompts";
 import {
   ActionStepper,
@@ -15,9 +17,10 @@ import {
   useBookmarkSet,
 } from "@/components/results-shared";
 
-type StoreTab = "location" | "actions" | "prep" | "trend";
+type StoreTab = "memo" | "location" | "actions" | "prep" | "trend";
 
 const TABS: { id: StoreTab; label: string }[] = [
+  { id: "memo", label: "내 쇼핑 메모" },
   { id: "location", label: "매장위치" },
   { id: "actions", label: "행동방법" },
   { id: "prep", label: "미리준비" },
@@ -32,6 +35,7 @@ interface Props {
   systemContextLabel: string;
   mapQuery: string;
   hasPlaces: boolean;
+  sourceUrl?: string;
   onBack: () => void;
   t: (k: TranslationKey) => string;
 }
@@ -52,10 +56,11 @@ export default function StoreResultsLayout({
   systemContextLabel,
   mapQuery,
   hasPlaces,
+  sourceUrl,
   onBack,
   t,
 }: Props) {
-  const [activeTab, setActiveTab] = useState<StoreTab>("location");
+  const [activeTab, setActiveTab] = useState<StoreTab>("memo");
   const tipBookmarks = useBookmarkSet();
   const sc = data.situation;
   const systemContext = data.contexts?.[0];
@@ -84,6 +89,16 @@ export default function StoreResultsLayout({
       </div>
 
       <div className="mt-5 px-4 lg:px-0">
+        {activeTab === "memo" && (
+          <ShoppingMemoPanel
+            products={data.products ?? []}
+            situation={situationLabel}
+            sourceUrl={sourceUrl}
+            videoTitle={data.video.title}
+            extraction={data}
+          />
+        )}
+
         {activeTab === "location" && (
           <div className="flex flex-col gap-4">
             <div>
@@ -167,7 +182,6 @@ export default function StoreResultsLayout({
                 </div>
               </section>
             )}
-
             <VideoResearchPrompts situation={situationLabel} />
           </div>
         )}
@@ -224,6 +238,12 @@ export default function StoreResultsLayout({
             ) : (
               <div className="bg-infoBox rounded-2xl p-4 text-[13px] text-text-tertiary text-center">{t("results.tips.empty")}</div>
             )}
+            <OliveYoungProducts
+              queries={[
+                ...(data.products ?? []).map((p) => p.searchQuery ?? p.name),
+                ...data.tips.map((tip) => tip.title),
+              ]}
+            />
             {systemContext && <ContextCallout ctx={systemContext} systemLabel={systemContextLabel} />}
             {insiderContexts.map((item, idx) => (
               <div key={idx} className="bg-white rounded-2xl border border-line-neutral p-4 shadow-sm">

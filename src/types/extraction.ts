@@ -61,6 +61,16 @@ export interface ContextCard {
   example?: string;    // concrete real-world example
 }
 
+/** Products the user may want to buy — extracted from video/situation for shopping memos */
+export interface ProductItem {
+  name: string;           // product name IN user language
+  brand?: string;
+  reason?: string;        // why recommended / when to use
+  category?: string;      // e.g. "립틴트", "선크림"
+  searchQuery?: string;   // Korean keyword for Olive Young search
+  memo?: string;
+}
+
 export interface ExtractionResult {
   video: VideoMeta;
   situation: SituationCard;
@@ -69,6 +79,7 @@ export interface ExtractionResult {
   phrases: Phrase[];
   tips: Tip[];
   contexts: ContextCard[];
+  products: ProductItem[];
 }
 
 export type ExtractErrorCode =

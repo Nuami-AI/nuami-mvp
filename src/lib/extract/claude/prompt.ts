@@ -161,6 +161,13 @@ Return STRICT JSON matching this exact shape:
     "theme": string,       // short cultural theme label IN [A] ${langName} (≤6 words)
     "explanation": string, // WHY this cultural norm exists in the destination — 2-3 sentences IN [A] ${langName}
     "example"?: string     // 1 concrete daily life example IN [A] ${langName}
+  }>,
+  "products": Array<{
+    "name": string,        // specific product name IN [A] ${langName} (brand + product line when known)
+    "brand"?: string,      // brand name
+    "reason"?: string,     // why buy this / skin tone / use case IN [A] ${langName}
+    "category"?: string,   // e.g. "립틴트", "선크림", "클렌징"
+    "searchQuery"?: string // Korean keyword for Olive Young search (Hangul preferred)
   }>
 }
 
@@ -173,8 +180,11 @@ RULES:
 1e. contexts[0] should be a broad system overview (e.g. "Korean Banking System") explaining how the local system works for foreigners.
 1f. places.branchType: include for banks/offices with dedicated foreigner desks when relevant.
 1g. places.status: estimate "open" or "closed" based on typical weekday business hours; omit if unknown.
-2.  Every place's "quote" MUST be a verbatim substring of the provided transcript.
-3.  Aim for 3-6 action steps, 2-5 places, 4-10 phrases, 3-6 tips, 2-4 context cards.
+1h. products: for shopping/beauty/cosmetic situations, list 3-8 specific products mentioned or strongly implied.
+    Include searchQuery in Korean Hangul for Olive Young lookup (e.g. "롬앤 쥬시 래스팅 틴트").
+    For non-shopping situations, return an empty products array.
+2.  Aim for 3-6 action steps, 2-5 places, 4-10 phrases, 3-6 tips, 2-4 context cards, 0-8 products.
+3.  Every place's "quote" MUST be a verbatim substring of the provided transcript (or situation text if no transcript).
 4.  video.language = the creator's speaking language detected from transcript text — NOT the hint.
 5.  destinationCountry = the country the VIDEO IS ABOUT, detected from place names, institutions,
     currency, and cultural context in the transcript. NEVER derive destination from:

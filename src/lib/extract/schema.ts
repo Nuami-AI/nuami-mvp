@@ -68,6 +68,15 @@ export const contextCardSchema = z.object({
   example: z.string().optional(),
 });
 
+export const productItemSchema = z.object({
+  name: z.string().min(1),
+  brand: z.string().optional(),
+  reason: z.string().optional(),
+  category: z.string().optional(),
+  searchQuery: z.string().optional(),
+  memo: z.string().optional(),
+});
+
 export const extractionSchema = z.object({
   video: videoMetaSchema,
   situation: situationCardSchema,
@@ -76,6 +85,7 @@ export const extractionSchema = z.object({
   phrases: z.array(phraseSchema),
   tips: z.array(tipSchema),
   contexts: z.array(contextCardSchema).default([]),
+  products: z.array(productItemSchema).default([]),
 });
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

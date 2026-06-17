@@ -12,7 +12,7 @@ type TabId = "guide" | "content" | "saved" | "history";
 const LINKS: { id: TabId; labelKey: "nav.guide" | "nav.content" | "nav.saved" | "nav.history"; href: string }[] = [
   { id: "guide",   labelKey: "nav.guide",   href: "/" },
   { id: "content", labelKey: "nav.content", href: "/content" },
-  { id: "saved",   labelKey: "nav.saved",   href: "/" },
+  { id: "saved",   labelKey: "nav.saved",   href: "/saved" },
   { id: "history", labelKey: "nav.history", href: "/" },
 ];
 

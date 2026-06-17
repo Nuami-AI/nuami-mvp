@@ -267,6 +267,7 @@ export async function POST(request: Request): Promise<Response> {
     phrases: zodResult.data.phrases,
     tips: zodResult.data.tips,
     contexts: zodResult.data.contexts,
+    products: zodResult.data.products,
   };
 
   // --- 8. Log usage event for tester ----------------------------------------

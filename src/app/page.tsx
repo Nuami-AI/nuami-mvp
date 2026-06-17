@@ -139,7 +139,14 @@ function HomeContent() {
   };
 
   if (status === "success" && data) {
-    return <ResultsScreen data={data} onBack={handleBack} situation={situation} />;
+    return (
+      <ResultsScreen
+        data={data}
+        onBack={handleBack}
+        situation={situation}
+        sourceUrl={url.trim() || undefined}
+      />
+    );
   }
 
   return (

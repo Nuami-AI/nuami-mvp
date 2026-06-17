@@ -16,6 +16,7 @@ import {
   TipsCarousel,
   useBookmarkSet,
 } from "@/components/results-shared";
+import { useSaves } from "@/lib/saves/hooks";
 
 import TopNav from "./TopNav";
 import BottomNav from "./BottomNav";
@@ -24,13 +25,14 @@ interface Props {
   data: ExtractionResult;
   onBack: () => void;
   situation?: string;
+  sourceUrl?: string;
 }
 
 type ResultVenue = "store" | "bank" | "hospital" | "default";
 
 function detectResultVenue(situation: string): ResultVenue {
   const s = situation.toLowerCase();
-  if (/쇼핑|올리브영|올영|매장|드럭스토어|화장품|뷰티|k-?beauty|olive|shopping|cosmetic|ショッピング|オリーブ/.test(s)) {
+  if (/쇼핑|올리브영|올영|매장|드럭스토어|화장품|뷰티|k-?beauty|olive|shopping|cosmetic|ショッピング|オリーブ|오프라인|준비사항|제품/.test(s)) {
     return "store";
   }
   if (/은행|계좌|bank|account|銀行|口座/.test(s)) return "bank";
@@ -219,11 +221,12 @@ function CultureEvents({ placeName }: { placeName: string }) {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 
-export default function ResultsScreen({ data, onBack, situation }: Props) {
+export default function ResultsScreen({ data, onBack, situation, sourceUrl }: Props) {
   const { t } = useLanguage();
   const phraseBookmarks = useBookmarkSet();
-  const pageBookmarked = useBookmarkSet();
   const tipBookmarks = useBookmarkSet();
+  const { save: persistSave } = useSaves();
+  const [guideSaved, setGuideSaved] = useState(false);
 
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [shareToast, setShareToast] = useState(false);
@@ -283,7 +286,31 @@ export default function ResultsScreen({ data, onBack, situation }: Props) {
             <ArrowLeft />
           </button>
           <div className="flex items-center gap-3">
-            <BookmarkBtn filled={pageBookmarked.has(0)} onToggle={() => pageBookmarked.toggle(0)} />
+            <button
+              type="button"
+              onClick={() => {
+                if (!guideSaved) {
+                  persistSave({
+                    type: "guide",
+                    title: situationLabel,
+                    body: sc.summary,
+                    memo: "",
+                    checked: false,
+                    situation: situationLabel,
+                    sourceUrl,
+                    videoTitle: data.video.title,
+                    payload: data,
+                  });
+                  setGuideSaved(true);
+                }
+              }}
+              className="p-0.5"
+              aria-label={t("results.bookmark")}
+            >
+              <svg width={20} height={20} fill={guideSaved ? "#8651F2" : "none"} stroke={guideSaved ? "#8651F2" : "currentColor"} strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M19 21 12 16l-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+              </svg>
+            </button>
             <button onClick={handleShare} className="text-text-secondary p-0.5" aria-label={t("results.share")}>
               <ShareIcon />
             </button>
@@ -328,6 +355,7 @@ export default function ResultsScreen({ data, onBack, situation }: Props) {
             systemContextLabel={systemContextLabel}
             mapQuery={mapQuery}
             hasPlaces={hasPlaces}
+            sourceUrl={sourceUrl}
             onBack={onBack}
             t={t}
           />
