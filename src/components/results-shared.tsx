@@ -150,14 +150,14 @@ export function TipsCarousel({ tips, t, bookmarks }: {
   );
 }
 
-export function MapPlaceholder({ query }: { query: string }) {
+export function MapPlaceholder({ query, className = "" }: { query: string; className?: string }) {
   const mapUrl = `https://map.kakao.com/link/search/${encodeURIComponent(query)}`;
   return (
     <a
       href={mapUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="block relative w-full h-48 rounded-xl overflow-hidden bg-gradient-to-br from-[#E8F4FD] to-[#D4E9F7] border border-line-neutral"
+      className={`block relative w-full h-48 rounded-xl overflow-hidden bg-gradient-to-br from-[#E8F4FD] to-[#D4E9F7] border border-line-neutral ${className}`}
     >
       <div
         className="absolute inset-0 opacity-30"

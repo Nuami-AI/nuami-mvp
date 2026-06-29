@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-04-20T12:51:44.887Z",
+  "timestamp": "2026-06-22T07:35:41.414Z",
   "reason": "compaction",
   "status": {
     "version": "3.0",
@@ -7,9 +7,11 @@
     "activeFeatures": [
       "cultural-action-service",
       "place-video-enrichment",
-      "content-hub"
+      "content-hub",
+      "market-validation",
+      "platform-pivot"
     ],
-    "primaryFeature": "content-hub",
+    "primaryFeature": "platform-pivot",
     "features": {
       "place-video-enrichment": {
         "phase": "completed",
@@ -31,6 +33,27 @@
         "docs": {
           "plan": "docs/01-plan/features/content-hub.plan.md",
           "design": "docs/02-design/features/content-hub.design.md"
+        }
+      },
+      "market-validation": {
+        "phase": "design",
+        "matchRate": null,
+        "iterationCount": 0,
+        "startedAt": "2026-04-22T00:00:00.000Z",
+        "docs": {
+          "prd": "docs/00-pm/market-validation.prd.md",
+          "plan": "docs/01-plan/features/market-validation.plan.md",
+          "design": "docs/02-design/features/market-validation.design.md"
+        }
+      },
+      "platform-pivot": {
+        "phase": "do",
+        "matchRate": null,
+        "iterationCount": 0,
+        "startedAt": "2026-05-23T00:00:00.000Z",
+        "docs": {
+          "plan": "docs/01-plan/features/platform-pivot.plan.md",
+          "design": "docs/02-design/features/platform-pivot.design.md"
         }
       },
       "cultural-action-service": {

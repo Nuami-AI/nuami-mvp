@@ -6,6 +6,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import PageShell from "./PageShell";
+import ExampleCategoryPicker from "./ExampleCategoryPicker";
 import { Button } from "./ui/button";
 import { Alert, AlertTitle, AlertDescription } from "./ui/alert";
 import { PageHeader } from "./ui/page-header";
@@ -97,20 +98,6 @@ function Illustration({ className = "" }: { className?: string }) {
     </svg>
   );
 }
-
-// ── Quick Chips ───────────────────────────────────────────────────────────────
-
-type ChipKey = "input.chip.bank" | "input.chip.professor" | "input.chip.hospital" | "input.chip.transit" | "input.chip.dorm" | "input.chip.food" | "input.chip.shopping";
-
-const CHIPS: { labelKey: ChipKey; icon: string }[] = [
-  { labelKey: "input.chip.bank",      icon: "🏦" },
-  { labelKey: "input.chip.professor", icon: "📧" },
-  { labelKey: "input.chip.hospital",  icon: "🏥" },
-  { labelKey: "input.chip.transit",   icon: "🚇" },
-  { labelKey: "input.chip.dorm",      icon: "🏠" },
-  { labelKey: "input.chip.food",      icon: "🍜" },
-  { labelKey: "input.chip.shopping",  icon: "🛍️" },
-];
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -234,30 +221,11 @@ export default function InputScreen({
         {/* ── Input Panel ── */}
         <div className="mt-8 lg:mt-0 md:max-w-xl md:mx-auto lg:max-w-none lg:mx-0 space-y-4">
 
-          {/* Quick Chips */}
-          <div className="flex flex-wrap gap-2">
-            {CHIPS.map(({ labelKey, icon }) => {
-              const label = t(labelKey);
-              const isActive = situation === label;
-              return (
-                <button
-                  key={labelKey}
-                  disabled={isLoading}
-                  onClick={() => onSituationChange(isActive ? "" : label)}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] font-medium border transition-colors",
-                    isActive
-                      ? "bg-accent-700 text-white border-accent-700"
-                      : "bg-background text-text-secondary border-line-normal hover:border-accent-300 hover:text-accent-700",
-                    isLoading && "opacity-50 pointer-events-none"
-                  )}
-                >
-                  <span>{icon}</span>
-                  {label}
-                </button>
-              );
-            })}
-          </div>
+          <ExampleCategoryPicker
+            situation={situation}
+            onSituationChange={onSituationChange}
+            disabled={isLoading}
+          />
 
           {/* Situation Textarea */}
           <div>
