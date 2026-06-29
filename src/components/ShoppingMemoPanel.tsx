@@ -78,11 +78,13 @@ function ProductRow({
   situation,
   sourceUrl,
   videoTitle,
+  showOliveYoung = true,
 }: {
   product: ProductItem;
   situation: string;
   sourceUrl?: string;
   videoTitle?: string;
+  showOliveYoung?: boolean;
 }) {
   const { t } = useLanguage();
   const { save, setMemo, toggleChecked, remove, items } = useSaves();
@@ -165,7 +167,7 @@ function ProductRow({
             rows={2}
             className="mt-3 w-full text-[12px] text-text-primary bg-infoBox border border-line-neutral rounded-xl px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-accent-200"
           />
-          <OliveYoungMatch query={searchQuery} />
+          <OliveYoungMatch query={showOliveYoung ? searchQuery : ""} />
         </div>
       </div>
     </div>
@@ -262,12 +264,6 @@ export default function ShoppingMemoPanel({
         <div className="bg-infoBox rounded-2xl p-5 text-center">
           <p className="text-[13px] text-text-secondary">{t("memo.noProducts")}</p>
           <p className="text-[12px] text-text-tertiary mt-2">{t("memo.noProductsHint")}</p>
-          <Link
-            href={`/guide/video-links?topic=trend&situation=${encodeURIComponent(situation)}`}
-            className="inline-block mt-3 text-[12px] font-semibold text-accent-700 underline"
-          >
-            {t("memo.addVideoLink")} →
-          </Link>
         </div>
       )}
     </div>

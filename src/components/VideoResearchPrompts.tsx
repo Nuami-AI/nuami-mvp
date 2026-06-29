@@ -2,12 +2,16 @@
 
 import Link from "next/link";
 import { VIDEO_RESEARCH_TOPICS } from "@/lib/shopping/video-research";
+import type { ResultVenue } from "@/lib/results/venue-context";
 
 interface Props {
   situation: string;
+  venue?: ResultVenue;
 }
 
-export default function VideoResearchPrompts({ situation }: Props) {
+export default function VideoResearchPrompts({ situation, venue = "default" }: Props) {
+  if (venue !== "store") return null;
+
   return (
     <section className="mt-6">
       <div className="mb-3">

@@ -1,15 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import type { CulturalEvent } from "@/lib/culture/types";
 import type { TranslationKey } from "@/lib/i18n";
-import { K_BEAUTY_TRENDS } from "@/lib/shopping/video-research";
+import type { ResultVenue } from "@/lib/results/venue-context";
 import type { ContextCard, ExtractionResult } from "@/types/extraction";
-import ShoppingMemoPanel from "@/components/ShoppingMemoPanel";
+import ActionMemoPanel from "@/components/ActionMemoPanel";
 import OliveYoungProducts from "@/components/OliveYoungProducts";
-import VideoResearchPrompts from "@/components/VideoResearchPrompts";
 import KakaoMap from "@/components/KakaoMap";
+import { isShoppingContext } from "@/lib/results/venue-context";
 import {
   ActionStepper,
   ContextCallout,
@@ -19,7 +18,6 @@ import {
 } from "@/components/results-shared";
 
 type ResultsTab = "guide" | "places" | "memo";
-type ResultVenue = "store" | "bank" | "hospital" | "default";
 
 const TABS: { id: ResultsTab; labelKey: TranslationKey }[] = [
   { id: "guide", labelKey: "results.tab.guide" },
@@ -87,51 +85,6 @@ function CultureEvents({ placeName, t }: { placeName: string; t: (k: Translation
   );
 }
 
-function TrendsSection({ situationLabel, venue }: { situationLabel: string; venue: ResultVenue }) {
-  if (venue !== "store") {
-    return (
-      <div className="bg-gradient-to-br from-accent-50 to-pink-50 rounded-2xl border border-accent-100 p-4">
-        <p className="text-[14px] font-bold text-text-primary mb-1">{K_BEAUTY_TRENDS[0]?.label ?? "한국 생활 트렌드"}</p>
-        <p className="text-[12px] text-text-secondary leading-relaxed mb-3">
-          영상 URL을 추가하면 요약본과 키워드를 메모에 쌓을 수 있어요.
-        </p>
-        <Link
-          href={`/guide/video-links?topic=trend&situation=${encodeURIComponent(situationLabel)}`}
-          className="inline-flex items-center justify-center w-full rounded-xl bg-accent-700 text-white text-[13px] font-semibold py-2.5 hover:bg-accent-800 transition-colors"
-        >
-          관련 영상 찾기 →
-        </Link>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div>
-        <h3 className="text-[15px] font-bold text-text-primary">지금 한국의 트렌드</h3>
-        <p className="text-[12px] text-text-secondary mt-1 leading-relaxed">
-          매장 가기 전에 요즘 뜨는 색감·제형을 빠르게 훑어보세요.
-        </p>
-      </div>
-      {K_BEAUTY_TRENDS.slice(0, 2).map((block) => (
-        <div key={block.id} className="bg-white rounded-2xl border border-line-neutral shadow-sm overflow-hidden">
-          <div className="bg-gradient-to-r from-accent-50 to-pink-50 px-4 py-2.5 border-b border-line-neutral">
-            <p className="text-[13px] font-bold text-text-primary">{block.label}</p>
-          </div>
-          <ul className="px-4 py-2.5 flex flex-col gap-1.5">
-            {block.items.slice(0, 3).map((item) => (
-              <li key={item} className="flex items-start gap-2 text-[12px] text-text-secondary">
-                <span className="text-accent-600 shrink-0">•</span>
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export default function ResultsTabLayout({
   data,
   situationLabel,
@@ -151,11 +104,9 @@ export default function ResultsTabLayout({
   const sc = data.situation;
   const systemContext = data.contexts?.[0];
   const insiderContexts = data.contexts?.slice(1) ?? [];
-
-  const productQueries = [
-    ...(data.products ?? []).map((p) => p.searchQuery ?? p.name),
-    ...data.tips.map((tip) => tip.title),
-  ];
+  const products = data.products ?? [];
+  const shoppingContext = isShoppingContext(venue, products.length);
+  const oliveYoungQueries = products.map((p) => p.searchQuery ?? p.name).filter(Boolean);
 
   return (
     <div className="mt-6">
@@ -357,8 +308,8 @@ export default function ResultsTabLayout({
               </div>
             )}
 
-            {(venue === "store" || productQueries.length > 0) && (
-              <OliveYoungProducts queries={productQueries} />
+            {shoppingContext && oliveYoungQueries.length > 0 && (
+              <OliveYoungProducts queries={oliveYoungQueries} />
             )}
 
             <button type="button" onClick={onBack} className="text-[12px] text-text-tertiary underline self-start">
@@ -369,17 +320,13 @@ export default function ResultsTabLayout({
 
         {/* ── Tab 3: Action memo (trends + URL save + memos) ── */}
         {activeTab === "memo" && (
-          <div className="flex flex-col gap-6">
-            <TrendsSection situationLabel={situationLabel} venue={venue} />
-            <ShoppingMemoPanel
-              products={data.products ?? []}
-              situation={situationLabel}
-              sourceUrl={sourceUrl}
-              videoTitle={data.video.title}
-              extraction={data}
-            />
-            <VideoResearchPrompts situation={situationLabel} />
-          </div>
+          <ActionMemoPanel
+            data={data}
+            situation={situationLabel}
+            venue={venue}
+            sourceUrl={sourceUrl}
+            showShoppingExtras={shoppingContext}
+          />
         )}
       </div>
     </div>

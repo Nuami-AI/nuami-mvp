@@ -82,8 +82,16 @@ export default function ExampleCategoryPicker({
   disabled = false,
 }: Props) {
   const { t } = useLanguage();
-  const [activeCategory, setActiveCategory] = useState<CategoryId>("leisure");
-  const active = CATEGORIES.find((c) => c.id === activeCategory) ?? CATEGORIES[0];
+  const [activeCategory, setActiveCategory] = useState<CategoryId | null>(null);
+  const active = activeCategory
+    ? CATEGORIES.find((c) => c.id === activeCategory) ?? null
+    : null;
+
+  function handleExampleClick(exampleKey: TranslationKey, categoryId: CategoryId) {
+    const label = t(exampleKey);
+    setActiveCategory(categoryId);
+    onSituationChange(situation === label ? "" : label);
+  }
 
   return (
     <div className="space-y-3">
@@ -97,7 +105,7 @@ export default function ExampleCategoryPicker({
               key={id}
               type="button"
               disabled={disabled}
-              onClick={() => setActiveCategory(id)}
+              onClick={() => setActiveCategory(isActive ? null : id)}
               className={cn(
                 "flex flex-col items-center gap-1 shrink-0 w-[60px] transition-opacity",
                 isActive ? "opacity-100" : "opacity-55 hover:opacity-80",
@@ -127,29 +135,35 @@ export default function ExampleCategoryPicker({
         })}
       </div>
 
-      <div className="flex flex-wrap justify-center gap-2">
-        {active.examples.map((exampleKey) => {
-          const label = t(exampleKey);
-          const isSelected = situation === label;
-          return (
-            <button
-              key={exampleKey}
-              type="button"
-              disabled={disabled}
-              onClick={() => onSituationChange(isSelected ? "" : label)}
-              className={cn(
-                "px-3 py-2 rounded-full text-[13px] font-medium border transition-colors",
-                isSelected
-                  ? "bg-accent-700 text-white border-accent-700"
-                  : "bg-background text-text-secondary border-line-normal hover:border-accent-300 hover:text-accent-700",
-                disabled && "opacity-50 pointer-events-none",
-              )}
-            >
-              {label}
-            </button>
-          );
-        })}
-      </div>
+      {active ? (
+        <div className="flex flex-wrap justify-center gap-2">
+          {active.examples.map((exampleKey) => {
+            const label = t(exampleKey);
+            const isSelected = situation === label;
+            return (
+              <button
+                key={exampleKey}
+                type="button"
+                disabled={disabled}
+                onClick={() => handleExampleClick(exampleKey, active.id)}
+                className={cn(
+                  "px-3 py-2 rounded-full text-[13px] font-medium border transition-colors",
+                  isSelected
+                    ? "bg-accent-700 text-white border-accent-700"
+                    : "bg-background text-text-secondary border-line-normal hover:border-accent-300 hover:text-accent-700",
+                  disabled && "opacity-50 pointer-events-none",
+                )}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="text-center text-[12px] text-text-disabled">
+          카테고리를 선택하면 예시 검색어가 나타나요
+        </p>
+      )}
     </div>
   );
 }

@@ -221,13 +221,7 @@ export default function InputScreen({
         {/* ── Input Panel ── */}
         <div className="mt-8 lg:mt-0 md:max-w-xl md:mx-auto lg:max-w-none lg:mx-0 space-y-4">
 
-          <ExampleCategoryPicker
-            situation={situation}
-            onSituationChange={onSituationChange}
-            disabled={isLoading}
-          />
-
-          {/* Situation Textarea */}
+          {/* Situation Textarea — search first */}
           <div>
             <p className="text-[13px] font-semibold text-text-secondary mb-2">{t("input.situation.label")}</p>
             <div className="bg-background border border-line-normal rounded-2xl px-4 py-3.5 shadow-sm focus-within:ring-2 focus-within:ring-accent-700 focus-within:ring-offset-1 transition-shadow">
@@ -272,6 +266,12 @@ export default function InputScreen({
               </div>
             )}
           </div>
+
+          <ExampleCategoryPicker
+            situation={situation}
+            onSituationChange={onSituationChange}
+            disabled={isLoading}
+          />
 
           {/* Error */}
           {shownError && (
