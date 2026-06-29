@@ -12,6 +12,7 @@ export interface PromptInput {
   language: string;
   userLanguage: string; // ISO 639-1 code from Accept-Language header
   truncated: boolean;
+  shortForm?: boolean; // Shorts / under ~1 min — scale down extraction counts
   toneStyle?: string;  // "default" | "casual" | "concise" | "expert"
   lifeStage?: string;  // "arrived" | "settling" | "established"
 }
@@ -184,6 +185,8 @@ RULES:
     Include searchQuery in Korean Hangul for Olive Young lookup (e.g. "롬앤 쥬시 래스팅 틴트").
     For non-shopping situations, return an empty products array.
 2.  Aim for 3-6 action steps, 2-5 places, 4-10 phrases, 3-6 tips, 2-4 context cards, 0-8 products.
+    SHORT-FORM OVERRIDE (when user message says short-form): 1-3 actions, 0-2 places,
+    2-5 phrases, 1-3 tips, 1-2 context cards, 0-5 products. Do not pad with invented content.
 3.  Every place's "quote" MUST be a verbatim substring of the provided transcript (or situation text if no transcript).
 4.  video.language = the creator's speaking language detected from transcript text — NOT the hint.
 5.  destinationCountry = the country the VIDEO IS ABOUT, detected from place names, institutions,
@@ -227,6 +230,9 @@ export function buildUserMessage(input: PromptInput): string {
   const meta = [
     `Channel: ${input.videoChannel}`,
     langHint,
+    input.shortForm
+      ? "SHORT-FORM VIDEO: transcript is brief (Shorts / under ~1 minute). Summarize only what is stated; use the smaller target counts from rule 2."
+      : null,
     input.truncated
       ? "Note: the transcript below has been truncated to fit context. Extract from what you can see."
       : null,

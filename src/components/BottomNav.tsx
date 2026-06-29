@@ -5,10 +5,11 @@
 import Link from "next/link";
 import { useLanguage } from "@/lib/i18n";
 
-type TabId = "home" | "content" | "guide" | "bookmark" | "mypage";
+type TabId = "home" | "history" | "content" | "guide" | "bookmark" | "mypage";
 
-const TABS: { id: TabId; labelKey: "nav.home" | "nav.content" | "nav.guide" | "nav.bookmarks" | "nav.mypage"; href: string }[] = [
+const TABS: { id: TabId; labelKey: "nav.home" | "nav.history" | "nav.content" | "nav.guide" | "nav.bookmarks" | "nav.mypage"; href: string }[] = [
   { id: "home",     labelKey: "nav.home",      href: "/" },
+  { id: "history",  labelKey: "nav.history",   href: "/history" },
   { id: "content",  labelKey: "nav.content",   href: "/content" },
   { id: "guide",    labelKey: "nav.guide",     href: "/guide" },
   { id: "bookmark", labelKey: "nav.bookmarks", href: "/saved" },
@@ -27,6 +28,13 @@ function TabIcon({ id, active }: { id: TabId; active: boolean }) {
       <svg width="20" height="20" fill={fill} stroke={stroke} strokeWidth="2" viewBox="0 0 24 24">
         <path d="M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" />
         <path d="M9 21V12h6v9" fill="white" />
+      </svg>
+    );
+  if (id === "history")
+    return (
+      <svg width="20" height="20" fill="none" stroke={stroke} strokeWidth="2" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7v5l3 2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     );
   if (id === "content")
@@ -51,12 +59,14 @@ function TabIcon({ id, active }: { id: TabId; active: boolean }) {
         <path d="M19 21 12 16l-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
       </svg>
     );
-  return (
-    <svg width="20" height="20" fill="none" stroke={stroke} strokeWidth="2" viewBox="0 0 24 24">
-      <circle cx="12" cy="8" r="4" />
-      <path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6" />
-    </svg>
-  );
+  if (id === "mypage")
+    return (
+      <svg width="20" height="20" fill="none" stroke={stroke} strokeWidth="2" viewBox="0 0 24 24">
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6" />
+      </svg>
+    );
+  return null;
 }
 
 export default function BottomNav({ active = "home" }: { active?: TabId }) {

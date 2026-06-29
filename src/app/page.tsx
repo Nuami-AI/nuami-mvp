@@ -3,13 +3,14 @@
 // Design Ref: §5.1 state machine — idle | loading | success | error.
 // Plan SC: FR-05, FR-07, FR-08, FR-09
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import InputScreen from "@/components/InputScreen";
 import PaywallModal from "@/components/PaywallModal";
 import ResultsScreen from "@/components/ResultsScreen";
 import { useLanguage } from "@/lib/i18n";
+import { addSummaryHistory } from "@/lib/history/storage";
 import { loadPreferences } from "@/lib/user/preferences";
 import type { ExtractError, ExtractResponse, ExtractionResult } from "@/types/extraction";
 
@@ -33,6 +34,7 @@ function HomeContent() {
   const { lang } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const autoExtractStarted = useRef(false);
 
   useEffect(() => {
     const s = searchParams.get("situation");
@@ -41,30 +43,13 @@ function HomeContent() {
     if (u) setUrl(u);
   }, [searchParams]);
 
-  useEffect(() => {
-    fetch("/api/usage")
-      .then((r) => {
-        if (r.status === 401) {
-          router.push("/login");
-          return null;
-        }
-        return r.json();
-      })
-      .then((d) => { if (d) setUsageInfo(d as UsageInfo); })
-      .catch(() => {});
-  }, [router]);
+  const doExtract = useCallback(async (situationValue: string, urlValue: string) => {
+    const trimmedSituation = situationValue.trim();
+    const trimmedUrl = urlValue.trim();
+    if (!trimmedSituation) return;
 
-  const logPaywallEvent = async (action: "paywall_cta_click" | "paywall_dismiss", metadata?: object) => {
-    await fetch("/api/usage/event", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, metadata }),
-    }).catch(() => {});
-  };
-
-  const handleExtract = async () => {
-    if (!situation.trim() || status === "loading") return;
-
+    setSituation(trimmedSituation);
+    setUrl(trimmedUrl);
     setStatus("loading");
     setError(null);
 
@@ -74,8 +59,8 @@ function HomeContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          situation: situation.trim(),
-          url: url.trim() || undefined,
+          situation: trimmedSituation,
+          url: trimmedUrl || undefined,
           userLang: lang,
           toneStyle: prefs.toneStyle,
           lifeStage: prefs.lifeStage,
@@ -109,6 +94,11 @@ function HomeContent() {
 
       setData(body.data);
       setStatus("success");
+      addSummaryHistory({
+        situation: trimmedSituation,
+        sourceUrl: trimmedUrl || undefined,
+        data: body.data,
+      });
     } catch {
       setError({
         code: "INTERNAL",
@@ -117,6 +107,49 @@ function HomeContent() {
       });
       setStatus("error");
     }
+  }, [lang, router]);
+
+  useEffect(() => {
+    if (searchParams.get("auto") !== "1") return;
+
+    const s = searchParams.get("situation")?.trim() ?? "";
+    const u = searchParams.get("url")?.trim() ?? "";
+    if (!s || !u || autoExtractStarted.current) return;
+
+    autoExtractStarted.current = true;
+
+    const clean = new URLSearchParams();
+    clean.set("situation", s);
+    clean.set("url", u);
+    router.replace(`/?${clean.toString()}`, { scroll: false });
+
+    void doExtract(s, u);
+  }, [searchParams, router, doExtract]);
+
+  useEffect(() => {
+    fetch("/api/usage")
+      .then((r) => {
+        if (r.status === 401) {
+          router.push("/login");
+          return null;
+        }
+        return r.json();
+      })
+      .then((d) => { if (d) setUsageInfo(d as UsageInfo); })
+      .catch(() => {});
+  }, [router]);
+
+  const logPaywallEvent = async (action: "paywall_cta_click" | "paywall_dismiss", metadata?: object) => {
+    await fetch("/api/usage/event", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, metadata }),
+    }).catch(() => {});
+  };
+
+  const handleExtract = async () => {
+    if (status === "loading") return;
+    await doExtract(situation, url);
   };
 
   const handleBack = () => {

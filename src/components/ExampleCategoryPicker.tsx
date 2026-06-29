@@ -30,6 +30,7 @@ const CATEGORIES: {
     icon: "🍜",
     examples: [
       "input.example.food.dinein",
+      "input.example.food.delivery",
       "input.example.food.mart",
       "input.example.food.online",
     ],

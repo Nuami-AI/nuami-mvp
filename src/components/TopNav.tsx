@@ -9,11 +9,11 @@ import { useLanguage } from "@/lib/i18n";
 // Design Ref: §6.1 platform-pivot — "Video AI" tab renamed to "Guide".
 type TabId = "guide" | "content" | "saved" | "history";
 
-const LINKS: { id: TabId; labelKey: "nav.guide" | "nav.content" | "nav.saved" | "nav.history"; href: string }[] = [
-  { id: "guide",   labelKey: "nav.guide",   href: "/" },
-  { id: "content", labelKey: "nav.content", href: "/content" },
-  { id: "saved",   labelKey: "nav.saved",   href: "/saved" },
-  { id: "history", labelKey: "nav.history", href: "/" },
+const LINKS: { id: TabId; labelKey: "nav.top.guide" | "nav.top.content" | "nav.top.saved" | "nav.top.history"; href: string }[] = [
+  { id: "guide",   labelKey: "nav.top.guide",   href: "/" },
+  { id: "content", labelKey: "nav.top.content", href: "/content" },
+  { id: "saved",   labelKey: "nav.top.saved",   href: "/saved" },
+  { id: "history", labelKey: "nav.top.history", href: "/history" },
 ];
 
 function NuamiLogo() {

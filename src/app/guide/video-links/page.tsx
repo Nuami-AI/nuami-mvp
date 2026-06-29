@@ -1,35 +1,16 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import BottomNav from "@/components/BottomNav";
 import TopNav from "@/components/TopNav";
 import { getVideoResearchTopic, VIDEO_RESEARCH_TOPICS } from "@/lib/shopping/video-research";
-
-const STORAGE_KEY = "nuami-video-links";
-
-function loadSavedLinks(topic: string): string[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [""];
-    const all = JSON.parse(raw) as Record<string, string[]>;
-    return all[topic]?.length ? all[topic] : [""];
-  } catch {
-    return [""];
-  }
-}
-
-function saveLinks(topic: string, links: string[]) {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const all = raw ? (JSON.parse(raw) as Record<string, string[]>) : {};
-    all[topic] = links.filter((l) => l.trim());
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-  } catch {
-    /* ignore */
-  }
-}
+import {
+  buildExtractHomeUrl,
+  loadVideoLinks,
+  saveVideoLinks,
+} from "@/lib/shopping/video-link-storage";
 
 function VideoLinksContent() {
   const router = useRouter();
@@ -43,38 +24,37 @@ function VideoLinksContent() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setLinks(loadSavedLinks(topic.id));
+    setLinks(loadVideoLinks(topic.id));
     setMounted(true);
   }, [topic.id]);
 
+  const savedLinks = useMemo(
+    () => links.map((l) => l.trim()).filter(Boolean),
+    [links],
+  );
+
+  function persistLinks(next: string[]) {
+    setLinks(next);
+    saveVideoLinks(topic.id, next);
+  }
+
   function updateLink(idx: number, value: string) {
-    setLinks((prev) => {
-      const next = [...prev];
-      next[idx] = value;
-      saveLinks(topic.id, next);
-      return next;
-    });
+    persistLinks(links.map((link, i) => (i === idx ? value : link)));
   }
 
   function addRow() {
-    setLinks((prev) => [...prev, ""]);
+    persistLinks([...links, ""]);
   }
 
   function removeRow(idx: number) {
-    setLinks((prev) => {
-      const next = prev.filter((_, i) => i !== idx);
-      saveLinks(topic.id, next);
-      return next.length ? next : [""];
-    });
+    const next = links.filter((_, i) => i !== idx);
+    persistLinks(next.length ? next : [""]);
   }
 
-  function handleSummarize(url: string) {
-    if (!url.trim()) return;
-    const params = new URLSearchParams({
-      situation,
-      url: url.trim(),
-    });
-    router.push(`/?${params.toString()}`);
+  function handleSummarize(videoUrl: string) {
+    const trimmed = videoUrl.trim();
+    if (!trimmed) return;
+    router.push(buildExtractHomeUrl(situation, trimmed));
   }
 
   return (
@@ -100,11 +80,40 @@ function VideoLinksContent() {
           <p className="text-[13px] text-text-primary leading-relaxed">{situation}</p>
         </div>
 
+        {mounted && savedLinks.length > 0 && (
+          <div className="mt-6 bg-white rounded-2xl border border-line-neutral p-4 shadow-sm">
+            <p className="text-[13px] font-bold text-text-primary mb-2">
+              저장된 링크 {savedLinks.length}개
+            </p>
+            <ul className="flex flex-col gap-2">
+              {savedLinks.map((link, idx) => (
+                <li
+                  key={`${link}-${idx}`}
+                  className="flex items-center gap-2 rounded-xl bg-infoBox px-3 py-2"
+                >
+                  <span className="text-[11px] font-semibold text-accent-700 shrink-0">{idx + 1}</span>
+                  <p className="flex-1 min-w-0 text-[12px] text-text-secondary truncate">{link}</p>
+                  <button
+                    type="button"
+                    onClick={() => handleSummarize(link)}
+                    className="shrink-0 rounded-lg bg-accent-700 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-accent-800"
+                  >
+                    요약
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {mounted && (
           <div className="mt-6 flex flex-col gap-4">
             <p className="text-[14px] font-bold text-text-primary">YouTube 링크 추가</p>
             {links.map((link, idx) => (
-              <div key={idx} className="flex flex-col gap-2 bg-white rounded-2xl border border-line-neutral p-4 shadow-sm">
+              <div
+                key={`row-${idx}-${link.slice(0, 24)}`}
+                className="flex flex-col gap-2 bg-white rounded-2xl border border-line-neutral p-4 shadow-sm"
+              >
                 <label className="text-[12px] font-medium text-text-tertiary">링크 {idx + 1}</label>
                 <input
                   type="url"
@@ -122,7 +131,7 @@ function VideoLinksContent() {
                   >
                     뉴아미로 요약하기
                   </button>
-                  {links.length > 1 && (
+                  {(links.length > 1 || link.trim()) && (
                     <button
                       type="button"
                       onClick={() => removeRow(idx)}

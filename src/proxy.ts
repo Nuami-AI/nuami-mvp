@@ -9,6 +9,8 @@ export const config = {
     "/",
     "/content/:path*",
     "/mypage/:path*",
+    "/history",
+    "/saved/:path*",
     "/guide/:path*",
     "/video-ai/:path*",
     "/admin/:path*",
@@ -39,6 +41,7 @@ export async function proxy(request: NextRequest) {
 
 function redirectToLogin(request: NextRequest) {
   const loginUrl = new URL("/login", request.url);
-  loginUrl.searchParams.set("redirect", request.nextUrl.pathname);
+  const redirectTarget = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+  loginUrl.searchParams.set("redirect", redirectTarget);
   return NextResponse.redirect(loginUrl);
 }

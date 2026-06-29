@@ -17,6 +17,10 @@ import {
   TranscriptTooShortError,
   TranscriptUnavailableError,
 } from "@/lib/extract/transcript/types";
+import {
+  MIN_TRANSCRIPT_CHARS,
+  SHORT_FORM_TRANSCRIPT_CHARS,
+} from "@/lib/extract/transcript/constants";
 import { youtubeTranscriptFetcher } from "@/lib/extract/transcript/youtube";
 import type {
   ExtractError,
@@ -30,8 +34,6 @@ import { checkGate, logEvent as logUsageEvent } from "@/lib/usage/tracker";
 
 export const runtime = "nodejs"; // Anthropic SDK requires Node
 export const dynamic = "force-dynamic"; // never cache — every call hits Claude
-
-const MIN_TRANSCRIPT_CHARS = 200;
 
 export async function POST(request: Request): Promise<Response> {
   const requestId = crypto.randomUUID();
@@ -165,8 +167,8 @@ export async function POST(request: Request): Promise<Response> {
     if (transcriptData.text.length < MIN_TRANSCRIPT_CHARS) {
       return emitError(requestId, url, "youtube", startedAt, {
         code: "TRANSCRIPT_TOO_SHORT",
-        message: "This video is too short to extract from.",
-        hint: "Try a video that's at least 1 minute long.",
+        message: "Not enough captions to summarize this video.",
+        hint: "Try a video with spoken narration or auto-captions (Shorts are OK if subtitles exist).",
       });
     }
 
@@ -190,6 +192,7 @@ export async function POST(request: Request): Promise<Response> {
       language: videoLanguage,
       userLanguage,
       truncated,
+      shortForm: transcriptText.length <= SHORT_FORM_TRANSCRIPT_CHARS,
       toneStyle: bodyToneStyle,
       lifeStage: bodyLifeStage,
     });

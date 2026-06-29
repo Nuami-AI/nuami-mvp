@@ -6,7 +6,7 @@ import TopNav from "./TopNav";
 import BottomNav from "./BottomNav";
 
 type TopTabId = "guide" | "content" | "saved" | "history";
-type BottomTabId = "home" | "content" | "guide" | "bookmark" | "mypage";
+type BottomTabId = "home" | "history" | "content" | "guide" | "bookmark" | "mypage";
 
 interface Props {
   topNav?: TopTabId;
