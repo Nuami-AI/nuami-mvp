@@ -45,3 +45,5 @@ claude
 gemini
 .jun_memo
 .siri
+.bkit/*
+.claude/*

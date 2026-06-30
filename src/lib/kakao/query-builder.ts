@@ -9,6 +9,45 @@ interface BuildQueriesInput {
   whereTo?: string[];
 }
 
+/** Generic landmarks — only used when the user did not express a specific place intent. */
+const GENERIC_LANDMARK_QUERIES = new Set([
+  "서울역",
+  "명동",
+  "강남역",
+  "홍대입구",
+  "이태원",
+]);
+
+const PLACE_INTENT_RULES: { pattern: RegExp; query: string }[] = [
+  {
+    pattern:
+      /카페|커피|coffee|cafe|ラーテ|ラテ|コーヒー|カフェ|라떼|아메리카노|에스프레소|스타벅스|이디야|투썸/i,
+    query: "카페",
+  },
+  {
+    pattern:
+      /맛집|음식|식당|밥|restaurant|food|먹|レストラン|飲食店|メニュー|注文|居酒屋|定食|料理|レストラン/i,
+    query: "맛집",
+  },
+  { pattern: /편의점|convenience|cu\b|gs25|コンビニ|コンビニエンス/i, query: "편의점" },
+  { pattern: /마트|슈퍼|supermarket|grocery|スーパー|スーパーマーケット/i, query: "마트" },
+  { pattern: /약국|pharmacy|薬局|ドラッグストア/i, query: "약국" },
+  { pattern: /병원|의원|clinic|hospital|病院|クリニック/i, query: "병원" },
+  { pattern: /은행|bank|account|계좌|銀行/i, query: "은행" },
+  { pattern: /올리브영|올영|olive\s*young|oliveyoung|드럭스토어|화장품|뷰티/i, query: "올리브영" },
+  { pattern: /다이소|daiso/i, query: "다이소" },
+  { pattern: /지하철|subway|metro|地下鉄|駅/i, query: "지하철역" },
+  { pattern: /버스|택시|bus|taxi/i, query: "버스정류장" },
+  { pattern: /공항|airport/i, query: "인천국제공항" },
+  {
+    pattern:
+      /기숙사|원룸|전세|월세|부동산|주거|dorm|rent|방|집|하우스|housing|apartment|숙소|임대|구하|lease|flat|room|셰어|쉐어|하숙|자취|거주/i,
+    query: "부동산",
+  },
+  { pattern: /학교|대학|교수|수강|campus|university|school/i, query: "대학교" },
+  { pattern: /유학|study\s*abroad|international\s*student/i, query: "유학생 기숙사" },
+];
+
 const BRAND_PATTERNS: { pattern: RegExp; query: string }[] = [
   { pattern: /올리브영|올영|olive\s*young|oliveyoung/i, query: "올리브영" },
   { pattern: /다이소|daiso/i, query: "다이소" },
@@ -21,6 +60,95 @@ const BRAND_PATTERNS: { pattern: RegExp; query: string }[] = [
   { pattern: /신한|국민|우리|하나|kb|nh/i, query: "은행" },
   { pattern: /서울역|강남역|홍대|명동|이태원|신촌|성수|여의도/i, query: "" },
 ];
+
+function normalizeSituation(situation: string): string {
+  return situation.replace(/[?？!！.。~…]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function isNaturalLanguageSentence(text: string): boolean {
+  const n = normalizeSituation(text);
+  return (
+    n.length > 14 ||
+    /(싶어|하고|인데|어디|알려|추천|방법|왔는데|싶다|どう|すれば|なのに|です|ます|？|\?)/.test(n)
+  );
+}
+
+/** Local-language search terms for Google Maps (non-Korea destinations). */
+const GOOGLE_LOCAL_QUERIES: { pattern: RegExp; byCountry: Record<string, string> }[] = [
+  {
+    pattern: /レストラン|飲食店|メニュー|注文|居酒屋|定食|料理|restaurant|food|맛집|식당/i,
+    byCountry: { JP: "レストラン", KR: "맛집", default: "restaurant" },
+  },
+  {
+    pattern: /カフェ|コーヒー|coffee|cafe|카페|커피/i,
+    byCountry: { JP: "カフェ", KR: "카페", default: "cafe" },
+  },
+  {
+    pattern: /コンビニ|편의점|convenience/i,
+    byCountry: { JP: "コンビニ", KR: "편의점", default: "convenience store" },
+  },
+  {
+    pattern: /薬局|ドラッグストア|약국|pharmacy/i,
+    byCountry: { JP: "薬局", KR: "약국", default: "pharmacy" },
+  },
+  {
+    pattern: /病院|クリニック|병원|hospital/i,
+    byCountry: { JP: "病院", KR: "병원", default: "hospital" },
+  },
+  {
+    pattern: /銀行|은행|bank/i,
+    byCountry: { JP: "銀行", KR: "은행", default: "bank" },
+  },
+  {
+    pattern: /地下鉄|駅|지하철|subway/i,
+    byCountry: { JP: "地下鉄駅", KR: "지하철역", default: "subway station" },
+  },
+];
+
+export function resolveGoogleMapQuery(
+  situation: string,
+  country: string,
+): { primary: string; queries: string[] } {
+  const text = normalizeSituation(situation);
+  const queries: string[] = [];
+
+  for (const { pattern, byCountry } of GOOGLE_LOCAL_QUERIES) {
+    if (pattern.test(text)) {
+      const q = byCountry[country] ?? byCountry.default;
+      if (!queries.includes(q)) queries.push(q);
+    }
+  }
+
+  const primary = queries[0] ?? (country === "JP" ? "レストラン" : "restaurant");
+  return { primary, queries: queries.length > 0 ? queries : [primary] };
+}
+
+function housingSupplementQueries(situation: string): string[] {
+  const text = normalizeSituation(situation);
+  const housing =
+    /기숙사|원룸|전세|월세|부동산|주거|dorm|rent|방|집|하우스|housing|apartment|숙소|임대|구하|lease|flat|room|셰어|쉐어|하숙|자취|거주/i;
+  if (!housing.test(text)) return [];
+
+  const extras = ["부동산중개"];
+  if (/원룸|방|자취|room/i.test(text)) extras.push("원룸");
+  if (/유학|study\s*abroad|international\s*student/i.test(text)) extras.push("유학생 원룸");
+  return extras;
+}
+
+export function extractPlaceIntentQueries(situation: string): string[] {
+  const text = normalizeSituation(situation);
+  const seen = new Set<string>();
+  const queries: string[] = [];
+
+  for (const { pattern, query } of PLACE_INTENT_RULES) {
+    if (pattern.test(text) && !seen.has(query)) {
+      seen.add(query);
+      queries.push(query);
+    }
+  }
+
+  return queries;
+}
 
 function extractAreaHints(situation: string): string[] {
   const hints: string[] = [];
@@ -38,33 +166,16 @@ function extractAreaHints(situation: string): string[] {
 }
 
 function venueDefaults(venue: ResultVenue, situation: string): string[] {
+  const intents = extractPlaceIntentQueries(situation);
+  if (intents.length > 0) return intents;
+
   const s = situation.toLowerCase();
 
-  if (/음식|배달|주문|식당|맛집|food|delivery|mart|마트|편의점/i.test(s) &&
-      !/쇼핑|올리브|할인|핫플|뷰티|화장품|드럭스토어/i.test(s)) {
-    return ["맛집", "편의점", "마트"];
-  }
-  if (venue === "store" || /쇼핑|할인|핫플|핫템|매장|뷰티|화장품|드럭스토어|shopping|cosmetic/i.test(s)) {
-    return ["올리브영", "드럭스토어", "명동"];
-  }
-  if (venue === "bank" || /은행|계좌|bank|account/i.test(s)) {
-    return ["외국인 친화 은행", "KEB하나은행"];
-  }
-  if (venue === "hospital" || /병원|약국|hospital|clinic|pharmacy/i.test(s)) {
-    return ["병원", "약국"];
-  }
-  if (/지하철|subway|metro/i.test(s)) return ["지하철역", "서울역"];
-  if (/버스|택시|bus|taxi/i.test(s)) return ["버스정류장", "서울역"];
-  if (/공항|airport/i.test(s)) return ["인천국제공항", "김포공항"];
-  if (/고속버스|터미널/i.test(s)) return ["고속버스터미널", "경부고속터미널"];
-  if (/기숙사|원룸|전세|월세|부동산|주거|dorm|rent/i.test(s)) {
-    return ["부동산", "대학교 기숙사"];
-  }
-  if (/학교|교수|수강|campus|university|school/i.test(s)) {
-    return ["대학교", "학교 행정실"];
-  }
+  if (venue === "store") return ["올리브영", "드럭스토어"];
+  if (venue === "bank") return ["외국인 친화 은행", "KEB하나은행"];
+  if (venue === "hospital") return ["병원", "약국"];
 
-  return ["서울역", "명동"];
+  return [];
 }
 
 export function buildKakaoSearchQueries({
@@ -75,6 +186,7 @@ export function buildKakaoSearchQueries({
 }: BuildQueriesInput): string[] {
   const queries: string[] = [];
   const trimmed = situation.trim();
+  const normalized = normalizeSituation(trimmed);
 
   for (const place of places) {
     if (place.nameKo?.trim()) queries.push(place.nameKo.trim());
@@ -88,31 +200,108 @@ export function buildKakaoSearchQueries({
     if (item.trim()) queries.push(item.trim());
   }
 
+  queries.push(...extractPlaceIntentQueries(trimmed));
+  queries.push(...housingSupplementQueries(trimmed));
+
+  const areaHints = extractAreaHints(trimmed);
+  const intents = extractPlaceIntentQueries(trimmed);
+  if (areaHints[0] && intents[0]) {
+    queries.push(`${areaHints[0]} ${intents[0]}`);
+  }
+
   for (const { pattern, query } of BRAND_PATTERNS) {
     if (query && pattern.test(trimmed)) queries.push(query);
   }
 
-  queries.push(...extractAreaHints(trimmed));
+  queries.push(...areaHints);
 
-  const defaults = venueDefaults(venue, trimmed);
-  queries.push(...defaults);
+  if (intents.length === 0 && normalized.length >= 2 && normalized.length <= 14 && !isNaturalLanguageSentence(normalized)) {
+    queries.push(normalized);
+  }
 
-  if (trimmed.length <= 20 && !/[?？]/.test(trimmed)) {
-    queries.unshift(trimmed);
+  const hasSpecificIntent =
+    places.length > 0 ||
+    whereTo.length > 0 ||
+    intents.length > 0 ||
+    areaHints.length > 0;
+
+  if (!hasSpecificIntent) {
+    queries.push(...venueDefaults(venue, trimmed));
   }
 
   const seen = new Set<string>();
-  const normalized: string[] = [];
+  const normalizedQueries: string[] = [];
   for (const q of queries) {
     const key = q.trim();
     if (!key || key.length < 2 || seen.has(key)) continue;
     seen.add(key);
-    normalized.push(key);
+    normalizedQueries.push(key);
   }
 
-  return normalized.slice(0, 8);
+  return normalizedQueries.slice(0, 8);
 }
 
 export function pickPrimaryKakaoQuery(queries: string[]): string {
-  return queries.find((q) => q.length >= 2) ?? "서울역";
+  const housing = queries.find((q) => q === "부동산" || q === "원룸" || q === "부동산중개");
+  if (housing) return housing;
+
+  const intent = queries.find((q) =>
+    PLACE_INTENT_RULES.some((rule) => rule.query === q),
+  );
+  if (intent) return intent;
+
+  const nonGeneric = queries.find((q) => q.length >= 2 && !GENERIC_LANDMARK_QUERIES.has(q) && !isNaturalLanguageSentence(q));
+  if (nonGeneric) return nonGeneric;
+
+  return queries.find((q) => q.length >= 2 && !isNaturalLanguageSentence(q)) ?? "";
+}
+
+export function resolveMapSearchQuery({
+  situation,
+  venue,
+  places = [],
+  whereTo = [],
+  explicitQuery = "",
+}: BuildQueriesInput & { explicitQuery?: string }): { primary: string; queries: string[] } {
+  const built = buildKakaoSearchQueries({ situation, venue, places, whereTo });
+  const intents = extractPlaceIntentQueries(situation);
+  const areaHints = extractAreaHints(situation);
+  const hasSpecific =
+    places.length > 0 || whereTo.length > 0 || intents.length > 0 || areaHints.length > 0;
+
+  let primary = "";
+  if (places[0]?.nameKo?.trim()) primary = places[0].nameKo.trim();
+  else if (places[0]?.name?.trim()) primary = places[0].name.trim();
+  else if (whereTo[0]?.trim()) primary = whereTo[0].trim();
+  else if (areaHints[0] && intents[0]) primary = `${areaHints[0]} ${intents[0]}`;
+  else if (intents[0]) primary = intents[0] === "유학생 기숙사" ? "부동산" : intents[0];
+  else {
+    const explicit = normalizeSituation(explicitQuery);
+    if (
+      explicit.length >= 2 &&
+      explicit.length <= 14 &&
+      !isNaturalLanguageSentence(explicit)
+    ) {
+      primary = explicit;
+    } else {
+      primary = pickPrimaryKakaoQuery(built);
+    }
+  }
+
+  const merged = [primary, ...built, ...whereTo].filter(Boolean);
+  const seen = new Set<string>();
+  const queries: string[] = [];
+
+  for (const q of merged) {
+    const key = q.trim();
+    if (!key || key.length < 2 || seen.has(key)) continue;
+    if (hasSpecific && GENERIC_LANDMARK_QUERIES.has(key) && key !== primary) continue;
+    seen.add(key);
+    queries.push(key);
+  }
+
+  return {
+    primary: primary || queries[0] || "",
+    queries: queries.slice(0, 6),
+  };
 }

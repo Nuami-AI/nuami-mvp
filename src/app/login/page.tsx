@@ -15,8 +15,11 @@ function LoginForm() {
 
   // Design §5.1 — already-logged-in users are redirected away from /login
   useEffect(() => {
-    fetch("/api/usage")
-      .then((r) => { if (r.ok) router.replace("/"); })
+    fetch("/api/auth/session")
+      .then((r) => r.json())
+      .then((data: { authenticated?: boolean }) => {
+        if (data.authenticated) router.replace("/");
+      })
       .catch(() => {});
   }, [router]);
 

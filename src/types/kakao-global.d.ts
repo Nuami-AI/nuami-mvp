@@ -13,6 +13,16 @@ declare global {
           setCenter: (latlng: unknown) => void;
         };
         Marker: new (options: { map: unknown; position: unknown; title?: string }) => unknown;
+        Circle: new (options: {
+          map: unknown;
+          center: unknown;
+          radius: number;
+          strokeWeight?: number;
+          strokeColor?: string;
+          strokeOpacity?: number;
+          fillColor?: string;
+          fillOpacity?: number;
+        }) => unknown;
         InfoWindow: new (options: { content: string }) => {
           open: (map: unknown, marker: unknown) => void;
         };

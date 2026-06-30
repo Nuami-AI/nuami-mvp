@@ -9,6 +9,7 @@ import { useSaves } from "@/lib/saves/hooks";
 import TopNav from "./TopNav";
 import BottomNav from "./BottomNav";
 import { detectResultVenue, type ResultVenue } from "@/lib/results/venue-context";
+import { resolveMapSearchQuery } from "@/lib/kakao/query-builder";
 
 interface Props {
   data: ExtractionResult;
@@ -72,7 +73,13 @@ export default function ResultsScreen({ data, onBack, situation, sourceUrl }: Pr
     ? interpolate(t("results.hero.title"), { name: displayName, situation: situationLabel })
     : interpolate(t("results.hero.titleNoName"), { situation: situationLabel });
 
-  const mapQuery = data.places[0]?.name ?? sc.whereTo[0] ?? situationLabel;
+  const mapSearch = resolveMapSearchQuery({
+    situation: situationLabel,
+    venue,
+    places: data.places,
+    whereTo: sc.whereTo,
+  });
+  const mapQuery = mapSearch.primary || situationLabel;
   const hasPlaces = data.places.length > 0;
 
   const handleShare = useCallback(async () => {
@@ -159,6 +166,7 @@ export default function ResultsScreen({ data, onBack, situation, sourceUrl }: Pr
           actionsTitle={actionsTitle}
           systemContextLabel={systemContextLabel}
           mapQuery={mapQuery}
+          destinationCountry={data.video.destinationCountry}
           hasPlaces={hasPlaces}
           sourceUrl={sourceUrl}
           onBack={onBack}

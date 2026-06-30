@@ -7,7 +7,8 @@ import type { ResultVenue } from "@/lib/results/venue-context";
 import type { ContextCard, ExtractionResult } from "@/types/extraction";
 import ActionMemoPanel from "@/components/ActionMemoPanel";
 import OliveYoungProducts from "@/components/OliveYoungProducts";
-import KakaoMap from "@/components/KakaoMap";
+import PlacesMap from "@/components/PlacesMap";
+import { detectDestinationCountry, usesKakaoMap } from "@/lib/geo/destination-country";
 import { isShoppingContext } from "@/lib/results/venue-context";
 import {
   ActionStepper,
@@ -35,6 +36,7 @@ interface Props {
   actionsTitle: string;
   systemContextLabel: string;
   mapQuery: string;
+  destinationCountry?: string | null;
   hasPlaces: boolean;
   sourceUrl?: string;
   onBack: () => void;
@@ -93,6 +95,7 @@ export default function ResultsTabLayout({
   actionsTitle,
   systemContextLabel,
   mapQuery,
+  destinationCountry,
   hasPlaces,
   sourceUrl,
   onBack,
@@ -107,6 +110,8 @@ export default function ResultsTabLayout({
   const products = data.products ?? [];
   const shoppingContext = isShoppingContext(venue, products.length);
   const oliveYoungQueries = products.map((p) => p.searchQuery ?? p.name).filter(Boolean);
+  const destination = detectDestinationCountry(situationLabel, destinationCountry);
+  const showKakaoLinks = usesKakaoMap(destination);
 
   return (
     <div className="mt-6">
@@ -253,29 +258,32 @@ export default function ResultsTabLayout({
 
             {(hasPlaces || sc.whereTo.length > 0 || mapQuery) ? (
               <>
-                <KakaoMap
-                  query={mapQuery}
+                <PlacesMap
                   situation={situationLabel}
                   venue={venue}
-                  additionalQueries={[
-                    ...data.places.map((p) => p.nameKo ?? p.name),
-                    ...sc.whereTo,
-                  ]}
+                  mapQuery={mapQuery}
+                  destinationCountry={destinationCountry}
+                  places={data.places}
+                  whereTo={sc.whereTo}
                 />
                 <div className="flex gap-2">
+                  {showKakaoLinks ? (
+                    <a
+                      href={`https://map.kakao.com/link/search/${encodeURIComponent(mapQuery)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 text-center rounded-xl border border-line-neutral bg-white py-2.5 text-[13px] font-semibold text-text-primary hover:bg-infoBox transition-colors"
+                    >
+                      {t("results.mapKakao")}
+                    </a>
+                  ) : null}
                   <a
-                    href={`https://map.kakao.com/link/search/${encodeURIComponent(mapQuery)}`}
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                      mapQuery + (showKakaoLinks ? " 한국" : ""),
+                    )}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 text-center rounded-xl border border-line-neutral bg-white py-2.5 text-[13px] font-semibold text-text-primary hover:bg-infoBox transition-colors"
-                  >
-                    {t("results.mapKakao")}
-                  </a>
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery + " 한국")}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 text-center rounded-xl border border-line-neutral bg-white py-2.5 text-[13px] font-semibold text-text-primary hover:bg-infoBox transition-colors"
+                    className={`${showKakaoLinks ? "flex-1" : "w-full"} text-center rounded-xl border border-line-neutral bg-white py-2.5 text-[13px] font-semibold text-text-primary hover:bg-infoBox transition-colors`}
                   >
                     {t("results.mapGoogle")}
                   </a>

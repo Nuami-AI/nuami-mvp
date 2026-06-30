@@ -8,4 +8,5 @@ export interface KakaoLocalPlace {
   placeUrl: string;
   phone: string;
   category: string;
+  distanceMeters?: number;
 }
