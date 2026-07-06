@@ -10,18 +10,16 @@ import type { SavedItem } from "@/types/saves";
 function SavedRow({
   item,
   onToggle,
-  onMemo,
   onRemove,
 }: {
   item: SavedItem;
   onToggle: (id: string) => void;
-  onMemo: (id: string, memo: string) => void;
   onRemove: (id: string) => void;
 }) {
   const { t } = useLanguage();
 
   return (
-    <div className={`bg-white rounded-2xl border shadow-sm p-4 ${item.checked ? "border-line-neutral opacity-60" : "border-line-neutral"}`}>
+    <div className={`bg-white rounded-2xl border-2 shadow-sm p-4 ${item.checked ? "border-line-neutral opacity-60" : "border-line-neutral"}`}>
       <div className="flex items-start gap-3">
         <button
           type="button"
@@ -38,33 +36,28 @@ function SavedRow({
         </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
-            <div>
+            <div className="flex-1 min-w-0">
               <span className="text-[10px] font-semibold text-accent-700 uppercase">{item.type}</span>
               <p className={`text-[14px] font-bold text-text-primary leading-snug ${item.checked ? "line-through" : ""}`}>
                 {item.title}
               </p>
               {item.body && (
-                <p className="text-[12px] text-text-secondary mt-1 line-clamp-2">{item.body}</p>
+                <p className={`text-[12px] text-text-secondary mt-1 leading-relaxed ${item.type === "memo" ? "whitespace-pre-wrap" : "line-clamp-2"}`}>
+                  {item.body}
+                </p>
               )}
-              {item.situation && (
+              {item.situation && item.type !== "memo" && (
                 <p className="text-[11px] text-text-disabled mt-1">📍 {item.situation}</p>
               )}
             </div>
             <button
               type="button"
               onClick={() => onRemove(item.id)}
-              className="text-[11px] text-text-disabled shrink-0"
+              className="text-[11px] text-text-disabled shrink-0 px-1"
             >
               {t("saved.remove")}
             </button>
           </div>
-          <textarea
-            defaultValue={item.memo ?? ""}
-            onBlur={(e) => onMemo(item.id, e.target.value)}
-            placeholder={t("memo.placeholder")}
-            rows={2}
-            className="mt-2 w-full text-[12px] bg-infoBox border border-line-neutral rounded-xl px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-accent-200"
-          />
           <div className="flex flex-wrap gap-2 mt-2">
             {item.sourceUrl && (
               <a
@@ -100,11 +93,17 @@ function SavedRow({
 
 export default function SavedPage() {
   const { t } = useLanguage();
-  const { items, toggleChecked, setMemo, remove } = useSaves();
+  const { items, toggleChecked, remove } = useSaves();
 
   const products = items.filter((i) => i.type === "product");
   const guides = items.filter((i) => i.type === "guide");
-  const others = items.filter((i) => i.type !== "product" && i.type !== "guide");
+  const memos = items.filter((i) => i.type === "memo");
+  const bookmarks = items.filter(
+    (i) => i.type === "phrase" || i.type === "place",
+  );
+  const others = items.filter(
+    (i) => i.type !== "product" && i.type !== "guide" && i.type !== "phrase" && i.type !== "place" && i.type !== "memo",
+  );
 
   return (
     <PageShell topNav="guide" bottomNav="bookmark">
@@ -133,7 +132,7 @@ export default function SavedPage() {
                 </h2>
                 <div className="space-y-3">
                   {products.map((item) => (
-                    <SavedRow key={item.id} item={item} onToggle={toggleChecked} onMemo={setMemo} onRemove={remove} />
+                    <SavedRow key={item.id} item={item} onToggle={toggleChecked} onRemove={remove} />
                   ))}
                 </div>
               </section>
@@ -145,7 +144,31 @@ export default function SavedPage() {
                 </h2>
                 <div className="space-y-3">
                   {guides.map((item) => (
-                    <SavedRow key={item.id} item={item} onToggle={toggleChecked} onMemo={setMemo} onRemove={remove} />
+                    <SavedRow key={item.id} item={item} onToggle={toggleChecked} onRemove={remove} />
+                  ))}
+                </div>
+              </section>
+            )}
+            {memos.length > 0 && (
+              <section>
+                <h2 className="text-[14px] font-bold text-text-primary mb-3 border-l-4 border-accent-700 pl-2">
+                  ✍️ {t("saved.memos")} ({memos.length})
+                </h2>
+                <div className="space-y-3">
+                  {memos.map((item) => (
+                    <SavedRow key={item.id} item={item} onToggle={toggleChecked} onRemove={remove} />
+                  ))}
+                </div>
+              </section>
+            )}
+            {bookmarks.length > 0 && (
+              <section>
+                <h2 className="text-[14px] font-bold text-text-primary mb-3 border-l-4 border-accent-700 pl-2">
+                  {t("saved.items")} ({bookmarks.length})
+                </h2>
+                <div className="space-y-3">
+                  {bookmarks.map((item) => (
+                    <SavedRow key={item.id} item={item} onToggle={toggleChecked} onRemove={remove} />
                   ))}
                 </div>
               </section>
@@ -155,7 +178,7 @@ export default function SavedPage() {
                 <h2 className="text-[14px] font-bold text-text-primary mb-3">{t("saved.other")}</h2>
                 <div className="space-y-3">
                   {others.map((item) => (
-                    <SavedRow key={item.id} item={item} onToggle={toggleChecked} onMemo={setMemo} onRemove={remove} />
+                    <SavedRow key={item.id} item={item} onToggle={toggleChecked} onRemove={remove} />
                   ))}
                 </div>
               </section>

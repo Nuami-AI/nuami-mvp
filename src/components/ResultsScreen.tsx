@@ -9,6 +9,7 @@ import { useSaves } from "@/lib/saves/hooks";
 import TopNav from "./TopNav";
 import BottomNav from "./BottomNav";
 import { detectResultVenue, type ResultVenue } from "@/lib/results/venue-context";
+import { summarizeSituationQuery } from "@/lib/results/encouragement";
 import { resolveMapSearchQuery } from "@/lib/kakao/query-builder";
 
 interface Props {
@@ -61,17 +62,14 @@ export default function ResultsScreen({ data, onBack, situation, sourceUrl }: Pr
 
   const sc = data.situation;
   const situationLabel = situation?.trim() || sc.summary;
+  const topicShort = summarizeSituationQuery(situationLabel);
   const venue = detectResultVenue(situationLabel);
   const actionsTitle = t(venueKey(venue, "results.actions.title"));
   const placesTitle = t(venueKey(venue, "results.places.title"));
   const systemContextLabel = t(venueKey(venue, "results.contexts.system"));
-  const heroSubtitle =
-    venue === "store"
-      ? t("results.hero.subtitle.store" as TranslationKey)
-      : t("results.hero.subtitle");
   const heroTitle = displayName
-    ? interpolate(t("results.hero.title"), { name: displayName, situation: situationLabel })
-    : interpolate(t("results.hero.titleNoName"), { situation: situationLabel });
+    ? interpolate(t("results.hero.title"), { name: displayName, topic: topicShort })
+    : topicShort;
 
   const mapSearch = resolveMapSearchQuery({
     situation: situationLabel,
@@ -80,7 +78,6 @@ export default function ResultsScreen({ data, onBack, situation, sourceUrl }: Pr
     whereTo: sc.whereTo,
   });
   const mapQuery = mapSearch.primary || situationLabel;
-  const hasPlaces = data.places.length > 0;
 
   const handleShare = useCallback(async () => {
     const text = `${heroTitle}\n${sc.summary}`;
@@ -153,9 +150,6 @@ export default function ResultsScreen({ data, onBack, situation, sourceUrl }: Pr
           <h1 className="text-[20px] font-bold text-text-primary leading-snug">
             {heroTitle}
           </h1>
-          <p className="text-[13px] text-text-secondary mt-2 leading-relaxed">
-            {heroSubtitle}
-          </p>
         </section>
 
         <ResultsTabLayout
@@ -167,7 +161,6 @@ export default function ResultsScreen({ data, onBack, situation, sourceUrl }: Pr
           systemContextLabel={systemContextLabel}
           mapQuery={mapQuery}
           destinationCountry={data.video.destinationCountry}
-          hasPlaces={hasPlaces}
           sourceUrl={sourceUrl}
           onBack={onBack}
           t={t}

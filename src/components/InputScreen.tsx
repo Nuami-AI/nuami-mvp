@@ -221,17 +221,28 @@ export default function InputScreen({
         {/* ── Input Panel ── */}
         <div className="mt-8 lg:mt-0 md:max-w-xl md:mx-auto lg:max-w-none lg:mx-0 space-y-4">
 
-          {/* Situation Textarea — search first */}
-          <div>
-            <p className="text-[13px] font-semibold text-text-secondary mb-2">{t("input.situation.label")}</p>
-            <div className="bg-background border border-line-normal rounded-2xl px-4 py-3.5 shadow-sm focus-within:ring-2 focus-within:ring-accent-700 focus-within:ring-offset-1 transition-shadow">
+          <ExampleCategoryPicker
+            situation={situation}
+            onSituationChange={onSituationChange}
+            disabled={isLoading}
+          />
+
+          {/* Prominent search bar — Trip.com style, 16px prevents iOS zoom */}
+          <div className="relative">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-accent-700 pointer-events-none">
+              <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" strokeLinecap="round" />
+              </svg>
+            </div>
+            <div className="bg-white border-2 border-accent-200 rounded-2xl pl-12 pr-4 py-4 shadow-md focus-within:border-accent-700 focus-within:shadow-lg transition-all">
               <textarea
-                rows={3}
+                rows={2}
                 value={situation}
                 onChange={(e) => onSituationChange(e.target.value)}
                 placeholder={t("input.situation.placeholder")}
                 disabled={isLoading}
-                className="w-full text-[13px] text-text-primary outline-none placeholder:text-text-disabled bg-transparent resize-none disabled:opacity-60 leading-relaxed"
+                className="w-full text-base text-text-primary outline-none placeholder:text-text-disabled bg-transparent resize-none disabled:opacity-60 leading-relaxed"
               />
             </div>
           </div>
@@ -256,7 +267,7 @@ export default function InputScreen({
                   onChange={(e) => onUrlChange(e.target.value)}
                   placeholder={t("input.url.placeholder")}
                   disabled={isLoading}
-                  className="flex-1 text-[13px] text-text-primary outline-none placeholder:text-text-disabled bg-transparent min-w-0 disabled:opacity-60"
+                  className="flex-1 text-base text-text-primary outline-none placeholder:text-text-disabled bg-transparent min-w-0 disabled:opacity-60"
                 />
                 {url && !isLoading && (
                   <button onClick={() => onUrlChange("")} className="ml-2 shrink-0" aria-label="Clear URL">
@@ -266,12 +277,6 @@ export default function InputScreen({
               </div>
             )}
           </div>
-
-          <ExampleCategoryPicker
-            situation={situation}
-            onSituationChange={onSituationChange}
-            disabled={isLoading}
-          />
 
           {/* Error */}
           {shownError && (

@@ -1,21 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import type { CulturalEvent } from "@/lib/culture/types";
+import { useState } from "react";
 import type { TranslationKey } from "@/lib/i18n";
 import type { ResultVenue } from "@/lib/results/venue-context";
-import type { ContextCard, ExtractionResult } from "@/types/extraction";
+import type { ContextCard, ExtractionResult, Tip } from "@/types/extraction";
 import ActionMemoPanel from "@/components/ActionMemoPanel";
+import GuideHero from "@/components/GuideHero";
 import OliveYoungProducts from "@/components/OliveYoungProducts";
 import PlacesMap from "@/components/PlacesMap";
+import SaveableItemCard, { InfoItemCard } from "@/components/SaveableItemCard";
+import { SectionCard } from "@/components/ui/section-card";
 import { detectDestinationCountry, usesKakaoMap } from "@/lib/geo/destination-country";
 import { isShoppingContext } from "@/lib/results/venue-context";
 import {
   ActionStepper,
   ContextCallout,
-  PlaceRow,
-  TipsCarousel,
-  useBookmarkSet,
 } from "@/components/results-shared";
 
 type ResultsTab = "guide" | "places" | "memo";
@@ -26,7 +25,12 @@ const TABS: { id: ResultsTab; labelKey: TranslationKey }[] = [
   { id: "memo", labelKey: "results.tab.memo" },
 ];
 
-const CULTURE_ENABLED = process.env.NEXT_PUBLIC_CULTURE_ENABLED === "true";
+function tipEmoji(cat: Tip["cat"]) {
+  const map: Record<Tip["cat"], string> = {
+    Time: "⏰", Price: "💰", Etiquette: "🙏", Transport: "🚇", Other: "💡",
+  };
+  return map[cat] ?? "💡";
+}
 
 interface Props {
   data: ExtractionResult;
@@ -37,54 +41,9 @@ interface Props {
   systemContextLabel: string;
   mapQuery: string;
   destinationCountry?: string | null;
-  hasPlaces: boolean;
   sourceUrl?: string;
   onBack: () => void;
   t: (k: TranslationKey) => string;
-}
-
-function ChatIcon() {
-  return (
-    <svg width="16" height="16" fill="#8651F2" viewBox="0 0 24 24">
-      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-    </svg>
-  );
-}
-
-function BookmarkBtn({ filled, onToggle }: { filled: boolean; onToggle: () => void }) {
-  return (
-    <button onClick={onToggle} className="flex-shrink-0 p-0.5" aria-label="bookmark">
-      <svg width={18} height={18} fill={filled ? "#8651F2" : "none"} stroke={filled ? "#8651F2" : "currentColor"} strokeWidth="2" viewBox="0 0 24 24">
-        <path d="M19 21 12 16l-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-      </svg>
-    </button>
-  );
-}
-
-function CultureEvents({ placeName, t }: { placeName: string; t: (k: TranslationKey) => string }) {
-  const [events, setEvents] = useState<CulturalEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch(`/api/culture/nearby?place=${encodeURIComponent(placeName)}`)
-      .then((r) => r.json())
-      .then((d: { events: CulturalEvent[] }) => setEvents(d.events ?? []))
-      .catch(() => setEvents([]))
-      .finally(() => setLoading(false));
-  }, [placeName]);
-
-  if (loading || events.length === 0) return null;
-
-  return (
-    <div className="mt-2 pt-2 border-t border-line-neutral">
-      <p className="text-[11px] font-semibold text-text-disabled mb-1">{t("results.culture")}</p>
-      <ul className="space-y-1">
-        {events.slice(0, 2).map((ev, i) => (
-          <li key={i} className="text-[11px] text-text-secondary">{ev.title}</li>
-        ))}
-      </ul>
-    </div>
-  );
 }
 
 export default function ResultsTabLayout({
@@ -96,14 +55,11 @@ export default function ResultsTabLayout({
   systemContextLabel,
   mapQuery,
   destinationCountry,
-  hasPlaces,
   sourceUrl,
   onBack,
   t,
 }: Props) {
   const [activeTab, setActiveTab] = useState<ResultsTab>("guide");
-  const tipBookmarks = useBookmarkSet();
-  const phraseBookmarks = useBookmarkSet();
   const sc = data.situation;
   const systemContext = data.contexts?.[0];
   const insiderContexts = data.contexts?.slice(1) ?? [];
@@ -112,6 +68,7 @@ export default function ResultsTabLayout({
   const oliveYoungQueries = products.map((p) => p.searchQuery ?? p.name).filter(Boolean);
   const destination = detectDestinationCountry(situationLabel, destinationCountry);
   const showKakaoLinks = usesKakaoMap(destination);
+  const videoTitle = data.video.title;
 
   return (
     <div className="mt-6">
@@ -124,8 +81,10 @@ export default function ResultsTabLayout({
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 rounded-xl py-2.5 text-[13px] font-semibold transition-colors ${
-                  isActive ? "bg-accent-700 text-white shadow-sm" : "bg-infoBox text-text-secondary hover:bg-accent-50"
+                className={`flex-1 rounded-xl py-2.5 text-[13px] font-semibold border-2 transition-colors ${
+                  isActive
+                    ? "bg-accent-700 text-white border-accent-700 shadow-md"
+                    : "bg-white text-text-secondary border-line-neutral hover:border-accent-300"
                 }`}
               >
                 {t(tab.labelKey)}
@@ -136,134 +95,122 @@ export default function ResultsTabLayout({
       </div>
 
       <div className="mt-5 px-4 lg:px-0">
-        {/* ── Tab 1: Guide (summary, prep, actions, phrases) ── */}
         {activeTab === "guide" && (
-          <div className="flex flex-col gap-6">
-            <div className="bg-white rounded-2xl border border-line-neutral shadow-sm p-4">
-              <p className="text-[12px] font-semibold text-text-disabled uppercase tracking-wide mb-2">
-                {t("results.situation.title")}
-              </p>
-              <p className="text-[14px] text-text-primary leading-relaxed">{sc.summary}</p>
-              {sc.estimatedMinutes !== undefined && (
-                <p className="mt-3 text-[12px] text-text-disabled">
-                  {t("results.situation.estimatedTime")}:{" "}
-                  <span className="font-semibold text-accent-700">
-                    {t("results.situation.minutes").replace("{n}", String(sc.estimatedMinutes))}
-                  </span>
-                </p>
-              )}
-            </div>
+          <div className="flex flex-col gap-5">
+            <GuideHero
+              situationLabel={situationLabel}
+              summary={sc.summary}
+              venue={venue}
+              actions={data.actions}
+              estimatedMinutes={sc.estimatedMinutes}
+            />
 
             {sc.documents.length > 0 && (
-              <div>
-                <p className="text-[12px] font-semibold text-text-disabled uppercase tracking-wide mb-2">
-                  {t("results.situation.documents")}
-                </p>
-                <div className="bg-white rounded-2xl border border-line-neutral divide-y divide-line-neutral">
+              <SectionCard icon="📄" title={t("results.situation.documents")} accent="blue">
+                <div className="p-3 space-y-2">
                   {sc.documents.map((doc, i) => (
-                    <div key={i} className="flex items-start gap-2.5 px-4 py-3 text-[13px] text-text-primary">
-                      <span>📄</span>
-                      {doc}
-                    </div>
+                    <InfoItemCard key={i} title={doc} emoji="📄" />
                   ))}
                 </div>
-              </div>
+              </SectionCard>
             )}
 
             {sc.checklist.length > 0 && (
-              <div>
-                <p className="text-[12px] font-semibold text-text-disabled uppercase tracking-wide mb-2">
-                  {t("results.situation.checklist")}
-                </p>
-                <div className="bg-white rounded-2xl border border-line-neutral shadow-sm divide-y divide-line-neutral">
+              <SectionCard icon="✅" title={t("results.situation.checklist")} accent="green">
+                <div className="p-3 space-y-2">
                   {sc.checklist.map((item, i) => (
-                    <div key={i} className="flex items-start gap-2.5 px-4 py-3 text-[13px] text-text-primary">
-                      <span className="mt-0.5 text-accent-700 font-bold">✓</span>
-                      {item}
-                    </div>
+                    <InfoItemCard key={i} title={item} emoji="✓" highlight={i === 0} />
                   ))}
                 </div>
-              </div>
+              </SectionCard>
             )}
 
             {venue === "store" && (
-              <div className="bg-gradient-to-br from-accent-50 to-pink-50 rounded-2xl border border-accent-100 p-4">
-                <p className="text-[14px] font-bold text-text-primary mb-2">오프라인 결제 할인 체크</p>
-                <ol className="flex flex-col gap-2 text-[13px] text-text-secondary list-decimal list-inside">
-                  <li>올리브영 앱 가입 · CJ ONE 멤버십 연동</li>
-                  <li>앱 쿠폰함에서 세일 쿠폰 다운로드</li>
-                  <li>제휴카드·간편결제 프로모션 확인</li>
-                  <li>매장에서 &apos;할인 다 적용하면 얼마예요?&apos; 확인</li>
-                </ol>
-              </div>
+              <SectionCard icon="💳" title="오프라인 결제 할인 체크" accent="amber">
+                <div className="p-3 grid grid-cols-2 gap-2">
+                  {["앱 가입 · 멤버십", "쿠폰 다운로드", "제휴카드 확인", "매장 할인 확인"].map((label) => (
+                    <div
+                      key={label}
+                      className="rounded-xl border-2 border-amber-200 bg-amber-50 px-3 py-2.5 text-[12px] font-semibold text-amber-900 text-center"
+                    >
+                      {label}
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
             )}
 
             {data.actions.length > 0 ? (
               <ActionStepper actions={data.actions} title={actionsTitle} t={t} />
             ) : (
-              <div className="bg-infoBox rounded-2xl p-5 text-[13px] text-text-secondary text-center">
+              <div className="bg-infoBox rounded-2xl border-2 border-line-neutral p-5 text-[13px] text-text-secondary text-center">
                 행동 단계가 아직 없어요. 상황을 더 구체적으로 입력해보세요.
               </div>
             )}
 
-            {data.phrases.length > 0 ? (
-              <section>
-                <div className="flex items-center gap-2 mb-3">
-                  <ChatIcon />
-                  <h2 className="text-[16px] font-bold text-text-primary">
-                    {t("results.phrases.title")} ({data.phrases.length})
-                  </h2>
-                </div>
-                <div className="space-y-3">
+            {data.phrases.length > 0 && (
+              <SectionCard icon="💬" title={`${t("results.phrases.title")} (${data.phrases.length})`} accent="purple">
+                <div className="p-3 space-y-2">
                   {data.phrases.map((ph, idx) => (
-                    <div key={idx} className="bg-white rounded-2xl border border-line-neutral shadow-sm p-4 relative">
-                      <div className="absolute top-3 right-3">
-                        <BookmarkBtn filled={phraseBookmarks.has(idx)} onToggle={() => phraseBookmarks.toggle(idx)} />
-                      </div>
-                      <p className="text-[15px] font-bold text-text-primary leading-snug pr-8">{ph.pronunciation}</p>
-                      <p className="text-[13px] text-text-secondary mt-1">{ph.meaning}</p>
-                      {ph.context && <p className="text-[11px] text-text-disabled mt-1.5 italic">{ph.context}</p>}
-                    </div>
+                    <SaveableItemCard
+                      key={idx}
+                      type="phrase"
+                      title={ph.pronunciation}
+                      body={[ph.meaning, ph.context].filter(Boolean).join(" · ")}
+                      situation={situationLabel}
+                      sourceUrl={sourceUrl}
+                      videoTitle={videoTitle}
+                      emoji="💬"
+                      saveable
+                    />
                   ))}
                 </div>
-              </section>
-            ) : null}
+              </SectionCard>
+            )}
 
-            {data.tips.length > 0 ? (
-              <TipsCarousel tips={data.tips} t={t} bookmarks={tipBookmarks} />
-            ) : null}
+            {data.tips.length > 0 && (
+              <SectionCard icon="💡" title={t("results.tips.title")} accent="amber">
+                <div className="p-3 space-y-2">
+                  {data.tips.map((tip, idx) => (
+                    <InfoItemCard
+                      key={idx}
+                      title={tip.title}
+                      body={tip.desc}
+                      emoji={tipEmoji(tip.cat)}
+                    />
+                  ))}
+                </div>
+              </SectionCard>
+            )}
 
             {systemContext && <ContextCallout ctx={systemContext} systemLabel={systemContextLabel} />}
 
             {insiderContexts.map((item: ContextCard, idx) => (
-              <div key={idx} className="bg-white rounded-2xl border border-line-neutral p-4 shadow-sm">
+              <div key={idx} className="bg-white rounded-2xl border-2 border-line-neutral p-4 shadow-sm">
                 <p className="text-[14px] font-bold text-text-primary">{item.theme}</p>
-                <p className="text-[12px] text-text-secondary mt-1 leading-relaxed">{item.explanation}</p>
+                <p className="text-[12px] text-text-secondary mt-1 leading-relaxed line-clamp-4">{item.explanation}</p>
               </div>
             ))}
           </div>
         )}
 
-        {/* ── Tab 2: Places (map, stores, similar products) ── */}
         {activeTab === "places" && (
           <div className="flex flex-col gap-4">
             <div>
               <h2 className="text-[17px] font-bold text-text-primary mb-1">{placesTitle}</h2>
               <p className="text-[13px] text-text-secondary leading-relaxed">
-                {venue === "store"
-                  ? "방문할 매장 위치와 주변에서 비슷한 품목을 파는 곳을 확인하세요."
-                  : "가까운 장소와 길 찾기 정보를 확인하세요."}
+                가까운 장소와 길 찾기 정보를 확인하세요.
               </p>
             </div>
 
-            {(hasPlaces || sc.whereTo.length > 0 || mapQuery) ? (
+            {(sc.whereTo.length > 0 || mapQuery) ? (
               <>
                 <PlacesMap
                   situation={situationLabel}
                   venue={venue}
                   mapQuery={mapQuery}
                   destinationCountry={destinationCountry}
-                  places={data.places}
+                  places={[]}
                   whereTo={sc.whereTo}
                 />
                 <div className="flex gap-2">
@@ -272,7 +219,7 @@ export default function ResultsTabLayout({
                       href={`https://map.kakao.com/link/search/${encodeURIComponent(mapQuery)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex-1 text-center rounded-xl border border-line-neutral bg-white py-2.5 text-[13px] font-semibold text-text-primary hover:bg-infoBox transition-colors"
+                      className="flex-1 text-center rounded-xl border-2 border-line-neutral bg-white py-2.5 text-[13px] font-semibold text-text-primary hover:bg-infoBox transition-colors"
                     >
                       {t("results.mapKakao")}
                     </a>
@@ -283,35 +230,30 @@ export default function ResultsTabLayout({
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`${showKakaoLinks ? "flex-1" : "w-full"} text-center rounded-xl border border-line-neutral bg-white py-2.5 text-[13px] font-semibold text-text-primary hover:bg-infoBox transition-colors`}
+                    className={`${showKakaoLinks ? "flex-1" : "w-full"} text-center rounded-xl border-2 border-line-neutral bg-white py-2.5 text-[13px] font-semibold text-text-primary hover:bg-infoBox transition-colors`}
                   >
                     {t("results.mapGoogle")}
                   </a>
                 </div>
-                <div className="bg-white rounded-2xl border border-line-neutral shadow-sm px-4">
-                  {hasPlaces && (
-                    <p className="text-[11px] font-semibold text-text-disabled uppercase tracking-wide pt-3 pb-1">
-                      가이드에서 추천한 장소
-                    </p>
-                  )}
-                  {hasPlaces
-                    ? data.places.map((p, idx) => (
-                        <div key={idx}>
-                          <PlaceRow place={p} t={t} />
-                          {CULTURE_ENABLED && idx === 0 && (
-                            <div className="pb-3"><CultureEvents placeName={p.name} t={t} /></div>
-                          )}
-                        </div>
-                      ))
-                    : sc.whereTo.map((place, i) => (
-                        <div key={i} className="flex items-center py-3.5 border-b border-line-neutral last:border-0">
-                          <p className="text-[14px] font-medium text-text-primary">{place}</p>
-                        </div>
-                      ))}
-                </div>
+                {sc.whereTo.length > 0 && (
+                  <div className="bg-white rounded-2xl border-2 border-line-neutral shadow-sm p-3 space-y-2">
+                    {sc.whereTo.map((place, i) => (
+                      <SaveableItemCard
+                        key={i}
+                        type="place"
+                        title={place}
+                        situation={situationLabel}
+                        sourceUrl={sourceUrl}
+                        videoTitle={videoTitle}
+                        emoji="📍"
+                        saveable
+                      />
+                    ))}
+                  </div>
+                )}
               </>
             ) : (
-              <div className="bg-infoBox rounded-2xl p-5 text-[13px] text-text-secondary text-center">
+              <div className="bg-infoBox rounded-2xl border-2 border-line-neutral p-5 text-[13px] text-text-secondary text-center">
                 {t("results.places.empty")}
               </div>
             )}
@@ -326,7 +268,6 @@ export default function ResultsTabLayout({
           </div>
         )}
 
-        {/* ── Tab 3: Action memo (trends + URL save + memos) ── */}
         {activeTab === "memo" && (
           <ActionMemoPanel
             data={data}

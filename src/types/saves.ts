@@ -1,6 +1,15 @@
 import type { ExtractionResult, ProductItem } from "./extraction";
 
-export type SaveItemType = "guide" | "product" | "tip" | "phrase" | "action" | "memo";
+export type SaveItemType =
+  | "guide"
+  | "product"
+  | "tip"
+  | "phrase"
+  | "place"
+  | "action"
+  | "checklist"
+  | "document"
+  | "memo";
 
 export interface SavedItem {
   id: string;

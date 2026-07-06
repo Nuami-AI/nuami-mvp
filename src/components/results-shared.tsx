@@ -44,7 +44,15 @@ function CheckCircle({ done, active }: { done: boolean; active: boolean }) {
   );
 }
 
-export function ActionStepper({ actions, title, t }: { actions: ActionStep[]; title: string; t: (k: TranslationKey) => string }) {
+export function ActionStepper({
+  actions,
+  title,
+  t,
+}: {
+  actions: ActionStep[];
+  title: string;
+  t: (k: TranslationKey) => string;
+}) {
   const [completed, setCompleted] = useState<Set<number>>(() => new Set());
   const [activeIdx, setActiveIdx] = useState(0);
 
@@ -65,13 +73,12 @@ export function ActionStepper({ actions, title, t }: { actions: ActionStep[]; ti
   });
 
   return (
-    <section>
-      <div className="flex items-start justify-between mb-1">
-        <h2 className="text-[16px] font-bold text-text-primary leading-snug flex-1 pr-4">{title}</h2>
-        <span className="text-[13px] font-semibold text-accent-700 flex-shrink-0">{progressLabel}</span>
+    <section className="rounded-2xl border-2 border-line-neutral overflow-hidden shadow-sm">
+      <div className="border-l-4 border-l-accent-700 bg-white px-4 py-3 flex items-start justify-between">
+        <h2 className="text-[15px] font-bold text-text-primary leading-snug flex-1 pr-4">👣 {title}</h2>
+        <span className="text-[12px] font-bold text-accent-700 flex-shrink-0">{progressLabel}</span>
       </div>
-      <p className="text-[12px] text-text-disabled mb-4">{t("results.actions.hint")}</p>
-      <div className="space-y-2">
+      <div className="border-t-2 border-line-neutral p-3 space-y-2">
         {actions.map((item, idx) => {
           const done = completed.has(idx);
           const active = idx === activeIdx && !done;
@@ -80,8 +87,8 @@ export function ActionStepper({ actions, title, t }: { actions: ActionStep[]; ti
               key={idx}
               type="button"
               onClick={() => toggleStep(idx)}
-              className={`w-full text-left flex items-start gap-3 px-4 py-3.5 rounded-2xl border transition-colors ${
-                active ? "border-accent-700 bg-accent-50 shadow-sm" : done ? "border-line-neutral bg-white opacity-60" : "border-line-neutral bg-white"
+              className={`w-full text-left flex items-start gap-3 px-3 py-3 rounded-xl border-2 transition-colors ${
+                active ? "border-accent-700 bg-accent-50 shadow-md" : done ? "border-line-neutral bg-white opacity-60" : "border-line-neutral bg-white"
               }`}
             >
               <CheckCircle done={done} active={active} />
@@ -90,7 +97,7 @@ export function ActionStepper({ actions, title, t }: { actions: ActionStep[]; ti
                   {item.action}
                 </p>
                 {item.detail && !done && (
-                  <p className="text-[12px] text-text-secondary mt-1 leading-relaxed">{item.detail}</p>
+                  <p className="text-[12px] text-text-secondary mt-1 leading-relaxed line-clamp-2">{item.detail}</p>
                 )}
               </div>
             </button>

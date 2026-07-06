@@ -8,6 +8,7 @@ import { useLanguage } from "@/lib/i18n";
 import type { ResultVenue } from "@/lib/results/venue-context";
 import type { ExtractionResult } from "@/types/extraction";
 import ShoppingMemoPanel from "@/components/ShoppingMemoPanel";
+import SessionMemoBox from "@/components/SessionMemoBox";
 import VideoResearchPrompts from "@/components/VideoResearchPrompts";
 
 interface Props {
@@ -53,30 +54,7 @@ function GeneralMemoPanel({
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h2 className="text-[17px] font-bold text-text-primary">📝 {t("memo.title")}</h2>
-        <p className="text-[13px] text-text-secondary mt-1 leading-relaxed">
-          이번 검색 결과를 메모·체크리스트로 정리하세요.
-        </p>
-      </div>
-
-      {sourceUrl && (
-        <div className="bg-infoBox rounded-xl border border-line-neutral px-3 py-2.5 flex items-center gap-2">
-          <span className="text-lg">🔗</span>
-          <div className="flex-1 min-w-0">
-            <p className="text-[11px] text-text-disabled">{t("memo.sourceVideo")}</p>
-            <p className="text-[12px] text-text-primary truncate">{videoTitle ?? sourceUrl}</p>
-          </div>
-          <a
-            href={sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[11px] font-semibold text-accent-700 shrink-0"
-          >
-            {t("memo.open")}
-          </a>
-        </div>
-      )}
+      <SessionMemoBox situation={situation} sourceUrl={sourceUrl} videoTitle={videoTitle} />
 
       <div className="flex gap-2">
         <button
@@ -176,6 +154,7 @@ export default function ActionMemoPanel({
   if (showShoppingExtras) {
     return (
       <div className="flex flex-col gap-6">
+        <SessionMemoBox situation={situation} sourceUrl={sourceUrl} videoTitle={data.video.title} />
         <ShoppingMemoPanel
           products={data.products ?? []}
           situation={situation}
