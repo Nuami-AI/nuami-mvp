@@ -1,19 +1,17 @@
 "use client";
 
-// Design Ref: §5.5 — hidden md:flex 상단 네브. 데스크탑 전용.
-
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/i18n";
 
-// Design Ref: §6.1 platform-pivot — "Video AI" tab renamed to "Guide".
-type TabId = "guide" | "content" | "saved" | "history";
+type TabId = "home" | "guide" | "culture" | "bookmark" | "mypage";
 
-const LINKS: { id: TabId; labelKey: "nav.top.guide" | "nav.top.content" | "nav.top.saved" | "nav.top.history"; href: string }[] = [
-  { id: "guide",   labelKey: "nav.top.guide",   href: "/" },
-  { id: "content", labelKey: "nav.top.content", href: "/content" },
-  { id: "saved",   labelKey: "nav.top.saved",   href: "/saved" },
-  { id: "history", labelKey: "nav.top.history", href: "/history" },
+const LINKS: { id: TabId; labelKey: "nav.home" | "nav.guide" | "nav.culture" | "nav.bookmarks" | "nav.mypage"; href: string }[] = [
+  { id: "home",     labelKey: "nav.home",      href: "/" },
+  { id: "guide",    labelKey: "nav.guide",     href: "/guide" },
+  { id: "culture",  labelKey: "nav.culture",   href: "/content" },
+  { id: "bookmark", labelKey: "nav.bookmarks", href: "/saved" },
+  { id: "mypage",   labelKey: "nav.mypage",    href: "/mypage" },
 ];
 
 function NuamiLogo() {
@@ -25,7 +23,7 @@ function NuamiLogo() {
   );
 }
 
-export default function TopNav({ active = "guide" }: { active?: TabId }) {
+export default function TopNav({ active = "home" }: { active?: TabId }) {
   const { t } = useLanguage();
   const router = useRouter();
 
@@ -37,10 +35,10 @@ export default function TopNav({ active = "guide" }: { active?: TabId }) {
   return (
     <nav className="hidden md:flex w-full bg-background border-b border-line-neutral sticky top-0 z-20">
       <div className="w-full max-w-[1200px] mx-auto px-6 h-14 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
+        <Link href="/" className="flex items-center gap-2.5">
           <NuamiLogo />
           <span className="text-[15px] font-bold text-text-primary tracking-tight">NUAMI</span>
-        </div>
+        </Link>
 
         <div className="flex items-center gap-1">
           {LINKS.map(({ id, labelKey, href }) => (
@@ -58,17 +56,12 @@ export default function TopNav({ active = "guide" }: { active?: TabId }) {
           ))}
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleLogout}
-            className="text-[12px] text-text-tertiary hover:text-text-secondary transition-colors"
-          >
-            로그아웃
-          </button>
-          <Link href="/mypage" className="w-8 h-8 rounded-full bg-accent-100 flex items-center justify-center text-[13px] font-semibold text-accent-700 hover:bg-accent-200 transition-colors">
-            J
-          </Link>
-        </div>
+        <button
+          onClick={handleLogout}
+          className="text-[12px] text-text-tertiary hover:text-text-secondary transition-colors"
+        >
+          {t("nav.logout")}
+        </button>
       </div>
     </nav>
   );

@@ -6,6 +6,8 @@ import {
   listSummaryHistory,
   loadLinkListHistory,
   removeSummaryHistory,
+  removeSummaryHistoryMany,
+  clearSummaryHistory,
 } from "./storage";
 import type { HistoryLinkListEntry, HistorySummaryEntry } from "@/types/history";
 
@@ -32,5 +34,19 @@ export function useHistory() {
     [refresh],
   );
 
-  return { summaries, linkLists, mounted, refresh, remove };
+  const removeMany = useCallback(
+    (ids: string[]) => {
+      if (ids.length === 0) return;
+      removeSummaryHistoryMany(ids);
+      refresh();
+    },
+    [refresh],
+  );
+
+  const removeAll = useCallback(() => {
+    clearSummaryHistory();
+    refresh();
+  }, [refresh]);
+
+  return { summaries, linkLists, mounted, refresh, remove, removeMany, removeAll };
 }

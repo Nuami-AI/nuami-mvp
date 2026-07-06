@@ -59,11 +59,11 @@ function VideoLinksContent() {
 
   return (
     <div className="relative flex flex-col min-h-screen bg-background">
-      <TopNav active="guide" />
+      <TopNav active="culture" />
 
       <main className="flex-1 w-full max-w-[1200px] mx-auto px-4 md:px-6 pb-24 md:pb-8 pt-5">
-        <Link href="/guide" className="text-[13px] text-text-tertiary hover:text-text-secondary">
-          ← 가이드로 돌아가기
+        <Link href="/content?tab=adapt" className="text-[13px] text-text-tertiary hover:text-text-secondary">
+          ← 문화생활로 돌아가기
         </Link>
 
         <div className="mt-4">
@@ -173,7 +173,7 @@ function VideoLinksContent() {
         </div>
       </main>
 
-      <BottomNav active="guide" />
+      <BottomNav active="culture" />
     </div>
   );
 }

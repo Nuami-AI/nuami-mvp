@@ -3,6 +3,7 @@
 // Design Ref: §5.3 PaywallModal — forced choice overlay, no ESC/outside-click dismiss
 // Plan SC: FR-08, FR-09
 import { useEffect } from "react";
+import { useLanguage } from "@/lib/i18n";
 
 interface Props {
   onSubscribe: () => void;
@@ -19,7 +20,8 @@ function LockIcon() {
 }
 
 export default function PaywallModal({ onSubscribe, onDismiss }: Props) {
-  // Prevent body scroll while modal is open
+  const { t } = useLanguage();
+
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
@@ -27,41 +29,34 @@ export default function PaywallModal({ onSubscribe, onDismiss }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      {/* Backdrop — not clickable (forced choice) */}
       <div className="absolute inset-0 bg-black/50" />
 
-      {/* Modal */}
       <div className="relative w-full sm:max-w-sm mx-auto bg-background rounded-t-3xl sm:rounded-3xl px-6 pt-8 pb-10 shadow-xl">
-        {/* Icon */}
         <div className="flex justify-center mb-4">
           <div className="w-14 h-14 rounded-2xl bg-accent-100 flex items-center justify-center text-accent-700">
             <LockIcon />
           </div>
         </div>
 
-        {/* Text */}
-        <h2 className="text-[18px] font-bold text-text-primary text-center leading-snug">
-          더 보려면 구독이 필요합니다
+        <h2 className="text-[18px] font-bold text-text-primary text-center leading-snug whitespace-pre-line">
+          {t("paywall.title")}
         </h2>
-        <p className="mt-2.5 text-[13px] text-text-secondary text-center leading-relaxed">
-          Nuami Video AI 무료 체험 3회를 모두 사용했습니다.{"\n"}
-          월 4,900원부터 시작하는 구독으로{"\n"}
-          계속 이용하세요.
+        <p className="mt-2.5 text-[13px] text-text-secondary text-center leading-relaxed whitespace-pre-line">
+          {t("paywall.desc")}
         </p>
 
-        {/* CTAs */}
         <div className="mt-7 space-y-3">
           <button
             onClick={onSubscribe}
             className="w-full rounded-2xl bg-accent-700 text-white py-4 text-[15px] font-bold hover:bg-accent-800 active:scale-[0.98] transition-all"
           >
-            구독 시작하기
+            {t("paywall.subscribe")}
           </button>
           <button
             onClick={onDismiss}
             className="w-full rounded-2xl bg-infoBox text-text-secondary py-4 text-[15px] font-medium hover:bg-muted active:scale-[0.98] transition-all"
           >
-            나중에
+            {t("paywall.dismiss")}
           </button>
         </div>
       </div>

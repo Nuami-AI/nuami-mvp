@@ -3,6 +3,7 @@
 import type { ActionStep } from "@/types/extraction";
 import type { ResultVenue } from "@/lib/results/venue-context";
 import { getEncouragementMessage, summarizeToBullets } from "@/lib/results/encouragement";
+import { useLanguage } from "@/lib/i18n";
 
 interface Props {
   situationLabel: string;
@@ -13,12 +14,13 @@ interface Props {
 }
 
 function ProcessFlow({ actions }: { actions: ActionStep[] }) {
+  const { t } = useLanguage();
   const steps = actions.slice(0, 5);
   if (steps.length === 0) return null;
 
   return (
     <div className="mt-4">
-      <p className="text-[12px] font-bold text-text-secondary mb-3">👣 진행 순서</p>
+      <p className="text-[12px] font-bold text-text-secondary mb-3">{t("guide.hero.processOrder")}</p>
       <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide">
         {steps.map((step, idx) => {
           const isFirst = idx === 0;
@@ -50,6 +52,7 @@ function ProcessFlow({ actions }: { actions: ActionStep[] }) {
 }
 
 export default function GuideHero({ situationLabel, summary, venue, actions, estimatedMinutes }: Props) {
+  const { t } = useLanguage();
   const encouragement = getEncouragementMessage(situationLabel, venue);
   const bullets = summarizeToBullets(summary, 3);
 
@@ -60,7 +63,7 @@ export default function GuideHero({ situationLabel, summary, venue, actions, est
       </div>
 
       <div className="px-4 py-3">
-        <p className="text-[11px] font-bold text-text-disabled uppercase tracking-wide mb-2">📋 요약</p>
+        <p className="text-[11px] font-bold text-text-disabled uppercase tracking-wide mb-2">{t("guide.hero.summary")}</p>
         <ul className="space-y-1.5">
           {bullets.map((line, i) => (
             <li key={i} className="flex items-start gap-2 text-[13px] text-text-primary font-medium">
@@ -71,7 +74,7 @@ export default function GuideHero({ situationLabel, summary, venue, actions, est
         </ul>
         {estimatedMinutes !== undefined && (
           <p className="mt-3 inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-3 py-1 text-[12px] font-bold text-amber-900">
-            ⏱ 약 {estimatedMinutes}분
+            {t("guide.hero.minutes").replace("{n}", String(estimatedMinutes))}
           </p>
         )}
       </div>

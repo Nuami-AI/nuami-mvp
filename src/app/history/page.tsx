@@ -165,7 +165,7 @@ function HistoryContent() {
   const showLinks = filter === "all" || filter === "links";
 
   return (
-    <PageShell topNav="history" bottomNav="history" className="px-4 md:px-6 pt-5">
+    <PageShell topNav="mypage" bottomNav="mypage" className="px-4 md:px-6 pt-5">
       <div className="mb-6">
         <h1 className="text-[22px] font-extrabold text-text-primary">{t("history.title")}</h1>
         <p className="text-[13px] text-text-secondary mt-1 leading-relaxed">{t("history.desc")}</p>
