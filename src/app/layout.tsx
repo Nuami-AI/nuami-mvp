@@ -27,6 +27,8 @@ export const viewport = {
   userScalable: false,
 };
 
+const GA_MEASUREMENT_ID = "G-3PJMG5D9JM";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -43,6 +45,16 @@ export default function RootLayout({
           <MobilePreviewFrame>{children}</MobilePreviewFrame>
         </LanguageProvider>
       </body>
+      <Script
+        src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+        strategy="afterInteractive"
+      />
+      <Script id="google-analytics" strategy="afterInteractive">
+        {`window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', '${GA_MEASUREMENT_ID}');`}
+      </Script>
       <Script id="beusable-rum" strategy="afterInteractive">
         {`(function(w, d, a){
     w.__beusablerumclient__ = {
