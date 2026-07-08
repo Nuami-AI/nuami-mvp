@@ -26,6 +26,16 @@ function getAccounts(): Array<Account & { password: string }> {
       password: process.env.TESTER3_PASSWORD ?? "",
       role: "tester",
     },
+    {
+      email: process.env.TESTER4_EMAIL ?? "",
+      password: process.env.TESTER4_PASSWORD ?? "",
+      role: "tester",
+    },
+    {
+      email: process.env.TESTER5_EMAIL ?? "",
+      password: process.env.TESTER5_PASSWORD ?? "",
+      role: "tester",
+    },
   ];
 }
 
@@ -43,5 +53,7 @@ export function getTesterEmails(): string[] {
     process.env.TESTER1_EMAIL ?? "",
     process.env.TESTER2_EMAIL ?? "",
     process.env.TESTER3_EMAIL ?? "",
+    process.env.TESTER4_EMAIL ?? "",
+    process.env.TESTER5_EMAIL ?? "",
   ].filter(Boolean);
 }
