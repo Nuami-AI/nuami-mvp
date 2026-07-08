@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import { LanguageProvider } from "@/lib/i18n";
 import MobilePreviewFrame from "@/components/dev/MobilePreviewFrame";
 import "./globals.css";
@@ -42,6 +43,17 @@ export default function RootLayout({
           <MobilePreviewFrame>{children}</MobilePreviewFrame>
         </LanguageProvider>
       </body>
+      <Script id="beusable-rum" strategy="afterInteractive">
+        {`(function(w, d, a){
+    w.__beusablerumclient__ = {
+        load : function(src){
+            var b = d.createElement("script");
+            b.src = src; b.async=true; b.type = "text/javascript";
+            d.getElementsByTagName("head")[0].appendChild(b);
+        }
+    };w.__beusablerumclient__.load(a + "?url=" + encodeURIComponent(d.URL));
+})(window, document, "//rum.beusable.net/load/b250828e171420u285");`}
+      </Script>
     </html>
   );
 }
