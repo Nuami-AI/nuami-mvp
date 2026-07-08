@@ -36,7 +36,7 @@ export default async function ContentDetailPage({
     .filter(Boolean);
 
   return (
-    <PageShell topNav="content" bottomNav="content">
+    <PageShell topNav="culture" bottomNav="culture">
       <PageHeader
         leading={<BackButton href={backHref} />}
         trailing={<ContentBadges category={post.category} country={post.country} />}

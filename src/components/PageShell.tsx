@@ -1,12 +1,10 @@
 "use client";
 
-// Design Ref: §2 — 표준 페이지 래퍼. TopNav + BottomNav + max-w + pb 통일.
-
 import TopNav from "./TopNav";
 import BottomNav from "./BottomNav";
 
-type TopTabId = "guide" | "content" | "saved" | "history";
-type BottomTabId = "home" | "history" | "content" | "guide" | "bookmark" | "mypage";
+type TopTabId = "home" | "guide" | "culture" | "bookmark" | "mypage";
+type BottomTabId = "home" | "guide" | "culture" | "bookmark" | "mypage";
 
 interface Props {
   topNav?: TopTabId;

@@ -183,7 +183,7 @@ export default function InputScreen({
 
   return (
     <PageShell
-      topNav="guide"
+      topNav="home"
       bottomNav="home"
       className="pb-44 md:pb-16 lg:pb-20"
     >

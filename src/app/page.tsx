@@ -9,7 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import InputScreen from "@/components/InputScreen";
 import PaywallModal from "@/components/PaywallModal";
 import ResultsScreen from "@/components/ResultsScreen";
-import { useLanguage } from "@/lib/i18n";
+import { useLanguage, getUserLanguageCode } from "@/lib/i18n";
 import { addSummaryHistory } from "@/lib/history/storage";
 import { loadPreferences } from "@/lib/user/preferences";
 import type { ExtractError, ExtractResponse, ExtractionResult } from "@/types/extraction";
@@ -61,7 +61,7 @@ function HomeContent() {
         body: JSON.stringify({
           situation: trimmedSituation,
           url: trimmedUrl || undefined,
-          userLang: lang,
+          userLang: getUserLanguageCode(lang),
           toneStyle: prefs.toneStyle,
           lifeStage: prefs.lifeStage,
         }),

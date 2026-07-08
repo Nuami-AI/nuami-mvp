@@ -1,17 +1,14 @@
 "use client";
 
-// Design Ref: §5.5 — md:hidden (PC에서 TopNav로 대체).
-
 import Link from "next/link";
 import { useLanguage } from "@/lib/i18n";
 
-type TabId = "home" | "history" | "content" | "guide" | "bookmark" | "mypage";
+type TabId = "home" | "guide" | "culture" | "bookmark" | "mypage";
 
-const TABS: { id: TabId; labelKey: "nav.home" | "nav.history" | "nav.content" | "nav.guide" | "nav.bookmarks" | "nav.mypage"; href: string }[] = [
+const TABS: { id: TabId; labelKey: "nav.home" | "nav.guide" | "nav.culture" | "nav.bookmarks" | "nav.mypage"; href: string }[] = [
   { id: "home",     labelKey: "nav.home",      href: "/" },
-  { id: "history",  labelKey: "nav.history",   href: "/history" },
-  { id: "content",  labelKey: "nav.content",   href: "/content" },
   { id: "guide",    labelKey: "nav.guide",     href: "/guide" },
+  { id: "culture",  labelKey: "nav.culture",   href: "/content" },
   { id: "bookmark", labelKey: "nav.bookmarks", href: "/saved" },
   { id: "mypage",   labelKey: "nav.mypage",    href: "/mypage" },
 ];
@@ -30,27 +27,20 @@ function TabIcon({ id, active }: { id: TabId; active: boolean }) {
         <path d="M9 21V12h6v9" fill="white" />
       </svg>
     );
-  if (id === "history")
+  if (id === "guide")
     return (
       <svg width="20" height="20" fill="none" stroke={stroke} strokeWidth="2" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 7v5l3 2" strokeLinecap="round" strokeLinejoin="round" />
+        <rect x="4" y="3" width="16" height="18" rx="2" fill={active ? "#F2EBFF" : "none"} stroke={stroke} />
+        <path d="M8 8h8M8 12h8M8 16h5" strokeLinecap="round" />
       </svg>
     );
-  if (id === "content")
+  if (id === "culture")
     return (
       <svg width="20" height="20" fill="none" stroke={stroke} strokeWidth="2" viewBox="0 0 24 24">
         <rect x="3"  y="3"  width="7" height="7" rx="1.5" />
         <rect x="14" y="3"  width="7" height="7" rx="1.5" />
         <rect x="3"  y="14" width="7" height="7" rx="1.5" />
         <rect x="14" y="14" width="7" height="7" rx="1.5" />
-      </svg>
-    );
-  if (id === "guide")
-    return (
-      <svg width="20" height="20" fill="none" stroke={stroke} strokeWidth="2" viewBox="0 0 24 24">
-        <rect x="4" y="3" width="16" height="18" rx="2" fill={active ? "#F2EBFF" : "none"} stroke={stroke} />
-        <path d="M8 8h8M8 12h8M8 16h5" strokeLinecap="round" />
       </svg>
     );
   if (id === "bookmark")

@@ -168,7 +168,7 @@ export default function ResultsScreen({ data, onBack, situation, sourceUrl }: Pr
 
       </div>
 
-      <BottomNav active="home" />
+      <BottomNav active="guide" />
     </div>
   );
 }

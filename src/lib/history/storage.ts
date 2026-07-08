@@ -151,6 +151,15 @@ export function removeSummaryHistory(id: string): void {
   persistSummaries(loadSummariesRaw().filter((e) => e.id !== id));
 }
 
+export function removeSummaryHistoryMany(ids: string[]): void {
+  const idSet = new Set(ids);
+  persistSummaries(loadSummariesRaw().filter((e) => !idSet.has(e.id)));
+}
+
+export function clearSummaryHistory(): void {
+  persistSummaries([]);
+}
+
 export function loadLinkListHistory(): HistoryLinkListEntry[] {
   if (typeof window === "undefined") return [];
   try {
