@@ -9,6 +9,8 @@
     "lint": "eslint",
     "test:access": "tsx --tsconfig tsconfig.json scripts/auth-access-check.ts",
     "auth:migrate-env": "tsx --tsconfig tsconfig.json scripts/migrate-env-accounts.ts",
+    "auth:list": "tsx --tsconfig tsconfig.json scripts/list-auth-users.ts",
+    "auth:reset-admin": "tsx --tsconfig tsconfig.json scripts/reset-admin-password.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

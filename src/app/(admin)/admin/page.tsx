@@ -2,14 +2,16 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getSessionFromCookies, listSessionOrganizations } from "@/lib/auth/page-session";
-import { isInternalAccount } from "@/lib/auth/access";
+import { isInternalAccount, isSuperAdmin } from "@/lib/auth/access";
 import { institutionAdminPath } from "@/lib/institution/catalog";
 
 export default async function InstitutionAdminIndexPage() {
   const session = await getSessionFromCookies();
   if (!session) redirect("/admin/login?redirect=/admin");
   if (session.mustChangePassword) redirect("/admin/password");
-  if (isInternalAccount(session.role)) redirect("/console/organizations");
+  if (isInternalAccount(session.role) && !isSuperAdmin(session.email)) {
+    redirect("/console/organizations");
+  }
 
   const orgs = await listSessionOrganizations(session);
 

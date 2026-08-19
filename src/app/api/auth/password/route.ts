@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
+import { isInternalAccount } from "@/lib/auth/access";
 import { consumeChallenge, issueChallenge, verifyChallenge } from "@/lib/auth/challenge";
 import { TEMP_ORG_PASSWORD } from "@/lib/auth/issue-org-staff";
 import { hashPassword, isValidEmail, isValidPassword, verifyPassword } from "@/lib/auth/password";
@@ -10,7 +11,6 @@ import {
   requestIsHttps,
   sessionCookieOptions,
 } from "@/lib/auth/session";
-import { adminLandingPath } from "@/lib/auth/tenant";
 import { prisma } from "@/lib/db";
 
 export const runtime = "nodejs";
@@ -25,6 +25,7 @@ export async function POST(request: Request): Promise<Response> {
     code?: unknown;
     password?: unknown;
     currentPassword?: unknown;
+    next?: unknown;
   } | null;
 
   const action = body?.action as Action | undefined;
@@ -41,8 +42,17 @@ export async function POST(request: Request): Promise<Response> {
       );
     }
 
+    const nextRaw = typeof body?.next === "string" ? body.next : "";
+    const next =
+      nextRaw.startsWith("/") && !nextRaw.startsWith("//") ? nextRaw : "";
+
     const user = await prisma.authUser.findUnique({ where: { email: session.email, status: "ACTIVE" } });
-    if (!user?.passwordHash) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+    if (!user?.passwordHash) {
+      return NextResponse.json(
+        { error: "SOCIAL_ONLY", message: "소셜 로그인 계정은 비밀번호가 없어요." },
+        { status: 404 },
+      );
+    }
     if (!verifyPassword(currentPassword, user.passwordHash)) {
       return NextResponse.json({ error: "WRONG_PASSWORD", message: "현재 비밀번호가 맞지 않아요." }, { status: 401 });
     }
@@ -56,7 +66,7 @@ export async function POST(request: Request): Promise<Response> {
     const opts = sessionCookieOptions(token, false, request.headers.get("host") ?? "", requestIsHttps(request));
     const cookieStore = await cookies();
     cookieStore.set(opts);
-    const redirect = await adminLandingPath(session.email);
+    const redirect = next || (isInternalAccount(session.role) ? "/console" : "/mypage");
     const res = NextResponse.json({ ok: true, redirect });
     res.cookies.set(opts);
     return res;

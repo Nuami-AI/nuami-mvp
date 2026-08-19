@@ -1,16 +1,19 @@
 import Link from "next/link";
 
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { isSuperAdmin } from "@/lib/auth/access";
 
 interface Props {
   email: string;
-  active: "users" | "knowledge" | "organizations";
+  active: "users" | "knowledge" | "organizations" | "operators";
   title: string;
   subtitle: string;
+  showOperators?: boolean;
   children: React.ReactNode;
 }
 
-export default function AdminShell({ email, active, title, subtitle, children }: Props) {
+export default function AdminShell({ email, active, title, subtitle, showOperators, children }: Props) {
+  const operators = showOperators ?? isSuperAdmin(email);
   return (
     <div className="flex min-h-screen bg-gray-50">
       <aside className="w-52 shrink-0 flex flex-col border-r border-gray-200 bg-white">
@@ -26,10 +29,16 @@ export default function AdminShell({ email, active, title, subtitle, children }:
           <SidebarItem href="/console" label="이용 현황" active={active === "users"} />
           <SidebarItem href="/console/organizations" label="기관" active={active === "organizations"} />
           <SidebarItem href="/console/knowledge" label="자료 검수" active={active === "knowledge"} />
+          {operators ? (
+            <SidebarItem href="/console/operators" label="콘솔 접근자" active={active === "operators"} />
+          ) : null}
         </nav>
 
         <div className="px-5 py-4 border-t border-gray-100">
           <p className="text-[10px] text-gray-400 truncate mb-2">{email}</p>
+          <Link href="/console/password" className="block text-xs text-gray-400 hover:text-gray-600 mb-2">
+            비밀번호 변경
+          </Link>
           <form action="/api/auth/logout" method="POST">
             <input type="hidden" name="audience" value="console" />
             <button type="submit" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">

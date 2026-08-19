@@ -313,6 +313,13 @@ export const ko = {
   "mypage.history.title": "히스토리",
   "mypage.history.desc":  "이전 검색·요약 기록을 확인하세요",
   "mypage.history.link":  "히스토리 보기",
+  "mypage.password.title": "비밀번호 변경",
+  "mypage.password.desc": "현재 비밀번호를 확인한 뒤 8자 이상으로 바꿉니다.",
+  "mypage.password.current": "현재 비밀번호",
+  "mypage.password.next": "새 비밀번호 (8자 이상)",
+  "mypage.password.confirm": "새 비밀번호 확인",
+  "mypage.password.save": "비밀번호 저장",
+  "mypage.password.mismatch": "새 비밀번호가 서로 달라요.",
 
   "affiliation.title": "소속 대학이 있으신가요?",
   "affiliation.settingsTitle": "소속 대학",

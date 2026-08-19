@@ -293,6 +293,13 @@ export const zh: TranslationDict = {
   "mypage.history.title": "历史",
   "mypage.history.desc": "查看以前的搜索和摘要记录",
   "mypage.history.link": "查看历史",
+  "mypage.password.title": "修改密码",
+  "mypage.password.desc": "确认当前密码后，设置至少 8 位的新密码。",
+  "mypage.password.current": "当前密码",
+  "mypage.password.next": "新密码（至少 8 位）",
+  "mypage.password.confirm": "确认新密码",
+  "mypage.password.save": "保存密码",
+  "mypage.password.mismatch": "两次新密码不一致。",
 
   "affiliation.title": "您有所属大学吗？",
   "affiliation.settingsTitle": "所属大学",

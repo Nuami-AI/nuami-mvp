@@ -46,6 +46,9 @@ export default function InstitutionShell({
 
         <div className="px-5 py-4 border-t border-gray-100">
           <p className="text-[10px] text-gray-400 truncate mb-2">{email}</p>
+          <Link href="/admin/password" className="block text-xs text-gray-400 hover:text-gray-600 mb-2">
+            비밀번호 변경
+          </Link>
           <Link href="/admin" className="block text-xs text-gray-400 hover:text-gray-600 mb-2">
             기관 목록
           </Link>

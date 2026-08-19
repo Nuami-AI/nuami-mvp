@@ -307,6 +307,13 @@ export const en: TranslationDict = {
   "mypage.history.title": "History",
   "mypage.history.desc":  "View your past searches and summaries",
   "mypage.history.link":  "View history",
+  "mypage.password.title": "Change password",
+  "mypage.password.desc": "Confirm your current password, then set a new one (8+ characters).",
+  "mypage.password.current": "Current password",
+  "mypage.password.next": "New password (8+ characters)",
+  "mypage.password.confirm": "Confirm new password",
+  "mypage.password.save": "Save password",
+  "mypage.password.mismatch": "New passwords don’t match.",
 
   "affiliation.title": "Are you affiliated with a university?",
   "affiliation.settingsTitle": "University",

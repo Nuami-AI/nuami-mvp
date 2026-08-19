@@ -17,7 +17,7 @@ function assert(name: string, condition: boolean) {
 }
 
 async function main() {
-  const { hasOrgPermission, isInternalAccount, maskEmail, sameOrganization } = await import("../src/lib/auth/access");
+  const { hasOrgPermission, isInternalAccount, isSuperAdmin, canAccessInstitutionAdmin, maskEmail, sameOrganization } = await import("../src/lib/auth/access");
   const {
     getActiveEndUserInOrganization,
     getActiveStaffMembership,
@@ -115,6 +115,11 @@ async function main() {
     );
 
     assert("이메일 마스킹", maskEmail("jay@nuami.kr") === "j***@nuami.kr");
+    assert("슈퍼어드민 이메일", isSuperAdmin("admin@nuami.kr"));
+    assert("슈퍼어드민만 기관+콘솔", canAccessInstitutionAdmin({ email: "admin@nuami.kr", role: "admin", hasOrgMembership: false }));
+    assert("콘솔 접근자는 기관 어드민 불가", !canAccessInstitutionAdmin({ email: "ops@nuami.kr", role: "admin", hasOrgMembership: false }));
+    assert("엔드유저는 기관 어드민 불가", !canAccessInstitutionAdmin({ email: "jay@nuami.kr", role: "tester", hasOrgMembership: false }));
+    assert("기관계정은 기관 어드민 가능", canAccessInstitutionAdmin({ email: "staff@uni.ac.kr", role: "tester", hasOrgMembership: true }));
     assert("A기관 사용자 상세는 A기관 id로만", Boolean(await getActiveEndUserInOrganization(endA.id, KOREA)));
     assert("쿠키 Domain 미사용(host-only)", true);
 

@@ -6,6 +6,7 @@ import PageShell from "@/components/PageShell";
 import LanguageSelector from "./LanguageSelector";
 import PreferenceSelector from "./PreferenceSelector";
 import UniversityAffiliation from "@/components/affiliation/UniversityAffiliation";
+import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
 import { PageHeader } from "@/components/ui/page-header";
 import { useLanguage } from "@/lib/i18n";
 
@@ -32,6 +33,19 @@ export default function MypagePage() {
         <UniversityAffiliation mode="settings" />
       </div>
       <PreferenceSelector />
+
+      <div className="px-4 md:px-6 mt-8">
+        <ChangePasswordForm
+          next="/mypage"
+          title={t("mypage.password.title")}
+          description={t("mypage.password.desc")}
+          currentLabel={t("mypage.password.current")}
+          nextLabel={t("mypage.password.next")}
+          confirmLabel={t("mypage.password.confirm")}
+          saveLabel={t("mypage.password.save")}
+          mismatchLabel={t("mypage.password.mismatch")}
+        />
+      </div>
 
       <div className="px-4 md:px-6 mt-8">
         <p className="text-[13px] font-semibold text-text-secondary mb-1">{t("mypage.history.title")}</p>

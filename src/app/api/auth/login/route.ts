@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { loginAccount } from "@/lib/auth/accounts";
-import { isInternalAccount, type LoginAudience } from "@/lib/auth/access";
+import { canAccessInstitutionAdmin, isInternalAccount, type LoginAudience } from "@/lib/auth/access";
 import { publicOrigin } from "@/lib/hosts";
 import { adminLandingPath, listActiveStaffOrganizations } from "@/lib/auth/tenant";
 import { createSession, requestIsHttps, sessionCookieOptions } from "@/lib/auth/session";
@@ -105,15 +105,19 @@ async function destinationFor(input: {
     if (!isInternalAccount(input.role)) {
       return { error: "NOT_INTERNAL", message: "이 계정은 내부 운영 권한이 없습니다." };
     }
+    if (input.mustChangePassword) return "/console/password";
     return input.redirect.startsWith("/console") ? safeRedirect(input.redirect) : "/console";
   }
 
   if (input.audience === "admin") {
-    if (isInternalAccount(input.role)) {
-      return { error: "NOT_ORG_STAFF", message: "이 계정은 기관 관리자 권한이 없습니다." };
-    }
     const memberships = await listActiveStaffOrganizations(input.email);
-    if (memberships.length === 0) {
+    if (
+      !canAccessInstitutionAdmin({
+        email: input.email,
+        role: input.role,
+        hasOrgMembership: memberships.length > 0,
+      })
+    ) {
       return { error: "NOT_ORG_STAFF", message: "이 계정은 기관 관리자 권한이 없습니다." };
     }
     if (input.mustChangePassword) return "/admin/password";
@@ -123,7 +127,10 @@ async function destinationFor(input: {
     return adminLandingPath(input.email);
   }
 
-  if (isInternalAccount(input.role)) return "/console";
+  if (isInternalAccount(input.role)) {
+    return input.mustChangePassword ? "/console/password" : "/console";
+  }
+  if (input.mustChangePassword) return "/password";
   if (input.redirect.startsWith("/console") || input.redirect.startsWith("/admin")) return "/";
   return safeRedirect(input.redirect);
 }

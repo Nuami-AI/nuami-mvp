@@ -307,6 +307,13 @@ export const ja: TranslationDict = {
   "mypage.history.title": "履歴",
   "mypage.history.desc":  "過去の検索・要約記録を確認できます",
   "mypage.history.link":  "履歴を見る",
+  "mypage.password.title": "パスワード変更",
+  "mypage.password.desc": "現在のパスワードを確認して、8文字以上の新しいパスワードに変更します。",
+  "mypage.password.current": "現在のパスワード",
+  "mypage.password.next": "新しいパスワード（8文字以上）",
+  "mypage.password.confirm": "新しいパスワード（確認）",
+  "mypage.password.save": "パスワードを保存",
+  "mypage.password.mismatch": "新しいパスワードが一致しません。",
 
   "affiliation.title": "所属大学はありますか？",
   "affiliation.settingsTitle": "所属大学",

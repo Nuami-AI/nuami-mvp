@@ -293,6 +293,13 @@ export const vi: TranslationDict = {
   "mypage.history.title": "Lịch sử",
   "mypage.history.desc": "Xem lịch sử tìm kiếm và tóm tắt",
   "mypage.history.link": "Xem lịch sử",
+  "mypage.password.title": "Đổi mật khẩu",
+  "mypage.password.desc": "Xác nhận mật khẩu hiện tại, rồi đặt mật khẩu mới (từ 8 ký tự).",
+  "mypage.password.current": "Mật khẩu hiện tại",
+  "mypage.password.next": "Mật khẩu mới (từ 8 ký tự)",
+  "mypage.password.confirm": "Nhập lại mật khẩu mới",
+  "mypage.password.save": "Lưu mật khẩu",
+  "mypage.password.mismatch": "Mật khẩu mới không khớp.",
 
   "affiliation.title": "Bạn có thuộc trường đại học không?",
   "affiliation.settingsTitle": "Trường đại học",

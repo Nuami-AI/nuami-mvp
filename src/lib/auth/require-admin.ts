@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { isInternalAccount, staffCan, type OrgPermission } from "@/lib/auth/access";
+import { isInternalAccount, isSuperAdmin, staffCan, type OrgPermission } from "@/lib/auth/access";
 import { getActiveStaffMembership, listActiveStaffOrganizations, writeAudit } from "@/lib/auth/tenant";
 import { getSessionFromRequest, type SessionPayload } from "@/lib/auth/session";
 
@@ -17,6 +17,13 @@ export async function requireNuamiOperator(request: Request) {
 /** @deprecated use requireNuamiOperator */
 export const requireAdmin = requireNuamiOperator;
 
+export async function requireSuperAdmin(request: Request) {
+  const auth = await requireNuamiOperator(request);
+  if (auth.error || !auth.session) return auth;
+  if (!isSuperAdmin(auth.session.email)) return { session: null, error: FORBIDDEN };
+  return auth;
+}
+
 export async function requireOrgAccess(
   request: Request,
   organizationId: string,
@@ -30,7 +37,7 @@ export async function requireOrgAccess(
   const mapped: OrgPermission =
     permission === "write" ? "content.write" : permission === "read" ? "content.read" : permission;
 
-  if (isInternalAccount(session.role)) {
+  if (isSuperAdmin(session.email)) {
     await writeAudit({
       actorEmail: session.email,
       actorType: "INTERNAL",
@@ -38,7 +45,7 @@ export async function requireOrgAccess(
       action: "org.access",
       resourceType: "organization",
       resourceId: organizationId,
-      metadata: { permission: mapped, via: "console-api" },
+      metadata: { permission: mapped, via: "super-admin" },
     }).catch(() => {});
     return { session, membershipRole: "NUAMI_SUPER_ADMIN", error: null };
   }
@@ -51,7 +58,7 @@ export async function requireOrgAccess(
 }
 
 export async function listAccessibleOrganizationIds(session: SessionPayload): Promise<string[] | "all"> {
-  if (isInternalAccount(session.role)) return "all";
+  if (isSuperAdmin(session.email)) return "all";
   const rows = await listActiveStaffOrganizations(session.email);
   return rows.map((row) => row.organizationId);
 }

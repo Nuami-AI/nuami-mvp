@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { hasOrgPermission, isInternalAccount } from "@/lib/auth/access";
+import { hasOrgPermission, isInternalAccount, isSuperAdmin } from "@/lib/auth/access";
 import { getSessionFromRequest, type SessionPayload } from "@/lib/auth/session";
 import { getActiveStaffMembership, listActiveStaffOrganizations } from "@/lib/auth/tenant";
 import {
@@ -36,6 +36,12 @@ export async function resolveOrgAccess(orgSlug: string): Promise<{
   if (!session) redirect(`/admin/login?redirect=/admin/${encodeURIComponent(orgSlug)}`);
   if (session.mustChangePassword) redirect("/admin/password");
 
+  if (isSuperAdmin(session.email)) {
+    const institution = findInstitutionByOrgSlug(orgSlug);
+    if (!institution) redirect("/admin/denied");
+    return { session, institution, membershipRole: "NUAMI_SUPER_ADMIN" };
+  }
+
   if (isInternalAccount(session.role)) {
     redirect("/console/organizations");
   }
@@ -50,6 +56,7 @@ export async function resolveOrgAccess(orgSlug: string): Promise<{
 }
 
 export async function listSessionOrganizations(session: SessionPayload): Promise<InstitutionSeed[]> {
+  if (isSuperAdmin(session.email)) return INSTITUTION_CATALOG;
   if (isInternalAccount(session.role)) return [];
   const rows = await listActiveStaffOrganizations(session.email);
   const ids = new Set(rows.map((row) => row.organizationId));

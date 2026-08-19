@@ -4,6 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { COOKIE_NAME, verifySession } from "@/lib/auth/session";
 import { isNuamiOperator } from "@/lib/auth/roles";
+import { isSuperAdmin } from "@/lib/auth/access";
 import {
   hostKind,
   isAppOnlyPath,
@@ -21,6 +22,7 @@ export const config = {
     "/signup/:path*",
     "/content/:path*",
     "/mypage/:path*",
+    "/password",
     "/history",
     "/saved/:path*",
     "/guide/:path*",
@@ -112,7 +114,9 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (pathname === "/admin/password") {
+  const passwordChangePaths = new Set(["/admin/password", "/console/password", "/password"]);
+
+  if (passwordChangePaths.has(pathname)) {
     const sessionCookie = request.cookies.get(COOKIE_NAME);
     if (!sessionCookie?.value) return redirectToLogin(request, kind);
     try {
@@ -147,11 +151,26 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  if (payload.mustChangePassword && pathname !== "/admin/password") {
-    return NextResponse.redirect(new URL("/admin/password", request.url));
+  if (payload.mustChangePassword && !passwordChangePaths.has(pathname)) {
+    const dest =
+      kind === "console" || isConsolePath(pathname)
+        ? "/console/password"
+        : kind === "admin" || pathname.startsWith("/admin")
+          ? "/admin/password"
+          : "/password";
+    return NextResponse.redirect(new URL(dest, request.url));
   }
 
-  if (isNuamiOperator(payload.role) && (pathname === "/admin" || (pathname.startsWith("/admin/") && pathname !== "/admin/login" && pathname !== "/admin/denied" && pathname !== "/admin/join" && pathname !== "/admin/password"))) {
+  if (
+    isNuamiOperator(payload.role) &&
+    !isSuperAdmin(payload.email) &&
+    (pathname === "/admin" ||
+      (pathname.startsWith("/admin/") &&
+        pathname !== "/admin/login" &&
+        pathname !== "/admin/denied" &&
+        pathname !== "/admin/join" &&
+        pathname !== "/admin/password"))
+  ) {
     return NextResponse.redirect(new URL("/console/organizations", request.url));
   }
 

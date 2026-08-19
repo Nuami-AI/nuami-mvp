@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { hasOrgPermission, type OrgPermission } from "@/lib/auth/access";
+import { hasOrgPermission, isSuperAdmin, type OrgPermission } from "@/lib/auth/access";
 import { getInstitution, organizationSlugOf } from "@/lib/institution/catalog";
 
 export async function getActiveStaffMembership(email: string, organizationId: string) {
@@ -20,6 +20,7 @@ export async function listActiveStaffOrganizations(email: string) {
 }
 
 export async function adminLandingPath(email: string): Promise<string> {
+  if (isSuperAdmin(email)) return "/admin";
   const memberships = await listActiveStaffOrganizations(email);
   if (memberships.length === 1) {
     const org = getInstitution(memberships[0].organizationId);
