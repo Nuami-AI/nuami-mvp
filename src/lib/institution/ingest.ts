@@ -2,6 +2,7 @@ import OpenAI from "openai";
 
 import { fetchOpenDataForScenario } from "@/lib/opendata/search";
 import { prisma } from "@/lib/db";
+import type { KnowledgeCategory } from "./catalog";
 import { koreaAcademicContext, isInboundStudentKnowledge } from "./relevance";
 
 export interface ExtractedKnowledgeItem {
