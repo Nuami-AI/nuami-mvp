@@ -177,12 +177,9 @@ export function SocialLoginHome({ configured }: { configured: OAuthProvider[] })
 
         <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4">
           <BrandLogo variant="color" className="h-11 w-auto" priority />
-          <div className="flex w-full flex-col items-center gap-2 text-center">
-            <h1 className="text-[24px] font-bold leading-[1.333] tracking-[-0.6px] text-text-primary">
-              {t("login.welcome.title")}
-            </h1>
-            <p className="text-[16px] leading-[1.5] text-text-secondary">{t("login.welcome.subtitle")}</p>
-          </div>
+          <h1 className="text-center text-[24px] font-bold leading-[1.333] tracking-[-0.6px] text-text-primary">
+            {t("login.welcome.title")}
+          </h1>
         </div>
 
         <div className="flex flex-col items-center gap-4 px-4 pb-8">
