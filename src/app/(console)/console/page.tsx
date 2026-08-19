@@ -1,6 +1,6 @@
 import AdminShell from "@/components/admin/AdminShell";
 import { requireConsoleSession } from "@/lib/auth/page-session";
-import { getTesterEmails } from "@/lib/auth/accounts";
+import { listAppUserEmails } from "@/lib/auth/accounts";
 import { getAdminUserDetails } from "@/lib/usage/tracker";
 
 function formatDate(date: Date | null): string {
@@ -39,7 +39,7 @@ function StatCard({ label, value, sub }: { label: string; value: string | number
 
 export default async function ConsolePage() {
   const session = await requireConsoleSession();
-  const testerEmails = getTesterEmails();
+  const testerEmails = await listAppUserEmails();
   const users = await getAdminUserDetails(testerEmails);
 
   const totalUse = users.reduce((s, u) => s + u.video_ai_use, 0);

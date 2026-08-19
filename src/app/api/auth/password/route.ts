@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { envAccountEmail } from "@/lib/auth/accounts";
 import { consumeChallenge, issueChallenge, verifyChallenge } from "@/lib/auth/challenge";
 import { TEMP_ORG_PASSWORD } from "@/lib/auth/issue-org-staff";
 import { hashPassword, isValidEmail, isValidPassword, verifyPassword } from "@/lib/auth/password";
@@ -33,10 +32,6 @@ export async function POST(request: Request): Promise<Response> {
   if (action === "change") {
     const session = await getSessionFromRequest(request);
     if (!session) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
-    if (envAccountEmail(session.email)) {
-      return NextResponse.json({ error: "ENV_ACCOUNT", message: "이 계정은 여기서 바꿀 수 없습니다." }, { status: 400 });
-    }
-
     const currentPassword = typeof body?.currentPassword === "string" ? body.currentPassword : "";
     const password = typeof body?.password === "string" ? body.password : "";
     if (!isValidPassword(password) || password === TEMP_ORG_PASSWORD) {
@@ -73,9 +68,6 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   if (action === "request-code") {
-    if (envAccountEmail(email)) {
-      return NextResponse.json({ error: "EMAIL_NOT_FOUND" }, { status: 404 });
-    }
     const user = await prisma.authUser.findUnique({ where: { email, status: "ACTIVE" } });
     if (!user) return NextResponse.json({ error: "EMAIL_NOT_FOUND" }, { status: 404 });
     const issued = await issueChallenge(email, "reset");

@@ -158,11 +158,13 @@ model AuthUser {
   marketingAgreed  Boolean  @default(false)
   thirdPartyAgreed Boolean  @default(false)
   passwordMustChange Boolean @default(false)
+  accountType      String   @default("END_USER")
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
   @@unique([provider, providerAccountId])
   @@index([status])
+  @@index([accountType])
 }
 
 model AuthChallenge {

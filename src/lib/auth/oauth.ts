@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomBytes } from "node:crypto";
 
-import { envAccountEmail } from "@/lib/auth/accounts";
+import { sessionRoleOf } from "@/lib/auth/accounts";
 import { isInternalAccount } from "@/lib/auth/access";
 import { isOAuthProvider, OAUTH_PROVIDERS, type OAuthProvider } from "@/lib/auth/oauth-providers";
 import { createSession, requestIsHttps, sessionCookieOptions } from "@/lib/auth/session";
@@ -272,8 +272,6 @@ function normalizeProfile(provider: OAuthProvider, profile: Record<string, unkno
 
 export async function upsertSocialUser(provider: OAuthProvider, profile: SocialProfile) {
   const email = profile.email.trim().toLowerCase();
-  const env = envAccountEmail(email);
-  if (env) return env;
 
   const byProvider = await prisma.authUser.findFirst({
     where: { provider, providerAccountId: profile.id },
@@ -282,7 +280,7 @@ export async function upsertSocialUser(provider: OAuthProvider, profile: SocialP
     if (byProvider.status !== "ACTIVE") {
       await prisma.authUser.update({ where: { id: byProvider.id }, data: { status: "ACTIVE" } });
     }
-    return { email: byProvider.email, role: "tester" as const };
+    return { email: byProvider.email, role: sessionRoleOf(byProvider.accountType) };
   }
 
   const byEmail = await prisma.authUser.findUnique({ where: { email } });
@@ -291,7 +289,7 @@ export async function upsertSocialUser(provider: OAuthProvider, profile: SocialP
       where: { id: byEmail.id },
       data: { provider, providerAccountId: profile.id, status: "ACTIVE" },
     });
-    return { email: byEmail.email, role: "tester" as const };
+    return { email: byEmail.email, role: sessionRoleOf(byEmail.accountType) };
   }
 
   const created = await prisma.authUser.create({
@@ -301,9 +299,10 @@ export async function upsertSocialUser(provider: OAuthProvider, profile: SocialP
       providerAccountId: profile.id,
       status: "ACTIVE",
       passwordHash: null,
+      accountType: "END_USER",
     },
   });
-  return { email: created.email, role: "tester" as const };
+  return { email: created.email, role: sessionRoleOf(created.accountType) };
 }
 
 export async function redirectWithAppSession(

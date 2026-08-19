@@ -31,6 +31,11 @@ export async function issueOrgStaffAccount(input: {
     throw new Error("이미 이 기관에 발급된 계정입니다.");
   }
 
+  const existingUser = await prisma.authUser.findUnique({ where: { email } });
+  if (existingUser?.accountType === "INTERNAL") {
+    throw new Error("내부 운영 계정에는 기관 권한을 붙일 수 없습니다.");
+  }
+
   const passwordHash = hashPassword(TEMP_ORG_PASSWORD);
   await prisma.authUser.upsert({
     where: { email },
@@ -38,11 +43,13 @@ export async function issueOrgStaffAccount(input: {
       email,
       passwordHash,
       status: "ACTIVE",
+      accountType: "ORG_STAFF",
       passwordMustChange: true,
     },
     update: {
       passwordHash,
       status: "ACTIVE",
+      accountType: "ORG_STAFF",
       passwordMustChange: true,
     },
   });

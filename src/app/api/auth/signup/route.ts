@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-import { envAccountEmail } from "@/lib/auth/accounts";
 import { consumeChallenge, issueChallenge, verifyChallenge } from "@/lib/auth/challenge";
 import { hashPassword, isValidEmail, isValidPassword } from "@/lib/auth/password";
 import { prisma } from "@/lib/db";
@@ -25,10 +24,6 @@ export async function POST(request: Request): Promise<Response> {
   if (!action || !isValidEmail(email)) {
     return NextResponse.json({ error: "INVALID_EMAIL" }, { status: 400 });
   }
-  if (envAccountEmail(email)) {
-    return NextResponse.json({ error: "EMAIL_TAKEN" }, { status: 409 });
-  }
-
   if (action === "request-code") {
     const existing = await prisma.authUser.findUnique({ where: { email } });
     if (existing) return NextResponse.json({ error: "EMAIL_TAKEN" }, { status: 409 });
@@ -57,6 +52,7 @@ export async function POST(request: Request): Promise<Response> {
         email,
         passwordHash: hashPassword(password),
         status: "ACTIVE",
+        accountType: "END_USER",
         marketingAgreed: body?.marketingAgreed === true,
         thirdPartyAgreed: body?.thirdPartyAgreed === true,
       },

@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test:access": "tsx --tsconfig tsconfig.json scripts/auth-access-check.ts",
+    "auth:migrate-env": "tsx --tsconfig tsconfig.json scripts/migrate-env-accounts.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

@@ -61,7 +61,7 @@ async function seedOnce(): Promise<void> {
 }
 
 async function seedStaffFromEnv(): Promise<void> {
-  const email = (process.env.ORG_STAFF_EMAIL || process.env.TESTER1_EMAIL)?.trim().toLowerCase();
+  const email = process.env.ORG_STAFF_EMAIL?.trim().toLowerCase();
   const organizationId = process.env.ORG_STAFF_ORG?.trim() || "korea-university";
   const role = process.env.ORG_STAFF_ROLE?.trim() || "ORG_ADMIN";
   if (!email) return;
