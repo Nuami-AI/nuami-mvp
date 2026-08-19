@@ -26,7 +26,22 @@ export function hostKind(hostHeader: string): HostKind {
   if (CONSOLE_HOST && host === CONSOLE_HOST) return "console";
   if (ADMIN_HOST && host === ADMIN_HOST) return "admin";
   if (APP_HOST && host === APP_HOST) return "app";
+  // NEXT_PUBLIC_* is baked in at build time. Infer from the hostname so
+  // app/admin/console still split when those env vars were missing on Vercel.
+  if (host.startsWith("console.")) return "console";
+  if (host.startsWith("admin.")) return "admin";
+  if (host.startsWith("app.")) return "app";
   return "local";
+}
+
+/** Hostname for cross-product redirects (env first, else sibling of the current host). */
+export function productHost(kind: "app" | "admin" | "console", hostHeader: string): string {
+  const configured = kind === "app" ? APP_HOST : kind === "admin" ? ADMIN_HOST : CONSOLE_HOST;
+  if (configured) return configured;
+  const host = hostnameOf(hostHeader);
+  const rest = host.replace(/^(app|admin|console)\./, "");
+  if (rest && rest !== host) return `${kind}.${rest}`;
+  return "";
 }
 
 /** Host-only cookies. Never set Domain=.nuami.kr — login on one product must not grant the others. */
@@ -72,13 +87,15 @@ export function homeHrefForRole(role: "admin" | "tester"): string {
   const host = window.location.hostname;
   const protocol = window.location.protocol;
   if (role === "admin") {
-    if (CONSOLE_HOST && host !== CONSOLE_HOST && !isLoopbackHost(host)) {
-      return `${protocol}//${CONSOLE_HOST}/`;
+    const consoleHost = productHost("console", host);
+    if (consoleHost && host !== consoleHost && !isLoopbackHost(host)) {
+      return `${protocol}//${consoleHost}/`;
     }
     return "/console";
   }
-  if (APP_HOST && host !== APP_HOST && !isLoopbackHost(host)) {
-    return `${protocol}//${APP_HOST}/`;
+  const appHost = productHost("app", host);
+  if (appHost && host !== appHost && !isLoopbackHost(host)) {
+    return `${protocol}//${appHost}/`;
   }
   return "/";
 }
