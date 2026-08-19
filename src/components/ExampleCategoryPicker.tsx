@@ -5,13 +5,22 @@ import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/i18n/ko";
 
-type CategoryId = "leisure" | "food" | "housing" | "transport" | "school";
+type CategoryId = "admin" | "leisure" | "food" | "housing" | "transport" | "school";
 
 const CATEGORIES: {
   id: CategoryId;
   icon: string;
   examples: TranslationKey[];
 }[] = [
+  {
+    id: "admin",
+    icon: "🏛️",
+    examples: [
+      "input.example.admin.bank",
+      "input.example.admin.address",
+      "input.example.admin.hospital",
+    ],
+  },
   {
     id: "leisure",
     icon: "🛍️",

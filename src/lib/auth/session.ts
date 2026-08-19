@@ -5,6 +5,7 @@ import { type NextRequest } from "next/server";
 export interface SessionPayload {
   email: string;
   role: "admin" | "tester";
+  mustChangePassword?: boolean;
   iat: number;
   exp: number;
 }
@@ -18,8 +19,16 @@ function getSecret(): Uint8Array {
   return new TextEncoder().encode(secret);
 }
 
-export async function createSession(email: string, role: "admin" | "tester"): Promise<string> {
-  return new SignJWT({ email, role })
+export async function createSession(
+  email: string,
+  role: "admin" | "tester",
+  extra?: { mustChangePassword?: boolean },
+): Promise<string> {
+  return new SignJWT({
+    email,
+    role,
+    ...(extra?.mustChangePassword ? { mustChangePassword: true } : {}),
+  })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${MAX_AGE}s`)
@@ -44,7 +53,12 @@ export async function getSessionFromRequest(
   }
 }
 
-export function sessionCookieOptions(value: string, clear = false) {
+export function sessionCookieOptions(
+  value: string,
+  clear = false,
+  _hostHeader?: string,
+  secure?: boolean,
+) {
   return {
     name: COOKIE_NAME,
     value: clear ? "" : value,
@@ -52,6 +66,17 @@ export function sessionCookieOptions(value: string, clear = false) {
     sameSite: "lax" as const,
     path: "/",
     maxAge: clear ? 0 : MAX_AGE,
-    secure: process.env.NODE_ENV === "production",
+    secure: secure ?? process.env.NODE_ENV === "production",
+    // no Domain — host-only. Do not share across app/admin/console subdomains.
   };
+}
+
+export function requestIsHttps(request: Request): boolean {
+  const forwarded = request.headers.get("x-forwarded-proto");
+  if (forwarded) return forwarded.split(",")[0]?.trim() === "https";
+  try {
+    return new URL(request.url).protocol === "https:";
+  } catch {
+    return false;
+  }
 }

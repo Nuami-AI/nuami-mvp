@@ -1,7 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+const globalForPrisma = globalThis as unknown as {
+  prisma?: PrismaClient;
+};
 
 function parseDatabaseUrl(url: string): Record<string, unknown> {
   const parsed = new URL(url.replace(/^mysql:\/\//i, "https://"));
@@ -22,13 +24,26 @@ function parseDatabaseUrl(url: string): Record<string, unknown> {
     user: decodedURIComponent(parsed.username),
     password: decodedURIComponent(parsed.password),
     database: database || undefined,
-    connectTimeout: 30_000,
-    acquireTimeout: 30_000,
+    ...poolTuning(),
   };
   if (urlWantsSsl || cloudNeedsSsl) {
     config.ssl = { rejectUnauthorized: true };
   }
   return config;
+}
+
+function poolTuning(): Record<string, unknown> {
+  // mariadb idleTimeout is seconds. minimumIdle: 0 prevents the pool from
+  // creating any connection (idle < 0 is never true), which shows up as
+  // active=0 idle=0 pool timeout.
+  return {
+    connectionLimit: 3,
+    minimumIdle: 1,
+    connectTimeout: 20_000,
+    acquireTimeout: 25_000,
+    idleTimeout: 600,
+    initializationTimeout: 20_000,
+  };
 }
 
 function decodedURIComponent(s: string): string {
@@ -48,8 +63,7 @@ function getPoolConfig(): Record<string, unknown> {
       user: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_DATABASE ?? "nuami",
-      connectTimeout: 30_000,
-      acquireTimeout: 30_000,
+      ...poolTuning(),
       ssl: process.env.DB_SSL !== "false" ? { rejectUnauthorized: true } : undefined,
     };
   }

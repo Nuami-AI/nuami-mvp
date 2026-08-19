@@ -49,16 +49,24 @@ export async function claudeExtract(input: PromptInput): Promise<ClaudeExtractRe
 
   const systemPrompt = buildSystemPrompt(input.userLanguage, input.toneStyle, input.lifeStage);
 
-  const response = await client.chat.completions.create({
-    model,
-    max_tokens: MAX_OUTPUT_TOKENS,
-    temperature: 0.2,  // low temperature for consistent, repeatable extraction
-    seed: 42,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: buildUserMessage(input) },
-    ],
-  });
+  let response;
+  try {
+    response = await client.chat.completions.create({
+      model,
+      max_tokens: MAX_OUTPUT_TOKENS,
+      temperature: 0.2,
+      seed: 42,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: buildUserMessage(input) },
+      ],
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    // Log the real cause so server logs are useful
+    console.error("[claudeExtract] OpenAI API error:", msg);
+    throw err;
+  }
 
   const text = response.choices[0]?.message?.content;
   if (!text) {

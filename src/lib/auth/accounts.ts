@@ -1,4 +1,6 @@
-// Design Ref: §7 — hardcoded 3-account system via env vars
+import { prisma } from "@/lib/db";
+import { verifyPassword } from "@/lib/auth/password";
+
 export interface Account {
   email: string;
   role: "admin" | "tester";
@@ -39,13 +41,42 @@ function getAccounts(): Array<Account & { password: string }> {
   ];
 }
 
+export function envAccountEmail(email: string): Account | null {
+  const normalized = email.trim().toLowerCase();
+  const found = getAccounts().find((a) => a.email && a.email.toLowerCase() === normalized);
+  return found ? { email: found.email, role: found.role } : null;
+}
+
 export function findAccount(email: string, password: string): Account | null {
-  const accounts = getAccounts();
-  const found = accounts.find(
-    (a) => a.email && a.email === email && a.password === password
-  );
-  if (!found) return null;
+  const normalized = email.trim().toLowerCase();
+  const accounts = getAccounts().filter((a) => a.email);
+  const found = accounts.find((a) => a.email.toLowerCase() === normalized);
+  if (!found || found.password !== password) return null;
   return { email: found.email, role: found.role };
+}
+
+export type LoginLookup =
+  | { ok: true; account: Account; mustChangePassword: boolean }
+  | { ok: false; reason: "unknown_email" | "wrong_password" | "social_only" };
+
+export async function loginAccount(email: string, password: string): Promise<LoginLookup> {
+  const normalized = email.trim().toLowerCase();
+  const accounts = getAccounts().filter((a) => a.email);
+  const found = accounts.find((a) => a.email.toLowerCase() === normalized);
+  if (found) {
+    if (found.password !== password) return { ok: false, reason: "wrong_password" };
+    return { ok: true, account: { email: found.email, role: found.role }, mustChangePassword: false };
+  }
+
+  const user = await prisma.authUser.findUnique({ where: { email: normalized } });
+  if (!user || user.status !== "ACTIVE") return { ok: false, reason: "unknown_email" };
+  if (!user.passwordHash) return { ok: false, reason: "social_only" };
+  if (!verifyPassword(password, user.passwordHash)) return { ok: false, reason: "wrong_password" };
+  return {
+    ok: true,
+    account: { email: user.email, role: "tester" },
+    mustChangePassword: user.passwordMustChange,
+  };
 }
 
 export function getTesterEmails(): string[] {

@@ -3,17 +3,20 @@
 // Design Ref: §6.1 platform-pivot — situation-first input with QuickChips + optional URL toggle.
 // Plan SC: FR-01 — QuickChips, SituationTextarea, UrlToggle, "Generate Action Guide" CTA.
 
+import Image from "next/image";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import PageShell from "./PageShell";
 import ExampleCategoryPicker from "./ExampleCategoryPicker";
+import PipelineLoading from "./guide/PipelineLoading";
 import { Button } from "./ui/button";
 import { Alert, AlertTitle, AlertDescription } from "./ui/alert";
-import { PageHeader } from "./ui/page-header";
+import { HeaderIconButton } from "./ui/header-icon";
+import { PageHeader, RemainingBadge } from "./ui/page-header";
+import { interpolate } from "./results-shared";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/i18n";
 import type { ExtractError } from "@/types/extraction";
-import type { UsageInfo } from "@/app/page";
+import type { UsageInfo } from "@/types/usage";
 
 interface Props {
   situation: string;
@@ -79,23 +82,14 @@ function Spinner() {
 
 function Illustration({ className = "" }: { className?: string }) {
   return (
-    <svg className={className} width="148" height="148" viewBox="0 0 148 148" fill="none">
-      <circle cx="74" cy="74" r="50" fill="#F2EBFF" />
-      {/* Person figure */}
-      <circle cx="74" cy="52" r="12" fill="#8651F2" />
-      <path d="M52 95c0-12.15 9.85-22 22-22s22 9.85 22 22" stroke="#8651F2" strokeWidth="3" fill="none" strokeLinecap="round" />
-      {/* Checklist card */}
-      <rect x="84" y="62" width="44" height="52" rx="8" fill="#8651F2" />
-      <line x1="92" y1="74" x2="120" y2="74" stroke="white" strokeWidth="2" strokeLinecap="round" />
-      <line x1="92" y1="82" x2="116" y2="82" stroke="white" strokeWidth="2" strokeLinecap="round" />
-      <line x1="92" y1="90" x2="118" y2="90" stroke="white" strokeWidth="2" strokeLinecap="round" />
-      <circle cx="89" cy="74" r="2" fill="white" />
-      <circle cx="89" cy="82" r="2" fill="white" />
-      <circle cx="89" cy="90" r="2" fill="white" />
-      {/* Star badge */}
-      <circle cx="30" cy="80" r="14" fill="#B186FF" />
-      <path d="M30 72l2.06 4.18 4.61.67-3.34 3.25.79 4.59L30 82.5l-4.12 2.19.79-4.59L23.33 76.85l4.61-.67L30 72z" fill="white" />
-    </svg>
+    <Image
+      src="/brand/nami-bot.png"
+      alt="nami bot"
+      width={400}
+      height={400}
+      priority
+      className={cn("w-[148px] h-[148px] object-contain", className)}
+    />
   );
 }
 
@@ -113,25 +107,45 @@ export default function InputScreen({
   usageInfo,
 }: Props) {
   const { t } = useLanguage();
-  const router = useRouter();
   const [showUrl, setShowUrl] = useState(false);
+  const [pipelineStep, setPipelineStep] = useState<"search" | "reason" | "generate">("search");
+  const [displayName, setDisplayName] = useState<string | null>(null);
 
   useEffect(() => {
     if (url.trim()) setShowUrl(true);
   }, [url]);
 
-  async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
-    router.push("/login");
-  }
+  useEffect(() => {
+    fetch("/api/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { displayName?: string } | null) => {
+        if (d?.displayName) setDisplayName(d.displayName);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!isLoading) {
+      setPipelineStep("search");
+      return;
+    }
+    setPipelineStep("search");
+    const t1 = window.setTimeout(() => setPipelineStep("reason"), 700);
+    const t2 = window.setTimeout(() => setPipelineStep("generate"), 1600);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, [isLoading]);
 
   const canGenerate = situation.trim().length > 0 && !isLoading;
+  const welcome = displayName
+    ? interpolate(t("input.welcome"), { name: displayName })
+    : t("input.welcomeAnon");
 
   const remainingBadge =
     usageInfo?.role === "tester" && usageInfo.remaining !== null ? (
-      <span className="ml-2 inline-flex items-center rounded-full bg-infoBox px-2 py-0.5 text-[11px] font-medium text-accent-700">
-        {usageInfo.remaining}회 남음
-      </span>
+      <RemainingBadge count={usageInfo.remaining} />
     ) : null;
 
   function friendlyError(err: ExtractError): { title: string; hint?: string } {
@@ -188,18 +202,13 @@ export default function InputScreen({
       className="pb-44 md:pb-16 lg:pb-20"
     >
       <PageHeader
-        title={`👋 ${t("input.welcome")}`}
+        variant="home"
+        title={welcome}
         trailing={
-          <div className="flex items-center gap-2">
+          <>
             {remainingBadge}
-            <button
-              onClick={handleLogout}
-              className="text-[12px] text-text-tertiary hover:text-text-secondary transition-colors px-1 md:hidden"
-              aria-label="로그아웃"
-            >
-              로그아웃
-            </button>
-          </div>
+            <HeaderIconButton name="notifications" label={t("header.notifications")} />
+          </>
         }
       />
 
@@ -208,7 +217,7 @@ export default function InputScreen({
         {/* ── Hero ── */}
         <div className="flex flex-col items-center lg:items-start lg:pt-4">
           <div className="flex justify-center mt-6 lg:mt-0">
-            <Illustration className="lg:w-44 lg:h-44" />
+            <Illustration className="lg:w-56 lg:h-56" />
           </div>
           <h1 className="text-[21px] lg:text-3xl font-bold text-center lg:text-left text-text-primary mt-5 leading-tight">
             {t("input.hero.title")}
@@ -278,6 +287,8 @@ export default function InputScreen({
             )}
           </div>
 
+          {isLoading && <PipelineLoading active={pipelineStep} t={t} />}
+
           {/* Error */}
           {shownError && (
             <Alert className="py-2.5 px-3 border-danger-200 bg-danger-50 text-danger-800">
@@ -305,9 +316,9 @@ export default function InputScreen({
         </div>
       </div>
 
-      {/* Mobile fixed CTA */}
-      <div className="fixed bottom-[56px] left-0 w-full px-4 py-3 bg-background md:hidden">
-        {ctaButton}
+      {/* Mobile fixed CTA — wrapper must not steal taps from content behind it */}
+      <div className="pointer-events-none fixed bottom-[56px] left-0 z-10 w-full px-4 py-3 md:hidden">
+        <div className="pointer-events-auto">{ctaButton}</div>
       </div>
     </PageShell>
   );

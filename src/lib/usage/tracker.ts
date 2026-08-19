@@ -7,7 +7,10 @@ export type UsageAction =
   | "paywall_shown"
   | "paywall_cta_click"
   | "paywall_dismiss"
-  | "guide_bonus_claimed";
+  | "guide_bonus_claimed"
+  | "guide_completed"
+  | "guide_rated"
+  | "guide_researched";
 
 const USAGE_LIMIT = parseInt(process.env.USAGE_LIMIT ?? "3", 10);
 
@@ -110,25 +113,23 @@ export async function getAdminUserDetails(emails: string[]): Promise<AdminUserDe
 
   const actions = TESTER_STAT_ACTIONS;
 
-  const [rows, firstEvents, lastEvents] = await Promise.all([
-    prisma.usageEvent.groupBy({
-      by: ["userEmail", "action"],
-      where: { userEmail: { in: emails } },
-      _count: { id: true },
-    }),
-    prisma.usageEvent.findMany({
-      where: { userEmail: { in: emails } },
-      orderBy: { createdAt: "asc" },
-      distinct: ["userEmail"],
-      select: { userEmail: true, createdAt: true },
-    }),
-    prisma.usageEvent.findMany({
-      where: { userEmail: { in: emails } },
-      orderBy: { createdAt: "desc" },
-      distinct: ["userEmail"],
-      select: { userEmail: true, createdAt: true },
-    }),
-  ]);
+  const rows = await prisma.usageEvent.groupBy({
+    by: ["userEmail", "action"],
+    where: { userEmail: { in: emails } },
+    _count: { id: true },
+  });
+  const firstEvents = await prisma.usageEvent.findMany({
+    where: { userEmail: { in: emails } },
+    orderBy: { createdAt: "asc" },
+    distinct: ["userEmail"],
+    select: { userEmail: true, createdAt: true },
+  });
+  const lastEvents = await prisma.usageEvent.findMany({
+    where: { userEmail: { in: emails } },
+    orderBy: { createdAt: "desc" },
+    distinct: ["userEmail"],
+    select: { userEmail: true, createdAt: true },
+  });
 
   return emails.map((email) => {
     const stat: TesterStats = {

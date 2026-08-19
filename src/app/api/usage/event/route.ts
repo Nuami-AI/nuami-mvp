@@ -5,7 +5,14 @@ import { NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/lib/auth/session";
 import { logEvent, type UsageAction } from "@/lib/usage/tracker";
 
-const ALLOWED_ACTIONS: UsageAction[] = ["paywall_cta_click", "paywall_dismiss", "paywall_shown"];
+const ALLOWED_ACTIONS: UsageAction[] = [
+  "paywall_cta_click",
+  "paywall_dismiss",
+  "paywall_shown",
+  "guide_completed",
+  "guide_rated",
+  "guide_researched",
+];
 
 export async function POST(request: Request): Promise<Response> {
   const session = await getSessionFromRequest(request);

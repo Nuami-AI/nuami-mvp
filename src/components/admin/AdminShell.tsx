@@ -1,0 +1,68 @@
+import Link from "next/link";
+
+import { BrandLogo } from "@/components/brand/BrandLogo";
+
+interface Props {
+  email: string;
+  active: "users" | "knowledge" | "organizations";
+  title: string;
+  subtitle: string;
+  children: React.ReactNode;
+}
+
+export default function AdminShell({ email, active, title, subtitle, children }: Props) {
+  return (
+    <div className="flex min-h-screen bg-gray-50">
+      <aside className="w-52 shrink-0 flex flex-col border-r border-gray-200 bg-white">
+        <div className="px-5 py-5 border-b border-gray-100">
+          <Link href="/console" className="inline-flex">
+            <BrandLogo className="h-7" />
+          </Link>
+          <p className="mt-2 text-sm font-bold text-gray-900">NUAMI Console</p>
+          <p className="mt-0.5 text-[10px] text-gray-400">내부 운영</p>
+        </div>
+
+        <nav className="flex-1 px-3 py-4 space-y-0.5">
+          <SidebarItem href="/console" label="이용 현황" active={active === "users"} />
+          <SidebarItem href="/console/organizations" label="기관" active={active === "organizations"} />
+          <SidebarItem href="/console/knowledge" label="자료 검수" active={active === "knowledge"} />
+        </nav>
+
+        <div className="px-5 py-4 border-t border-gray-100">
+          <p className="text-[10px] text-gray-400 truncate mb-2">{email}</p>
+          <form action="/api/auth/logout" method="POST">
+            <input type="hidden" name="audience" value="console" />
+            <button type="submit" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+              로그아웃
+            </button>
+          </form>
+        </div>
+      </aside>
+
+      <main className="flex-1 overflow-auto">
+        <div className="px-8 py-7">
+          <div className="mb-6">
+            <h1 className="text-xl font-bold text-gray-900">{title}</h1>
+            <p className="mt-0.5 text-sm text-gray-400">{subtitle}</p>
+          </div>
+          {children}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function SidebarItem({ href, label, active }: { href: string; label: string; active: boolean }) {
+  return (
+    <Link
+      href={href}
+      className={`flex items-center rounded-lg px-3 py-2 text-sm transition-colors ${
+        active
+          ? "bg-gray-100 text-gray-900 font-medium"
+          : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+      }`}
+    >
+      {label}
+    </Link>
+  );
+}

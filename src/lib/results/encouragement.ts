@@ -12,6 +12,9 @@ export function getEncouragementMessage(situation: string, venue: ResultVenue): 
   if (/은행|계좌|송금|bank/.test(s) || venue === "bank") {
     return "서류만 준비하면 차근차근 할 수 있어요. 응원할게요 💳";
   }
+  if (/체류지|전입|이사|주소/.test(s) || venue === "immigration") {
+    return "전입한 날부터 15일이에요. 서류만 챙기면 순서대로 끝낼 수 있어요 🏠";
+  }
   if (/학교|수업|교수|등록|학점|campus|university/.test(s)) {
     return "새 학기, 잘 해낼 수 있어요. 하나씩만 챙기면 돼요 🎓";
   }

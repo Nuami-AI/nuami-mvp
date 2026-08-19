@@ -1,6 +1,6 @@
 import type { Place } from "@/types/extraction";
 
-export type ResultVenue = "store" | "bank" | "hospital" | "default";
+export type ResultVenue = "store" | "bank" | "hospital" | "immigration" | "default";
 
 interface BuildQueriesInput {
   situation: string;
@@ -34,6 +34,7 @@ const PLACE_INTENT_RULES: { pattern: RegExp; query: string }[] = [
   { pattern: /약국|pharmacy|薬局|ドラッグストア/i, query: "약국" },
   { pattern: /병원|의원|clinic|hospital|病院|クリニック/i, query: "병원" },
   { pattern: /은행|bank|account|계좌|銀行/i, query: "은행" },
+  { pattern: /체류지|전입|출입국|immigration|주소\s*변경|하이코리아/i, query: "출입국외국인청" },
   { pattern: /올리브영|올영|olive\s*young|oliveyoung|드럭스토어|화장품|뷰티/i, query: "올리브영" },
   { pattern: /다이소|daiso/i, query: "다이소" },
   { pattern: /지하철|subway|metro|地下鉄|駅/i, query: "지하철역" },
@@ -165,15 +166,18 @@ function extractAreaHints(situation: string): string[] {
   return hints;
 }
 
+export function isMappableQuery(query: string): boolean {
+  return !/하이코리아|전자민원|온라인 신청|hikorea/i.test(query);
+}
+
 function venueDefaults(venue: ResultVenue, situation: string): string[] {
   const intents = extractPlaceIntentQueries(situation);
   if (intents.length > 0) return intents;
 
-  const s = situation.toLowerCase();
-
   if (venue === "store") return ["올리브영", "드럭스토어"];
-  if (venue === "bank") return ["외국인 친화 은행", "KEB하나은행"];
+  if (venue === "bank") return ["은행"];
   if (venue === "hospital") return ["병원", "약국"];
+  if (venue === "immigration") return ["출입국외국인청"];
 
   return [];
 }
@@ -197,7 +201,11 @@ export function buildKakaoSearchQueries({
   }
 
   for (const item of whereTo) {
-    if (item.trim()) queries.push(item.trim());
+    if (item.trim() && isMappableQuery(item)) queries.push(item.trim());
+  }
+
+  if (venue === "immigration") {
+    queries.push("출입국외국인청");
   }
 
   queries.push(...extractPlaceIntentQueries(trimmed));
@@ -233,7 +241,7 @@ export function buildKakaoSearchQueries({
   const normalizedQueries: string[] = [];
   for (const q of queries) {
     const key = q.trim();
-    if (!key || key.length < 2 || seen.has(key)) continue;
+    if (!key || key.length < 2 || seen.has(key) || !isMappableQuery(key)) continue;
     seen.add(key);
     normalizedQueries.push(key);
   }
@@ -263,24 +271,37 @@ export function resolveMapSearchQuery({
   whereTo = [],
   explicitQuery = "",
 }: BuildQueriesInput & { explicitQuery?: string }): { primary: string; queries: string[] } {
-  const built = buildKakaoSearchQueries({ situation, venue, places, whereTo });
+  const mappableWhere = whereTo.filter((item) => item.trim() && isMappableQuery(item));
+  const built = buildKakaoSearchQueries({ situation, venue, places, whereTo: mappableWhere });
   const intents = extractPlaceIntentQueries(situation);
   const areaHints = extractAreaHints(situation);
   const hasSpecific =
-    places.length > 0 || whereTo.length > 0 || intents.length > 0 || areaHints.length > 0;
+    places.length > 0 || mappableWhere.length > 0 || intents.length > 0 || areaHints.length > 0;
 
   let primary = "";
-  if (places[0]?.nameKo?.trim()) primary = places[0].nameKo.trim();
-  else if (places[0]?.name?.trim()) primary = places[0].name.trim();
-  else if (whereTo[0]?.trim()) primary = whereTo[0].trim();
-  else if (areaHints[0] && intents[0]) primary = `${areaHints[0]} ${intents[0]}`;
-  else if (intents[0]) primary = intents[0] === "유학생 기숙사" ? "부동산" : intents[0];
-  else {
+  const isImmigrationSearch =
+    venue === "immigration" ||
+    intents.includes("출입국외국인청") ||
+    mappableWhere.some((item) => /출입국|immigration/i.test(item));
+  if (isImmigrationSearch) {
+    primary = "출입국외국인청";
+  } else if (places[0]?.nameKo?.trim() && isMappableQuery(places[0].nameKo)) {
+    primary = places[0].nameKo.trim();
+  } else if (places[0]?.name?.trim() && isMappableQuery(places[0].name)) {
+    primary = places[0].name.trim();
+  } else if (mappableWhere[0]?.trim()) {
+    primary = mappableWhere[0].trim();
+  } else if (areaHints[0] && intents[0]) {
+    primary = `${areaHints[0]} ${intents[0]}`;
+  } else if (intents[0]) {
+    primary = intents[0] === "유학생 기숙사" ? "부동산" : intents[0];
+  } else {
     const explicit = normalizeSituation(explicitQuery);
     if (
       explicit.length >= 2 &&
       explicit.length <= 14 &&
-      !isNaturalLanguageSentence(explicit)
+      !isNaturalLanguageSentence(explicit) &&
+      isMappableQuery(explicit)
     ) {
       primary = explicit;
     } else {
@@ -288,13 +309,13 @@ export function resolveMapSearchQuery({
     }
   }
 
-  const merged = [primary, ...built, ...whereTo].filter(Boolean);
+  const merged = [primary, ...built, ...mappableWhere].filter(Boolean);
   const seen = new Set<string>();
   const queries: string[] = [];
 
   for (const q of merged) {
     const key = q.trim();
-    if (!key || key.length < 2 || seen.has(key)) continue;
+    if (!key || key.length < 2 || seen.has(key) || !isMappableQuery(key)) continue;
     if (hasSpecific && GENERIC_LANDMARK_QUERIES.has(key) && key !== primary) continue;
     seen.add(key);
     queries.push(key);

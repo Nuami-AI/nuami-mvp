@@ -60,6 +60,7 @@ export const actionStepSchema = z.object({
   action: z.string().min(1),
   detail: z.string().optional(),
   source: z.string().optional(), // XAI: verbatim transcript quote
+  stage: z.enum(["prepare", "move", "apply", "confirm"]).optional(),
 });
 
 export const contextCardSchema = z.object({

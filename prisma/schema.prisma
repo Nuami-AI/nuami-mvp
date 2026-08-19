@@ -33,3 +33,161 @@ model UsageEvent {
   @@index([userEmail, action])
   @@index([createdAt])
 }
+
+model Institution {
+  id        String   @id
+  nameKo    String
+  nameEn    String
+  aliases   String   @db.Text
+  city      String
+  type      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  documents InstitutionDocument[]
+  knowledge InstitutionKnowledge[]
+  sources   InstitutionSource[]
+  members   OrganizationMember[]
+  endUsers  EndUserOrganization[]
+}
+
+model InstitutionDocument {
+  id            String   @id @default(cuid())
+  institutionId String
+  title         String
+  category      String
+  fileName      String
+  mimeType      String
+  extractedText String   @db.LongText
+  status        String   @default("processing")
+  errorMessage  String?  @db.Text
+  uploadedBy    String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  institution Institution             @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  knowledge   InstitutionKnowledge[]
+  sources     InstitutionSource[]
+
+  @@index([institutionId, createdAt])
+}
+
+model InstitutionKnowledge {
+  id             String   @id @default(cuid())
+  institutionId  String
+  documentId     String?
+  category       String
+  title          String
+  summary        String   @db.Text
+  factsJson      String   @db.LongText
+  documentsJson  String   @db.Text
+  whereToJson    String   @db.Text
+  keywordsJson   String   @db.Text
+  source         String
+  verified       Boolean  @default(false)
+  publicDataNote String?  @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  institution Institution          @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  document    InstitutionDocument? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@index([institutionId, verified])
+  @@index([institutionId, category])
+}
+
+model InstitutionSource {
+  id            String   @id @default(cuid())
+  institutionId String
+  label         String
+  url           String   @db.VarChar(500)
+  status        String   @default("idle")
+  errorMessage  String?  @db.Text
+  documentId    String?
+  lastFetchedAt DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  institution Institution          @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  document    InstitutionDocument? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@unique([institutionId, url])
+  @@index([institutionId, status])
+}
+
+model OrganizationMember {
+  id             String   @id @default(cuid())
+  organizationId String
+  email          String
+  role           String   @default("ORG_VIEWER")
+  status         String   @default("ACTIVE")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Institution @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, email])
+  @@index([email])
+  @@index([organizationId, status])
+}
+
+model EndUserOrganization {
+  id             String    @id @default(cuid())
+  email          String
+  organizationId String
+  status         String    @default("ACTIVE")
+  joinedAt       DateTime  @default(now())
+  leftAt         DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Institution @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([email, organizationId])
+  @@index([organizationId, status])
+  @@index([email])
+}
+
+model AuthUser {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  passwordHash     String?  @db.VarChar(255)
+  provider         String?
+  providerAccountId String?
+  status           String   @default("ACTIVE")
+  marketingAgreed  Boolean  @default(false)
+  thirdPartyAgreed Boolean  @default(false)
+  passwordMustChange Boolean @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([provider, providerAccountId])
+  @@index([status])
+}
+
+model AuthChallenge {
+  id         String    @id @default(cuid())
+  email      String
+  purpose    String
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([email, purpose])
+}
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  actorEmail     String
+  actorType      String
+  organizationId String?
+  action         String
+  resourceType   String
+  resourceId     String?
+  metadata       String?  @db.Text
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([actorEmail, createdAt])
+}

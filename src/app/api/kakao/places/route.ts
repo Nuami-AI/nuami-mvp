@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { resolveMapSearchQuery, type ResultVenue } from "@/lib/kakao/query-builder";
+import { isMappableQuery, resolveMapSearchQuery, type ResultVenue } from "@/lib/kakao/query-builder";
 import { getKakaoRestApiKey, searchKakaoPlacesMany } from "@/lib/kakao/search";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const VENUES = new Set<ResultVenue>(["store", "bank", "hospital", "default"]);
+const VENUES = new Set<ResultVenue>(["store", "bank", "hospital", "immigration", "default"]);
 
 export async function GET(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
@@ -16,14 +16,14 @@ export async function GET(request: Request): Promise<Response> {
   const venue: ResultVenue = VENUES.has(venueParam as ResultVenue)
     ? (venueParam as ResultVenue)
     : "default";
-  const extra = searchParams.getAll("extra").map((v) => v.trim()).filter(Boolean);
+  const extra = searchParams.getAll("extra").map((v) => v.trim()).filter((v) => v && isMappableQuery(v));
   const latParam = searchParams.get("lat");
   const lngParam = searchParams.get("lng");
   const lat = latParam ? Number.parseFloat(latParam) : NaN;
   const lng = lngParam ? Number.parseFloat(lngParam) : NaN;
   const location =
     Number.isFinite(lat) && Number.isFinite(lng)
-      ? { lat, lng, radius: 8000 }
+      ? { lat, lng, radius: 20000 }
       : undefined;
 
   const configured = Boolean(getKakaoRestApiKey());

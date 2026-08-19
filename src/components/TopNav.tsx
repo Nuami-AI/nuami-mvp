@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { BrandLogo } from "@/components/brand/BrandLogo";
+import { useCampusAffiliation } from "@/hooks/useCampusAffiliation";
 import { useLanguage } from "@/lib/i18n";
+import type { NavTabId } from "./nav-tabs";
 
-type TabId = "home" | "guide" | "culture" | "bookmark" | "mypage";
-
-const LINKS: { id: TabId; labelKey: "nav.home" | "nav.guide" | "nav.culture" | "nav.bookmarks" | "nav.mypage"; href: string }[] = [
+const BASE_LINKS: { id: NavTabId; labelKey: "nav.home" | "nav.guide" | "nav.culture" | "nav.bookmarks" | "nav.mypage"; href: string }[] = [
   { id: "home",     labelKey: "nav.home",      href: "/" },
   { id: "guide",    labelKey: "nav.guide",     href: "/guide" },
   { id: "culture",  labelKey: "nav.culture",   href: "/content" },
@@ -14,44 +15,48 @@ const LINKS: { id: TabId; labelKey: "nav.home" | "nav.guide" | "nav.culture" | "
   { id: "mypage",   labelKey: "nav.mypage",    href: "/mypage" },
 ];
 
-function NuamiLogo() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      <circle cx="14" cy="14" r="14" fill="#8651F2" />
-      <polygon points="10,8 22,14 10,20" fill="white" />
-    </svg>
-  );
-}
-
-export default function TopNav({ active = "home" }: { active?: TabId }) {
+export default function TopNav({ active = "home" }: { active?: NavTabId }) {
   const { t } = useLanguage();
   const router = useRouter();
+  const { universityId, navLabel, campusHref } = useCampusAffiliation();
 
   async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: "audience=app",
+      redirect: "manual",
+    }).catch(() => {});
     router.push("/login");
   }
+
+  const links = universityId && navLabel
+    ? [
+        BASE_LINKS[0],
+        { id: "campus" as const, href: campusHref, label: navLabel },
+        ...BASE_LINKS.slice(1),
+      ]
+    : BASE_LINKS;
 
   return (
     <nav className="hidden md:flex w-full bg-background border-b border-line-neutral sticky top-0 z-20">
       <div className="w-full max-w-[1200px] mx-auto px-6 h-14 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2.5">
-          <NuamiLogo />
-          <span className="text-[15px] font-bold text-text-primary tracking-tight">NUAMI</span>
+        <Link href="/" className="flex items-center">
+          <BrandLogo className="h-8" />
         </Link>
 
         <div className="flex items-center gap-1">
-          {LINKS.map(({ id, labelKey, href }) => (
+          {links.map((link) => (
             <Link
-              key={id}
-              href={href}
+              key={link.id}
+              href={link.href}
               className={`px-4 py-2 rounded-lg text-[13px] font-medium transition-colors ${
-                active === id
+                active === link.id
                   ? "text-text-primary bg-accent-50 font-semibold"
                   : "text-text-secondary hover:text-text-primary hover:bg-muted"
               }`}
             >
-              {t(labelKey)}
+              {"label" in link ? link.label : t(link.labelKey)}
             </Link>
           ))}
         </div>

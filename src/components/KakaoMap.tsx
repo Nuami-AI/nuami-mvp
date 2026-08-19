@@ -9,7 +9,7 @@ import type { KakaoLocalPlace } from "@/types/kakao";
 interface Props {
   query: string;
   situation?: string;
-  venue?: "store" | "bank" | "hospital" | "default";
+  venue?: "store" | "bank" | "hospital" | "immigration" | "default";
   additionalQueries?: string[];
   className?: string;
 }
@@ -142,7 +142,9 @@ export default function KakaoMap({
     params.set("venue", venue);
     if (query.trim()) params.set("q", query.trim());
     for (const q of additionalQueries) {
-      if (q.trim()) params.append("extra", q.trim());
+      if (q.trim() && !/하이코리아|전자민원|온라인 신청|hikorea/i.test(q)) {
+        params.append("extra", q.trim());
+      }
     }
     if (userCoords) {
       params.set("lat", String(userCoords.lat));

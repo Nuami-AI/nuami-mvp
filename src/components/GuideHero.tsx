@@ -4,6 +4,7 @@ import type { ActionStep } from "@/types/extraction";
 import type { ResultVenue } from "@/lib/results/venue-context";
 import { getEncouragementMessage, summarizeToBullets } from "@/lib/results/encouragement";
 import { useLanguage } from "@/lib/i18n";
+import { StatusBubble, type StatusTone } from "@/components/ui/status-bubble";
 
 interface Props {
   situationLabel: string;
@@ -15,7 +16,14 @@ interface Props {
 
 function ProcessFlow({ actions }: { actions: ActionStep[] }) {
   const { t } = useLanguage();
-  const steps = actions.slice(0, 5);
+  const stageOrder = ["prepare", "move", "apply", "confirm"] as const;
+  const hasStages = actions.some((step) => step.stage);
+  const steps = hasStages
+    ? stageOrder.map((stage, idx) => ({
+        step: idx + 1,
+        action: t(`results.stage.${stage}` as Parameters<typeof t>[0]),
+      }))
+    : actions.slice(0, 5);
   if (steps.length === 0) return null;
 
   return (
@@ -23,20 +31,25 @@ function ProcessFlow({ actions }: { actions: ActionStep[] }) {
       <p className="text-[12px] font-bold text-text-secondary mb-3">{t("guide.hero.processOrder")}</p>
       <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide">
         {steps.map((step, idx) => {
-          const isFirst = idx === 0;
+          const stage = hasStages ? stageOrder[idx] : null;
+          const tone: StatusTone = !stage
+            ? idx === 0
+              ? "ready"
+              : idx === steps.length - 1
+                ? "done"
+                : "progress"
+            : stage === "prepare"
+              ? "ready"
+              : stage === "confirm"
+                ? "done"
+                : "progress";
           return (
             <div key={step.step} className="flex items-center shrink-0">
-              <div
-                className={`flex flex-col items-center w-[88px] rounded-xl border-2 px-2 py-2.5 ${
-                  isFirst
-                    ? "border-accent-700 bg-accent-700 text-white shadow-md"
-                    : "border-line-neutral bg-white text-text-primary"
-                }`}
-              >
-                <span className={`text-[10px] font-bold ${isFirst ? "text-accent-100" : "text-accent-700"}`}>
+              <div className="flex w-[88px] flex-col items-center rounded-xl border border-line-neutral bg-white px-2 py-2.5 text-text-primary">
+                <StatusBubble tone={tone} className="mb-1">
                   STEP {step.step}
-                </span>
-                <p className={`text-[11px] font-semibold mt-1 text-center leading-tight line-clamp-3 ${isFirst ? "text-white" : ""}`}>
+                </StatusBubble>
+                <p className="mt-1 line-clamp-3 text-center text-[11px] font-semibold leading-tight">
                   {step.action}
                 </p>
               </div>
@@ -57,9 +70,9 @@ export default function GuideHero({ situationLabel, summary, venue, actions, est
   const bullets = summarizeToBullets(summary, 3);
 
   return (
-    <div className="rounded-2xl border-2 border-accent-200 bg-gradient-to-br from-accent-50 via-white to-blue-50 shadow-sm overflow-hidden">
-      <div className="px-4 pt-4 pb-3 border-b-2 border-accent-100">
-        <p className="text-[13px] font-semibold text-accent-800 leading-relaxed">{encouragement}</p>
+    <div className="rounded-2xl border-2 border-line-neutral bg-white shadow-sm overflow-hidden">
+      <div className="px-4 pt-4 pb-3 border-b border-line-neutral">
+        <p className="text-[13px] font-semibold text-text-primary leading-relaxed">{encouragement}</p>
       </div>
 
       <div className="px-4 py-3">
@@ -67,13 +80,13 @@ export default function GuideHero({ situationLabel, summary, venue, actions, est
         <ul className="space-y-1.5">
           {bullets.map((line, i) => (
             <li key={i} className="flex items-start gap-2 text-[13px] text-text-primary font-medium">
-              <span className="text-accent-700 shrink-0">•</span>
+              <span className="text-text-primary shrink-0">•</span>
               <span>{line}</span>
             </li>
           ))}
         </ul>
         {estimatedMinutes !== undefined && (
-          <p className="mt-3 inline-flex items-center gap-1 rounded-full bg-amber-100 border border-amber-300 px-3 py-1 text-[12px] font-bold text-amber-900">
+          <p className="mt-3 inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-[12px] font-bold text-text-primary">
             {t("guide.hero.minutes").replace("{n}", String(estimatedMinutes))}
           </p>
         )}

@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* iOS는 첫 탭을 hover로 처리해서 버튼이 안 눌린 것처럼 보임 */
+@custom-variant hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @slot;
+    }
+  }
+}
+
 @theme {
   /* ── Gray — Warm Gray (NUAMI) ── */
   --color-gray-50: #F9F9F8;
@@ -40,6 +49,17 @@
   --color-danger-700: #8a240f;
   --color-danger-800: #5c180a;
 
+  /* ── Status bubbles — Figma Semantic Destructive + Status ── */
+  --color-status-ready: #a16207;
+  --color-status-ready-bg: #fef9c3;
+  --color-status-progress: #c2410c;
+  --color-status-progress-bg: #ffedd5;
+  --color-status-done: #15803d;
+  --color-status-done-bg: #dcfce7;
+  --color-status-done-solid: #22c55e;
+  --color-status-progress-solid: #ff9900;
+  --color-status-ready-solid: #eab308;
+
   /* ── Semantic Background ── */
   --color-background: #F9F9F8;
   --color-card: #F9F9F8;
@@ -63,6 +83,12 @@
   --color-button-primary: #8651F2;
   --color-button-hover: #703AD9;
   --color-button-disabled: #D3D3CD;
+
+  /* ── Social login (iOS Safari ignores utility bg on native buttons) ── */
+  --color-kakao: #FEE500;
+  --color-naver: #03C75A;
+  --color-line: #06C755;
+  --color-facebook: #0866FF;
 }
 
 body {
@@ -77,6 +103,16 @@ button,
 a {
   cursor: pointer;
   touch-action: manipulation;
+}
+
+/* iOS native chrome 제거. @layer base 에 둬야 Tailwind bg-* 가 이긴다.
+   unlayered background-color: transparent 는 모든 버튼 색을 지운다. */
+@layer base {
+  button {
+    appearance: none;
+    -webkit-appearance: none;
+    background-color: transparent;
+  }
 }
 
 /* Hide scrollbar but keep functionality */

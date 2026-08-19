@@ -4,6 +4,8 @@
 // iframe 안에서는 뷰포트 폭이 390px이 되어 md:/lg: 반응형이 실제 모바일처럼 렌더된다.
 import { useEffect, useState } from "react";
 
+import { BrandLogo } from "@/components/brand/BrandLogo";
+
 const STORAGE_KEY = "nuami-mobile-preview";
 const FRAME_W = 390;
 const FRAME_H = 844;
@@ -63,6 +65,7 @@ export default function MobilePreviewFrame({ children }: { children: React.React
       {mounted && mobile && (
         <div className="fixed inset-0 z-9999 flex flex-col items-center justify-center gap-4 bg-gray-900/92 p-6">
           <div className="flex items-center gap-3 text-white/90">
+            <BrandLogo variant="color" className="h-6" />
             <span className="text-[13px] font-medium">모바일 미리보기 · {FRAME_W}×{FRAME_H}</span>
             <button
               type="button"

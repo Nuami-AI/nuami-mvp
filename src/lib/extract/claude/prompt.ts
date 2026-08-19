@@ -15,6 +15,8 @@ export interface PromptInput {
   shortForm?: boolean; // Shorts / under ~1 min — scale down extraction counts
   toneStyle?: string;  // "default" | "casual" | "concise" | "expert"
   lifeStage?: string;  // "arrived" | "settling" | "established"
+  stayType?: string;   // "D-2" | "D-4" | "other"
+  verifiedFacts?: string; // Search+Reason stage output; Generation must not contradict
 }
 
 const LANG_NAMES: Record<string, string> = {
@@ -135,7 +137,9 @@ Return STRICT JSON matching this exact shape:
     "step": number,    // 1-based sequential step number
     "action": string,  // short imperative sentence IN [A] ${langName} (≤15 words)
     "detail"?: string, // optional 1-sentence clarification IN [A] ${langName}
-    "source"?: string  // verbatim transcript substring this action is grounded in (XAI)
+    "source"?: string, // verbatim transcript substring this action is grounded in (XAI)
+    "stage": "prepare" | "move" | "apply" | "confirm"
+    // prepare=서류·정보 준비, move=장소로 이동, apply=창구·신청, confirm=결과 확인
   }>,
   "places": Array<{
     "name": string,      // place name in local script or Romanized
@@ -184,6 +188,12 @@ RULES:
 1h. products: for shopping/beauty/cosmetic situations, list 3-8 specific products mentioned or strongly implied.
     Include searchQuery in Korean Hangul for Olive Young lookup (e.g. "롬앤 쥬시 래스팅 틴트").
     For non-shopping situations, return an empty products array.
+1i. ACTION STAGES: every action MUST include "stage" as prepare → move → apply → confirm.
+    Cover all four stages when the situation is an administrative or in-person procedure
+    (bank, hospital, immigration, school office). Do not skip movement or confirmation.
+1j. If VERIFIED PUBLIC DATA is provided in the user message, treat it as ground truth.
+    Do not invent different deadlines, required documents, or agencies.
+    You MAY rewrite them into ${langName} and add practical how-to detail.
 2.  Aim for 3-6 action steps, 2-5 places, 4-10 phrases, 3-6 tips, 2-4 context cards, 0-8 products.
     SHORT-FORM OVERRIDE (when user message says short-form): 1-3 actions, 0-2 places,
     2-5 phrases, 1-3 tips, 1-2 context cards, 0-5 products. Do not pad with invented content.
@@ -245,7 +255,12 @@ export function buildUserMessage(input: PromptInput): string {
     ? `Transcript:\n"""\n${input.transcript}\n"""`
     : `Transcript:\n(none — generate the action guide from the user situation only. For places, return an empty array.)`;
 
-  return `${destinationReminder}\n\n[USER SITUATION]\nThe user needs help with: "${input.situation}"\n\n${meta}\n\n${transcriptSection}\n\nReturn the JSON now.`;
+  const userContext = [
+    input.stayType ? `User stay type: ${input.stayType} (D-2=degree student, D-4=language student). Tailor documents and agencies.` : null,
+    input.verifiedFacts ?? null,
+  ].filter(Boolean).join("\n\n");
+
+  return `${destinationReminder}\n\n[USER SITUATION]\nThe user needs help with: "${input.situation}"\n\n${meta}\n\n${userContext ? `${userContext}\n\n` : ""}${transcriptSection}\n\nReturn the JSON now.`;
 }
 
 export { LANG_NAMES };

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { HeaderIconButton } from "@/components/ui/header-icon";
 import { useLanguage, type TranslationKey } from "@/lib/i18n";
 import type { ExtractionResult } from "@/types/extraction";
 import ResultsTabLayout from "@/components/ResultsTabLayout";
@@ -11,6 +12,7 @@ import BottomNav from "./BottomNav";
 import { detectResultVenue, type ResultVenue } from "@/lib/results/venue-context";
 import { summarizeSituationQuery } from "@/lib/results/encouragement";
 import { resolveMapSearchQuery } from "@/lib/kakao/query-builder";
+import { isPhysicalPlaceName } from "@/lib/geo/region";
 
 interface Props {
   data: ExtractionResult;
@@ -24,24 +26,7 @@ function venueKey(venue: ResultVenue, base: string): TranslationKey {
   return `${base}.${venue}` as TranslationKey;
 }
 
-// ── Icons ────────────────────────────────────────────────────────────────────
-
-function ArrowLeft() {
-  return (
-    <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-      <path d="M19 12H5M12 5l-7 7 7 7" />
-    </svg>
-  );
-}
-
-function ShareIcon() {
-  return (
-    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-      <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
-      <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98" />
-    </svg>
-  );
-}
+// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function ResultsScreen({ data, onBack, situation, sourceUrl }: Props) {
   const { t } = useLanguage();
@@ -75,7 +60,7 @@ export default function ResultsScreen({ data, onBack, situation, sourceUrl }: Pr
     situation: situationLabel,
     venue,
     places: data.places,
-    whereTo: sc.whereTo,
+    whereTo: sc.whereTo.filter((place) => isPhysicalPlaceName(place)),
   });
   const mapQuery = mapSearch.primary || situationLabel;
 
@@ -98,15 +83,14 @@ export default function ResultsScreen({ data, onBack, situation, sourceUrl }: Pr
     <div className="relative flex flex-col min-h-screen bg-background">
       <TopNav active="guide" />
 
-      {/* Sticky header */}
-      <div className="sticky top-0 md:top-14 z-20 bg-background/95 backdrop-blur-sm border-b border-line-neutral">
-        <div className="w-full max-w-[1200px] mx-auto flex items-center justify-between px-4 py-3">
-          <button onClick={onBack} className="text-text-secondary p-1 -ml-1" aria-label="Back">
-            <ArrowLeft />
-          </button>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
+      <div className="sticky top-0 md:top-14 z-20 h-16 bg-white">
+        <div className="mx-auto flex h-full w-full max-w-[1024px] items-center justify-between px-2">
+          <HeaderIconButton name="back" label={t("common.back")} onClick={onBack} />
+          <div className="flex items-center">
+            <HeaderIconButton
+              name="bookmark"
+              label={t("results.bookmark")}
+              tintClassName={guideSaved ? "bg-accent-700" : undefined}
               onClick={() => {
                 if (!guideSaved) {
                   persistSave({
@@ -123,16 +107,8 @@ export default function ResultsScreen({ data, onBack, situation, sourceUrl }: Pr
                   setGuideSaved(true);
                 }
               }}
-              className="p-0.5"
-              aria-label={t("results.bookmark")}
-            >
-              <svg width={20} height={20} fill={guideSaved ? "#8651F2" : "none"} stroke={guideSaved ? "#8651F2" : "currentColor"} strokeWidth="2" viewBox="0 0 24 24">
-                <path d="M19 21 12 16l-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-              </svg>
-            </button>
-            <button onClick={handleShare} className="text-text-secondary p-0.5" aria-label={t("results.share")}>
-              <ShareIcon />
-            </button>
+            />
+            <HeaderIconButton name="share" label={t("results.share")} onClick={handleShare} />
           </div>
         </div>
       </div>

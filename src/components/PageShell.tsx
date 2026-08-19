@@ -2,13 +2,11 @@
 
 import TopNav from "./TopNav";
 import BottomNav from "./BottomNav";
-
-type TopTabId = "home" | "guide" | "culture" | "bookmark" | "mypage";
-type BottomTabId = "home" | "guide" | "culture" | "bookmark" | "mypage";
+import type { NavTabId } from "./nav-tabs";
 
 interface Props {
-  topNav?: TopTabId;
-  bottomNav?: BottomTabId;
+  topNav?: NavTabId;
+  bottomNav?: NavTabId;
   children: React.ReactNode;
   className?: string;
 }

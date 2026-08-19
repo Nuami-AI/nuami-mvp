@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import type { TranslationKey } from "@/lib/i18n";
-import type { ActionStep, ContextCard, Place, Tip } from "@/types/extraction";
+import type { ActionStep, BehaviorStage, ContextCard, Place, Tip } from "@/types/extraction";
+import { StatusBubble, type StatusTone } from "@/components/ui/status-bubble";
 
 export function interpolate(template: string, vars: Record<string, string>) {
   return Object.entries(vars).reduce((s, [k, v]) => s.replace(`{${k}}`, v), template);
@@ -66,43 +67,72 @@ export function ActionStepper({
     setActiveIdx(idx);
   };
 
+  const stages: BehaviorStage[] = ["prepare", "move", "apply", "confirm"];
+  const hasStages = actions.some((a) => a.stage);
+  const stageLabel = (stage: BehaviorStage): TranslationKey =>
+    (`results.stage.${stage}`) as TranslationKey;
+  const stageTone = (stage: BehaviorStage): StatusTone => {
+    if (stage === "prepare") return "ready";
+    if (stage === "confirm") return "done";
+    return "progress";
+  };
+
   const doneCount = completed.size;
   const progressLabel = interpolate(t("results.actions.progress"), {
     current: String(Math.max(1, doneCount || activeIdx + 1)),
     total: String(actions.length),
   });
 
+  const renderItem = (item: ActionStep, idx: number) => {
+    const done = completed.has(idx);
+    const active = idx === activeIdx && !done;
+    return (
+      <button
+        key={idx}
+        type="button"
+        onClick={() => toggleStep(idx)}
+        className={`w-full text-left flex items-start gap-3 px-3 py-3 rounded-xl border-2 transition-colors ${
+          active ? "border-accent-700 bg-accent-50 shadow-md" : done ? "border-line-neutral bg-white opacity-60" : "border-line-neutral bg-white"
+        }`}
+      >
+        <CheckCircle done={done} active={active} />
+        <div className="flex-1 min-w-0">
+          <p className={`text-[14px] leading-snug ${done ? "text-text-disabled line-through" : "text-text-primary font-medium"}`}>
+            {item.action}
+          </p>
+          {item.detail && !done && (
+            <p className="text-[12px] text-text-secondary mt-1 leading-relaxed line-clamp-2">{item.detail}</p>
+          )}
+        </div>
+      </button>
+    );
+  };
+
   return (
     <section className="rounded-2xl border-2 border-line-neutral overflow-hidden shadow-sm">
-      <div className="border-l-4 border-l-accent-700 bg-white px-4 py-3 flex items-start justify-between">
-        <h2 className="text-[15px] font-bold text-text-primary leading-snug flex-1 pr-4">👣 {title}</h2>
-        <span className="text-[12px] font-bold text-accent-700 flex-shrink-0">{progressLabel}</span>
+      <div className="border-l-4 border-l-gray-800 bg-white px-4 py-3 flex items-start justify-between">
+        <h2 className="text-[15px] font-bold text-text-primary leading-snug flex-1 pr-4">{title}</h2>
+        <span className="text-[12px] font-bold text-text-secondary flex-shrink-0">{progressLabel}</span>
       </div>
-      <div className="border-t-2 border-line-neutral p-3 space-y-2">
-        {actions.map((item, idx) => {
-          const done = completed.has(idx);
-          const active = idx === activeIdx && !done;
-          return (
-            <button
-              key={idx}
-              type="button"
-              onClick={() => toggleStep(idx)}
-              className={`w-full text-left flex items-start gap-3 px-3 py-3 rounded-xl border-2 transition-colors ${
-                active ? "border-accent-700 bg-accent-50 shadow-md" : done ? "border-line-neutral bg-white opacity-60" : "border-line-neutral bg-white"
-              }`}
-            >
-              <CheckCircle done={done} active={active} />
-              <div className="flex-1 min-w-0">
-                <p className={`text-[14px] leading-snug ${done ? "text-text-disabled line-through" : "text-text-primary font-medium"}`}>
-                  {item.action}
-                </p>
-                {item.detail && !done && (
-                  <p className="text-[12px] text-text-secondary mt-1 leading-relaxed line-clamp-2">{item.detail}</p>
-                )}
-              </div>
-            </button>
-          );
-        })}
+      <div className="border-t-2 border-line-neutral p-3 space-y-3">
+        {hasStages
+          ? stages.map((stage) => {
+              const items = actions
+                .map((item, idx) => ({ item, idx }))
+                .filter(({ item }) => item.stage === stage);
+              if (items.length === 0) return null;
+              return (
+                <div key={stage}>
+                  <div className="mb-2">
+                    <StatusBubble tone={stageTone(stage)}>{t(stageLabel(stage))}</StatusBubble>
+                  </div>
+                  <div className="space-y-2">
+                    {items.map(({ item, idx }) => renderItem(item, idx))}
+                  </div>
+                </div>
+              );
+            })
+          : actions.map((item, idx) => renderItem(item, idx))}
       </div>
     </section>
   );
@@ -200,9 +230,9 @@ export function PlaceRow({ place, t }: { place: Place; t: (k: TranslationKey) =>
         )}
       </div>
       {place.status && (
-        <span className={`flex-shrink-0 text-[11px] font-semibold rounded-full px-2.5 py-1 ${isOpen ? "bg-accent-50 text-accent-700" : "bg-muted text-text-disabled"}`}>
+        <StatusBubble tone={isOpen ? "done" : "danger"}>
           {isOpen ? t("results.places.open") : t("results.places.closed")}
-        </span>
+        </StatusBubble>
       )}
     </div>
   );

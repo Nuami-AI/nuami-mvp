@@ -6,6 +6,7 @@ import { Suspense, useMemo, useState } from "react";
 
 import PageShell from "@/components/PageShell";
 import ResultsScreen from "@/components/ResultsScreen";
+import { PageHeader } from "@/components/ui/page-header";
 import { formatHistoryDate } from "@/lib/history/storage";
 import { useHistory } from "@/lib/history/hooks";
 import { useLanguage } from "@/lib/i18n";
@@ -143,10 +144,11 @@ function ActionGuideHubContent() {
 
   return (
     <PageShell topNav="guide" bottomNav="guide" className="px-4 md:px-6 pt-5">
+      <PageHeader variant="top" title={t("guide.hub.title")} />
       <div className="mb-6">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
-            <h1 className="text-[22px] font-extrabold text-text-primary">{t("guide.hub.title")}</h1>
+            <h1 className="hidden md:block text-[22px] font-extrabold text-text-primary">{t("guide.hub.title")}</h1>
             <p className="text-[13px] text-text-secondary mt-1 leading-relaxed">{t("guide.hub.desc")}</p>
           </div>
           {mounted && summaries.length > 0 && (

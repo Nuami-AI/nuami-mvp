@@ -8,7 +8,7 @@
 
 import { NextResponse } from "next/server";
 
-import { claudeExtract, ClaudeParseError, truncateTranscript } from "@/lib/extract/claude/client";
+import { ClaudeParseError, truncateTranscript } from "@/lib/extract/claude/client";
 import { logEvent } from "@/lib/extract/logger";
 import { parseUrl } from "@/lib/extract/parse-url";
 import { checkRateLimit } from "@/lib/extract/rate-limit";
@@ -31,9 +31,12 @@ import type {
 } from "@/types/extraction";
 import { getSessionFromRequest } from "@/lib/auth/session";
 import { checkGate, logEvent as logUsageEvent } from "@/lib/usage/tracker";
+import { runGuidePipeline } from "@/lib/guide/pipeline";
+import type { StayType } from "@/lib/guide/types";
 
 export const runtime = "nodejs"; // Anthropic SDK requires Node
 export const dynamic = "force-dynamic"; // never cache — every call hits Claude
+export const maxDuration = 90;
 
 export async function POST(request: Request): Promise<Response> {
   const requestId = crypto.randomUUID();
@@ -47,8 +50,24 @@ export async function POST(request: Request): Promise<Response> {
   let bodyUserLang: string | undefined;
   let bodyToneStyle: string | undefined;
   let bodyLifeStage: string | undefined;
+  let bodyStayType: StayType | undefined;
+  let bodyLat: number | undefined;
+  let bodyLng: number | undefined;
+  let bodyUniversityId: string | undefined;
+  let bodyKnowledgeId: string | undefined;
   try {
-    const body = (await request.json()) as { situation?: unknown; url?: unknown; userLang?: unknown; toneStyle?: unknown; lifeStage?: unknown };
+    const body = (await request.json()) as {
+      situation?: unknown;
+      url?: unknown;
+      userLang?: unknown;
+      toneStyle?: unknown;
+      lifeStage?: unknown;
+      stayType?: unknown;
+      lat?: unknown;
+      lng?: unknown;
+      universityId?: unknown;
+      knowledgeId?: unknown;
+    };
     if (typeof body.situation !== "string" || body.situation.trim().length === 0) {
       return emitError(requestId, "", "unparsed", startedAt, {
         code: "INVALID_SITUATION",
@@ -61,6 +80,17 @@ export async function POST(request: Request): Promise<Response> {
     if (typeof body.userLang === "string") bodyUserLang = body.userLang;
     if (typeof body.toneStyle === "string") bodyToneStyle = body.toneStyle;
     if (typeof body.lifeStage === "string") bodyLifeStage = body.lifeStage;
+    if (body.stayType === "D-2" || body.stayType === "D-4" || body.stayType === "other") {
+      bodyStayType = body.stayType;
+    }
+    if (typeof body.lat === "number" && Number.isFinite(body.lat)) bodyLat = body.lat;
+    if (typeof body.lng === "number" && Number.isFinite(body.lng)) bodyLng = body.lng;
+    if (typeof body.universityId === "string" && body.universityId.trim()) {
+      bodyUniversityId = body.universityId.trim();
+    }
+    if (typeof body.knowledgeId === "string" && body.knowledgeId.trim()) {
+      bodyKnowledgeId = body.knowledgeId.trim();
+    }
   } catch {
     return emitError(requestId, "", "unparsed", startedAt, {
       code: "INVALID_SITUATION",
@@ -181,10 +211,12 @@ export async function POST(request: Request): Promise<Response> {
     parsedVideoId = parsed.videoId;
   }
 
-  // --- 5. Call Claude -------------------------------------------------------
-  let claudeResult;
+  // --- 5. Search → Reason → Generate ----------------------------------------
+  let claudeResult: { rawJson: string; tokensIn: number; tokensOut: number } | null = null;
+  let templateResult: ExtractionResult | null = null;
+  let pipelineMeta;
   try {
-    claudeResult = await claudeExtract({
+    const pipeline = await runGuidePipeline({
       situation,
       transcript: transcriptText,
       videoTitle,
@@ -195,7 +227,15 @@ export async function POST(request: Request): Promise<Response> {
       shortForm: transcriptText.length <= SHORT_FORM_TRANSCRIPT_CHARS,
       toneStyle: bodyToneStyle,
       lifeStage: bodyLifeStage,
+      stayType: bodyStayType,
+      lat: bodyLat,
+      lng: bodyLng,
+      universityId: bodyUniversityId,
+      knowledgeId: bodyKnowledgeId,
     });
+    claudeResult = pipeline.claude;
+    templateResult = pipeline.template;
+    pipelineMeta = pipeline.meta;
   } catch (err) {
     const code: ExtractErrorCode = err instanceof ClaudeParseError ? "CLAUDE_PARSE_FAILED" : "INTERNAL";
     return emitError(requestId, url || situation, url ? "youtube" : "unknown", startedAt, {
@@ -205,73 +245,84 @@ export async function POST(request: Request): Promise<Response> {
     });
   }
 
-  // --- 6. Parse JSON + Zod validate -----------------------------------------
-  let parsedJson: unknown;
-  try {
-    parsedJson = JSON.parse(claudeResult.rawJson);
-  } catch {
-    return emitError(
-      requestId,
-      url,
-      "youtube",
-      startedAt,
-      {
-        code: "CLAUDE_PARSE_FAILED",
-        message: "We couldn't parse the extraction result.",
-        hint: "This is on us. Please try again in a moment.",
-      },
-      claudeResult.tokensIn,
-      claudeResult.tokensOut
-    );
-  }
+  // --- 6. Parse JSON + Zod validate (or use verified template) --------------
+  let result: ExtractionResult;
 
-  const zodResult = extractionSchema.safeParse(parsedJson);
-  if (!zodResult.success) {
-    return emitError(
-      requestId,
-      url,
-      "youtube",
-      startedAt,
-      {
-        code: "CLAUDE_PARSE_FAILED",
-        message: "Extraction result did not match the expected shape.",
-        hint: "Please try again in a moment.",
-      },
-      claudeResult.tokensIn,
-      claudeResult.tokensOut
-    );
-  }
+  if (templateResult) {
+    result = { ...templateResult, pipeline: pipelineMeta };
+  } else if (claudeResult) {
+    let parsedJson: unknown;
+    try {
+      parsedJson = JSON.parse(claudeResult.rawJson);
+    } catch {
+      return emitError(
+        requestId,
+        url,
+        "youtube",
+        startedAt,
+        {
+          code: "CLAUDE_PARSE_FAILED",
+          message: "We couldn't parse the extraction result.",
+          hint: "This is on us. Please try again in a moment.",
+        },
+        claudeResult.tokensIn,
+        claudeResult.tokensOut
+      );
+    }
 
-  // --- 7. Hallucination guard: only when URL provided (transcript exists) ---
-  // Design Ref: §2.1 platform-pivot — text-only path skips guard, places = [].
-  let kept: Place[];
-  if (transcriptText) {
-    const normalizedTranscript = transcriptText.toLowerCase();
-    kept = zodResult.data.places.filter((p) =>
-      normalizedTranscript.includes(p.quote.toLowerCase())
-    );
+    const zodResult = extractionSchema.safeParse(parsedJson);
+    if (!zodResult.success) {
+      return emitError(
+        requestId,
+        url,
+        "youtube",
+        startedAt,
+        {
+          code: "CLAUDE_PARSE_FAILED",
+          message: "Extraction result did not match the expected shape.",
+          hint: "Please try again in a moment.",
+        },
+        claudeResult.tokensIn,
+        claudeResult.tokensOut
+      );
+    }
+
+    let kept: Place[];
+    if (transcriptText) {
+      const normalizedTranscript = transcriptText.toLowerCase();
+      kept = zodResult.data.places.filter((p) =>
+        normalizedTranscript.includes(p.quote.toLowerCase())
+      );
+    } else {
+      kept = [];
+    }
+
+    result = {
+      video: {
+        title: zodResult.data.video.title || videoTitle,
+        channel: zodResult.data.video.channel || videoChannel,
+        language: zodResult.data.video.language || videoLanguage,
+        destinationCountry: zodResult.data.video.destinationCountry,
+        destinationLanguage: zodResult.data.video.destinationLanguage,
+        userLanguage,
+        videoId: parsedVideoId,
+      },
+      situation: zodResult.data.situation,
+      actions: assignActionStages(zodResult.data.actions),
+      places: kept,
+      phrases: zodResult.data.phrases,
+      tips: zodResult.data.tips,
+      contexts: zodResult.data.contexts,
+      products: zodResult.data.products,
+      pipeline: pipelineMeta,
+    };
   } else {
-    kept = [];
+    return emitError(requestId, url || situation, url ? "youtube" : "unknown", startedAt, {
+      code: "INTERNAL",
+      message: "Extraction service is temporarily unavailable.",
+      hint: "Please try again in a moment.",
+    });
   }
-
-  const result: ExtractionResult = {
-    video: {
-      title: zodResult.data.video.title || videoTitle,
-      channel: zodResult.data.video.channel || videoChannel,
-      language: zodResult.data.video.language || videoLanguage,
-      destinationCountry: zodResult.data.video.destinationCountry,
-      destinationLanguage: zodResult.data.video.destinationLanguage,
-      userLanguage,
-      videoId: parsedVideoId,
-    },
-    situation: zodResult.data.situation,
-    actions: zodResult.data.actions,
-    places: kept,
-    phrases: zodResult.data.phrases,
-    tips: zodResult.data.tips,
-    contexts: zodResult.data.contexts,
-    products: zodResult.data.products,
-  };
 
   // --- 8. Log usage event for tester ----------------------------------------
   if (session.role === "tester") {
@@ -284,8 +335,8 @@ export async function POST(request: Request): Promise<Response> {
     url: url || situation,
     platform: url ? "youtube" : "unknown",
     durationMs: Date.now() - startedAt,
-    tokensIn: claudeResult.tokensIn,
-    tokensOut: claudeResult.tokensOut,
+    tokensIn: claudeResult?.tokensIn,
+    tokensOut: claudeResult?.tokensOut,
     extractedCounts: {
       places: result.places.length,
       phrases: result.phrases.length,
@@ -298,6 +349,17 @@ export async function POST(request: Request): Promise<Response> {
 }
 
 // --- Helpers ---------------------------------------------------------------
+
+function assignActionStages(actions: ExtractionResult["actions"]): ExtractionResult["actions"] {
+  const stages = ["prepare", "move", "apply", "confirm"] as const;
+  if (actions.length === 0) return actions;
+  if (actions.every((a) => a.stage)) return actions;
+  return actions.map((action, idx) => {
+    if (action.stage) return action;
+    const bucket = Math.min(stages.length - 1, Math.floor((idx / actions.length) * stages.length));
+    return { ...action, stage: stages[bucket] };
+  });
+}
 
 function getClientIp(request: Request): string {
   // Vercel sets x-forwarded-for. Fall back to a literal to avoid leaking

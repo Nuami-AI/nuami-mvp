@@ -48,11 +48,42 @@ export interface Tip {
   source?: string; // XAI: verbatim transcript quote grounding this tip
 }
 
+export type BehaviorStage = "prepare" | "move" | "apply" | "confirm";
+
 export interface ActionStep {
   step: number;
   action: string;
   detail?: string;
   source?: string; // XAI: verbatim transcript quote grounding this action
+  stage?: BehaviorStage; // 준비 → 이동 → 신청 → 확인
+}
+
+export interface GuidePipelineMeta {
+  search: { matched: boolean; scenarioId?: string; keywords: string[] };
+  reason: { stayType: string; region: string; agencies: string[] };
+  generate: { mode: "llm" | "verified-template" | "institution-cache"; grounded: boolean };
+  sources: Array<{ name: string; url?: string }>;
+  asOf?: string;
+  institution?: {
+    id: string;
+    name: string;
+    reused: boolean;
+    titles: string[];
+  };
+  openData?: {
+    live: boolean;
+    queriedAt: string;
+    facilities: Array<{
+      name: string;
+      address?: string;
+      phone?: string;
+      category?: string;
+      provider: string;
+      dataset: string;
+      datasetUrl?: string;
+      live: boolean;
+    }>;
+  };
 }
 
 export interface ContextCard {
@@ -80,6 +111,7 @@ export interface ExtractionResult {
   tips: Tip[];
   contexts: ContextCard[];
   products: ProductItem[];
+  pipeline?: GuidePipelineMeta;
 }
 
 export type ExtractErrorCode =
