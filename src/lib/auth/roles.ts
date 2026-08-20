@@ -42,7 +42,7 @@ export function orgStatusLabel(status: string): string {
 /** 기관 담당자가 역할을 고를 때 보는 짧은 설명 */
 const ORG_ROLE_HELP: Record<string, string> = {
   ORG_OWNER:
-    "기관을 대표하는 계정입니다. 콘텐츠와 멤버를 모두 관리합니다. 대표는 뉴아미 콘솔에서만 지정할 수 있습니다.",
+    "기관을 대표하는 계정입니다. 콘텐츠와 멤버를 모두 관리합니다. 대표 이관은 뉴아미에 문의해주세요.",
   ORG_ADMIN:
     "일상 운영을 맡는 계정입니다. 자료를 올리고, 담당자를 추가하거나 비밀번호를 초기화·비활성화할 수 있습니다.",
   ORG_EDITOR:
