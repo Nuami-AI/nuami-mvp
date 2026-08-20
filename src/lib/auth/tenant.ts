@@ -19,6 +19,14 @@ export async function listActiveStaffOrganizations(email: string) {
   });
 }
 
+export async function hasInactiveStaffMembership(email: string): Promise<boolean> {
+  const row = await prisma.organizationMember.findFirst({
+    where: { email: email.toLowerCase(), status: "INACTIVE" },
+    select: { id: true },
+  });
+  return Boolean(row);
+}
+
 export async function adminLandingPath(email: string): Promise<string> {
   if (isSuperAdmin(email)) return "/admin";
   const memberships = await listActiveStaffOrganizations(email);

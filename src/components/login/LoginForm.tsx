@@ -16,6 +16,7 @@ const ERROR_COPY: Record<string, string> = {
   SERVER_ERROR: "로그인 서버에 문제가 있어요. 잠시 후 다시 시도해주세요.",
   NETWORK: "네트워크 연결을 확인해주세요.",
   NOT_ORG_STAFF: "이 계정은 기관 관리자 권한이 없습니다.",
+  ACCOUNT_INACTIVE: "비활성화된 계정입니다.",
   NOT_INTERNAL: "이 계정은 내부 운영 권한이 없습니다.",
   SOCIAL_ONLY: "이 계정은 소셜 로그인을 사용해주세요.",
 };
@@ -68,7 +69,7 @@ export function LoginForm({ audience }: { audience: LoginAudience }) {
   return (
     <div className="min-h-dvh w-full bg-background text-text-primary">
       <div className="mx-auto flex min-h-dvh w-full max-w-[448px] flex-col">
-        <header className="relative flex h-16 items-center bg-white px-2">
+        <header className="relative flex h-16 items-center px-2">
           {audience === "app" ? (
             <>
               <HeaderIconButton name="back" label="뒤로" href="/login" />

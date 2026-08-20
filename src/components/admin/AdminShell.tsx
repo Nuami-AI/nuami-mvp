@@ -1,11 +1,14 @@
 import Link from "next/link";
 
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { StatusBubble } from "@/components/ui/status-bubble";
 import { isSuperAdmin } from "@/lib/auth/access";
+
+type ConsoleNavId = "users" | "logs" | "organizations" | "knowledge" | "operators" | "accounts";
 
 interface Props {
   email: string;
-  active: "users" | "knowledge" | "organizations" | "operators";
+  active: ConsoleNavId;
   title: string;
   subtitle: string;
   showOperators?: boolean;
@@ -13,7 +16,8 @@ interface Props {
 }
 
 export default function AdminShell({ email, active, title, subtitle, showOperators, children }: Props) {
-  const operators = showOperators ?? isSuperAdmin(email);
+  const superAdmin = isSuperAdmin(email);
+  const operators = showOperators ?? superAdmin;
   return (
     <div className="flex min-h-screen bg-gray-50">
       <aside className="w-52 shrink-0 flex flex-col border-r border-gray-200 bg-white">
@@ -21,21 +25,34 @@ export default function AdminShell({ email, active, title, subtitle, showOperato
           <Link href="/console" className="inline-flex">
             <BrandLogo className="h-7" />
           </Link>
-          <p className="mt-2 text-sm font-bold text-gray-900">NUAMI Console</p>
-          <p className="mt-0.5 text-[10px] text-gray-400">내부 운영</p>
+          <p className="mt-2 truncate text-sm font-bold text-gray-900" title={email}>
+            {email}
+          </p>
+          <div className="mt-1.5">
+            <StatusBubble tone={superAdmin ? "done" : "progress"}>
+              {superAdmin ? "슈퍼 어드민" : "콘솔 접근자"}
+            </StatusBubble>
+          </div>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-0.5">
-          <SidebarItem href="/console" label="이용 현황" active={active === "users"} />
-          <SidebarItem href="/console/organizations" label="기관" active={active === "organizations"} />
-          <SidebarItem href="/console/knowledge" label="자료 검수" active={active === "knowledge"} />
+        <nav className="flex-1 px-3 py-4 space-y-4">
+          <NavGroup label="운영">
+            <SidebarItem href="/console" label="이용 현황" active={active === "users"} />
+            <SidebarItem href="/console/logs" label="로그" active={active === "logs"} />
+          </NavGroup>
+          <NavGroup label="기관">
+            <SidebarItem href="/console/organizations" label="기관 목록" active={active === "organizations"} />
+            <SidebarItem href="/console/knowledge" label="자료 검수" active={active === "knowledge"} />
+          </NavGroup>
           {operators ? (
-            <SidebarItem href="/console/operators" label="콘솔 접근자" active={active === "operators"} />
+            <NavGroup label="계정">
+              <SidebarItem href="/console/accounts" label="전체 계정" active={active === "accounts"} />
+              <SidebarItem href="/console/operators" label="콘솔 접근자" active={active === "operators"} />
+            </NavGroup>
           ) : null}
         </nav>
 
         <div className="px-5 py-4 border-t border-gray-100">
-          <p className="text-[10px] text-gray-400 truncate mb-2">{email}</p>
           <Link href="/console/password" className="block text-xs text-gray-400 hover:text-gray-600 mb-2">
             비밀번호 변경
           </Link>
@@ -57,6 +74,15 @@ export default function AdminShell({ email, active, title, subtitle, showOperato
           {children}
         </div>
       </main>
+    </div>
+  );
+}
+
+function NavGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400">{label}</p>
+      <div className="space-y-0.5">{children}</div>
     </div>
   );
 }

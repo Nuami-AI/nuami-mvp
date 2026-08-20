@@ -26,6 +26,7 @@ export default async function InstitutionUsersPage({
     <InstitutionShell
       email={session.email}
       institution={institution}
+      membershipRole={membershipRole}
       active="users"
       showUsers
       title="사용자"

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 import { getSessionFromCookies, listSessionOrganizations } from "@/lib/auth/page-session";
 import { isInternalAccount, isSuperAdmin } from "@/lib/auth/access";
-import { institutionAdminPath } from "@/lib/institution/catalog";
+import { institutionAdminPath, institutionLogoSrc } from "@/lib/institution/catalog";
 
 export default async function InstitutionAdminIndexPage() {
   const session = await getSessionFromCookies();
@@ -38,10 +38,19 @@ export default async function InstitutionAdminIndexPage() {
               <Link
                 key={row.id}
                 href={institutionAdminPath(row)}
-                className="block rounded-xl border border-gray-200 bg-white px-4 py-3 hover:border-gray-300"
+                className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 hover:border-gray-300"
               >
-                <p className="text-sm font-semibold text-gray-900">{row.nameKo}</p>
-                <p className="text-[12px] text-gray-400">{row.city} · {row.nameEn}</p>
+                <img
+                  src={institutionLogoSrc(row.city, row.logoFile ?? row.id)}
+                  alt=""
+                  width={36}
+                  height={36}
+                  className="h-9 w-9 shrink-0 object-contain"
+                />
+                <span className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-900">{row.nameKo}</p>
+                  <p className="text-[12px] text-gray-400">{row.city} · {row.nameEn}</p>
+                </span>
               </Link>
             ))
           )}

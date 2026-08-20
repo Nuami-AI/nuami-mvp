@@ -15,6 +15,7 @@ export default async function InstitutionLogsPage({
     <InstitutionShell
       email={session.email}
       institution={institution}
+      membershipRole={membershipRole}
       active="logs"
       showUsers={hasOrgPermission(membershipRole, "users.read")}
       title="로그"

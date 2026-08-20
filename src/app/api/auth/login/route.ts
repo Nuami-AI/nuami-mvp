@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { loginAccount } from "@/lib/auth/accounts";
 import { canAccessInstitutionAdmin, isInternalAccount, type LoginAudience } from "@/lib/auth/access";
 import { publicOrigin } from "@/lib/hosts";
-import { adminLandingPath, listActiveStaffOrganizations } from "@/lib/auth/tenant";
+import { adminLandingPath, hasInactiveStaffMembership, listActiveStaffOrganizations } from "@/lib/auth/tenant";
 import { createSession, requestIsHttps, sessionCookieOptions } from "@/lib/auth/session";
 
 export const runtime = "nodejs";
@@ -118,6 +118,9 @@ async function destinationFor(input: {
         hasOrgMembership: memberships.length > 0,
       })
     ) {
+      if (await hasInactiveStaffMembership(input.email)) {
+        return { error: "ACCOUNT_INACTIVE", message: "비활성화된 계정입니다." };
+      }
       return { error: "NOT_ORG_STAFF", message: "이 계정은 기관 관리자 권한이 없습니다." };
     }
     if (input.mustChangePassword) return "/admin/password";
@@ -152,6 +155,9 @@ export async function POST(request: Request): Promise<Response> {
   if (!result.ok) {
     if (result.reason === "unknown_email") {
       return fail(viaForm, request, audience, "UNKNOWN_EMAIL", "등록되지 않은 이메일이에요.", 401);
+    }
+    if (result.reason === "deactivated") {
+      return fail(viaForm, request, audience, "ACCOUNT_INACTIVE", "비활성화된 계정입니다.", 403);
     }
     if (result.reason === "social_only") {
       return fail(viaForm, request, audience, "SOCIAL_ONLY", "이 계정은 소셜 로그인을 사용해주세요.", 401);

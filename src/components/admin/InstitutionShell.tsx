@@ -1,12 +1,19 @@
 import Link from "next/link";
 
-import { BrandLogo } from "@/components/brand/BrandLogo";
-import { institutionAdminPath, type InstitutionSeed } from "@/lib/institution/catalog";
+import { StatusBubble } from "@/components/ui/status-bubble";
+import { hasOrgPermission } from "@/lib/auth/access";
+import { orgRoleLabel } from "@/lib/auth/roles";
+import {
+  institutionAdminPath,
+  institutionLogoSrc,
+  type InstitutionSeed,
+} from "@/lib/institution/catalog";
 
 interface Props {
   email: string;
   institution: InstitutionSeed;
-  active: "dashboard" | "content" | "knowledge" | "logs" | "users";
+  membershipRole?: string;
+  active: "dashboard" | "content" | "knowledge" | "logs" | "users" | "members";
   title: string;
   subtitle: string;
   showUsers?: boolean;
@@ -16,6 +23,7 @@ interface Props {
 export default function InstitutionShell({
   email,
   institution,
+  membershipRole,
   active,
   title,
   subtitle,
@@ -23,15 +31,31 @@ export default function InstitutionShell({
   children,
 }: Props) {
   const base = institutionAdminPath(institution);
+  const canMembers = hasOrgPermission(membershipRole, "users.write");
   return (
     <div className="flex min-h-screen bg-gray-50">
       <aside className="w-52 shrink-0 flex flex-col border-r border-gray-200 bg-white">
         <div className="px-5 py-5 border-b border-gray-100">
-          <Link href={base} className="inline-flex">
-            <BrandLogo className="h-7" />
+          <Link href={base} className="inline-flex items-center gap-2.5">
+            <img
+              src={institutionLogoSrc(institution.city, institution.logoFile ?? institution.id)}
+              alt={institution.nameKo}
+              width={40}
+              height={40}
+              className="h-10 w-10 shrink-0 object-contain"
+            />
+            <span className="min-w-0">
+              <span className="block text-sm font-bold leading-tight text-gray-900">{institution.nameKo}</span>
+              <span className="mt-0.5 block truncate text-[11px] text-gray-500" title={email}>
+                {email}
+              </span>
+              {membershipRole ? (
+                <span className="mt-1.5 block">
+                  <StatusBubble tone="progress">{orgRoleLabel(membershipRole)}</StatusBubble>
+                </span>
+              ) : null}
+            </span>
           </Link>
-          <p className="mt-2 text-sm font-bold text-gray-900">{institution.nameKo}</p>
-          <p className="mt-0.5 text-[10px] text-gray-400">기관 Admin</p>
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-0.5">
@@ -42,10 +66,12 @@ export default function InstitutionShell({
           {showUsers ? (
             <SidebarItem href={`${base}/users`} label="사용자" active={active === "users"} />
           ) : null}
+          {canMembers ? (
+            <SidebarItem href={`${base}/members`} label="멤버" active={active === "members"} />
+          ) : null}
         </nav>
 
         <div className="px-5 py-4 border-t border-gray-100">
-          <p className="text-[10px] text-gray-400 truncate mb-2">{email}</p>
           <Link href="/admin/password" className="block text-xs text-gray-400 hover:text-gray-600 mb-2">
             비밀번호 변경
           </Link>

@@ -15,6 +15,7 @@ export default async function InstitutionContentPage({
     <InstitutionShell
       email={session.email}
       institution={institution}
+      membershipRole={membershipRole}
       active="content"
       showUsers={hasOrgPermission(membershipRole, "users.read")}
       title="콘텐츠"

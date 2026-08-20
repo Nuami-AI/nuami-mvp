@@ -15,6 +15,7 @@ export default async function InstitutionKnowledgePage({
     <InstitutionShell
       email={session.email}
       institution={institution}
+      membershipRole={membershipRole}
       active="knowledge"
       showUsers={hasOrgPermission(membershipRole, "users.read")}
       title="안내 지식"

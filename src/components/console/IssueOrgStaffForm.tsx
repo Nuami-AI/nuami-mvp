@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { orgRoleLabel } from "@/lib/auth/roles";
 
 export function IssueOrgStaffForm({ organizationId }: { organizationId: string }) {
   const router = useRouter();
@@ -49,16 +49,17 @@ export function IssueOrgStaffForm({ organizationId }: { organizationId: string }
           onChange={(e) => setEmail(e.target.value)}
           className="h-10 flex-1 rounded-lg border border-gray-200 px-3 text-sm"
         />
-        <select
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          className="h-10 rounded-lg border border-gray-200 px-3 text-sm"
-        >
-          <option value="ORG_ADMIN">ORG_ADMIN</option>
-          <option value="ORG_OWNER">ORG_OWNER</option>
-          <option value="ORG_EDITOR">ORG_EDITOR</option>
-          <option value="ORG_VIEWER">ORG_VIEWER</option>
-        </select>
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            aria-label="역할"
+            className="h-10 rounded-lg border border-gray-200 px-3 text-sm"
+          >
+            <option value="ORG_OWNER">{orgRoleLabel("ORG_OWNER")}</option>
+            <option value="ORG_ADMIN">{orgRoleLabel("ORG_ADMIN")}</option>
+            <option value="ORG_EDITOR">{orgRoleLabel("ORG_EDITOR")}</option>
+            <option value="ORG_VIEWER">{orgRoleLabel("ORG_VIEWER")}</option>
+          </select>
         <button
           type="button"
           disabled={!email.trim() || busy}

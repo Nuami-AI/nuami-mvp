@@ -40,6 +40,8 @@ export async function issueConsoleOperator(emailRaw: string): Promise<{
     },
   });
 
+  await prisma.organizationMember.deleteMany({ where: { email } });
+
   return { email, tempPassword: TEMP_ORG_PASSWORD, created };
 }
 

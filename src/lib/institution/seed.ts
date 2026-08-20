@@ -66,9 +66,13 @@ async function seedStaffFromEnv(): Promise<void> {
   const role = process.env.ORG_STAFF_ROLE?.trim() || "ORG_ADMIN";
   if (!email) return;
   if (!INSTITUTION_CATALOG.some((row) => row.id === organizationId)) return;
-  await prisma.organizationMember.upsert({
+  const user = await prisma.authUser.findUnique({ where: { email }, select: { accountType: true } });
+  if (!user || user.accountType !== "ORG_STAFF") return;
+  const existing = await prisma.organizationMember.findUnique({
     where: { organizationId_email: { organizationId, email } },
-    create: { organizationId, email, role, status: "ACTIVE" },
-    update: { role, status: "ACTIVE" },
+  });
+  if (existing) return;
+  await prisma.organizationMember.create({
+    data: { organizationId, email, role, status: "ACTIVE" },
   });
 }

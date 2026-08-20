@@ -1,6 +1,6 @@
 import AdminShell from "@/components/admin/AdminShell";
 import { requireConsoleSession } from "@/lib/auth/page-session";
-import { listAppUserEmails } from "@/lib/auth/accounts";
+import { listUsageAccounts } from "@/lib/auth/accounts";
 import { getAdminUserDetails } from "@/lib/usage/tracker";
 
 function formatDate(date: Date | null): string {
@@ -39,7 +39,9 @@ function StatCard({ label, value, sub }: { label: string; value: string | number
 
 export default async function ConsolePage() {
   const session = await requireConsoleSession();
-  const testerEmails = await listAppUserEmails();
+  const accounts = await listUsageAccounts();
+  const kindByEmail = Object.fromEntries(accounts.map((row) => [row.email.toLowerCase(), row.kind]));
+  const testerEmails = accounts.map((row) => row.email);
   const users = await getAdminUserDetails(testerEmails);
 
   const totalUse = users.reduce((s, u) => s + u.video_ai_use, 0);
@@ -65,6 +67,7 @@ export default async function ConsolePage() {
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
               <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">이메일</th>
+              <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">구분</th>
               <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">가입일</th>
               <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">마지막 사용</th>
               <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">크래딧</th>
@@ -76,7 +79,7 @@ export default async function ConsolePage() {
           <tbody className="divide-y divide-gray-100">
             {users.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-sm text-gray-400">
+                <td colSpan={8} className="px-4 py-10 text-center text-sm text-gray-400">
                   등록된 테스터가 없습니다.
                 </td>
               </tr>
@@ -85,6 +88,9 @@ export default async function ConsolePage() {
               <tr key={u.email} className="hover:bg-gray-50 transition-colors">
                 <td className="px-4 py-3 text-gray-800 font-medium text-xs max-w-[180px] truncate">
                   {u.email}
+                </td>
+                <td className="px-4 py-3">
+                  <KindBadge kind={kindByEmail[u.email.toLowerCase()] ?? "end"} />
                 </td>
                 <td className="px-4 py-3 text-xs text-gray-500 tabular-nums">
                   {formatDate(u.firstSeenAt)}
@@ -110,5 +116,20 @@ export default async function ConsolePage() {
         </table>
       </div>
     </AdminShell>
+  );
+}
+
+function KindBadge({ kind }: { kind: "org" | "end" }) {
+  if (kind === "org") {
+    return (
+      <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+        기관
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-800">
+      엔드유저
+    </span>
   );
 }

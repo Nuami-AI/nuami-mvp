@@ -27,6 +27,7 @@ export default async function InstitutionDashboardPage({
     <InstitutionShell
       email={session.email}
       institution={institution}
+      membershipRole={membershipRole}
       active="dashboard"
       showUsers={hasOrgPermission(membershipRole, "users.read")}
       title="대시보드"
