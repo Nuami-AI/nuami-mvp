@@ -37,6 +37,16 @@ function unique(items: string[]): string[] {
   return out;
 }
 
+/** Warm knowledge in background — never block the user response. */
+function scheduleMissLearn(institutionId: string, situation: string): void {
+  void learnFromOfficialSourcesOnMiss({ institutionId, situation }).catch((err) => {
+    console.warn(
+      "[guide-pipeline] background learn failed:",
+      err instanceof Error ? err.message : err,
+    );
+  });
+}
+
 export async function runGuidePipeline(input: GuidePipelineInput): Promise<GuidePipelineOutput> {
   const search = searchVerifiedData(input.situation);
   const stayType = input.stayType ?? "other";
@@ -46,21 +56,18 @@ export async function runGuidePipeline(input: GuidePipelineInput): Promise<Guide
       : undefined;
   const city = coords ? regionFromCoords(coords.lat, coords.lng) : "other";
   const region: GuideRegion = city === "busan" ? "busan" : "other";
-  let institutionHits = input.universityId
-    ? await searchInstitutionKnowledge(input.universityId, input.situation, input.knowledgeId)
-    : [];
-  let learnedOnMiss = false;
+
+  const [institutionHits, openData] = await Promise.all([
+    input.universityId
+      ? searchInstitutionKnowledge(input.universityId, input.situation, input.knowledgeId)
+      : Promise.resolve([]),
+    fetchOpenDataForScenario(search.primary?.id, coords),
+  ]);
+
   if (input.universityId && institutionHits.length === 0 && !input.knowledgeId) {
-    const added = await learnFromOfficialSourcesOnMiss({
-      institutionId: input.universityId,
-      situation: input.situation,
-    });
-    if (added > 0) {
-      learnedOnMiss = true;
-      institutionHits = await searchInstitutionKnowledge(input.universityId, input.situation);
-    }
+    scheduleMissLearn(input.universityId, input.situation);
   }
-  const openData = await fetchOpenDataForScenario(search.primary?.id, coords);
+
   const liveAgencies = unique([
     ...institutionHits.flatMap((hit) => hit.whereTo),
     ...openData.facilities
@@ -154,25 +161,25 @@ export async function runGuidePipeline(input: GuidePipelineInput): Promise<Guide
       ? {
           id: institutionHits[0].institutionId,
           name: institutionHits[0].institutionName,
-          reused: !learnedOnMiss,
+          reused: true,
           titles: institutionHits.map((hit) => hit.title),
         }
       : undefined,
   };
 
-  const shouldLearn = false;
-
-  if (institutionHits.length > 0 && reasoned.scenario) {
+  // Known scenarios (bank / residence / hospital): skip LLM entirely.
+  if (reasoned.scenario) {
     const template = buildVerifiedTemplate(reasoned, {
       situation: input.situation,
       userLanguage: input.userLanguage,
     });
     if (template) {
+      const mode = institutionHits.length > 0 ? "institution-cache" : "verified-template";
       return {
         claude: null,
         template,
         shouldLearn: false,
-        meta: { ...metaBase, generate: { mode: "institution-cache", grounded: true } },
+        meta: { ...metaBase, generate: { mode, grounded: true } },
       };
     }
   }
@@ -182,7 +189,7 @@ export async function runGuidePipeline(input: GuidePipelineInput): Promise<Guide
     return {
       claude,
       template: null,
-      shouldLearn,
+      shouldLearn: false,
       meta: {
         ...metaBase,
         generate: {
@@ -201,7 +208,7 @@ export async function runGuidePipeline(input: GuidePipelineInput): Promise<Guide
       return {
         claude: null,
         template,
-        shouldLearn,
+        shouldLearn: false,
         meta: { ...metaBase, generate: { mode: "verified-template", grounded: true } },
       };
     }

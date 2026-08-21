@@ -37,12 +37,12 @@ function poolTuning(): Record<string, unknown> {
   // creating any connection (idle < 0 is never true), which shows up as
   // active=0 idle=0 pool timeout.
   return {
-    connectionLimit: 3,
+    connectionLimit: 5,
     minimumIdle: 1,
-    connectTimeout: 20_000,
-    acquireTimeout: 25_000,
+    connectTimeout: 10_000,
+    acquireTimeout: 15_000,
     idleTimeout: 600,
-    initializationTimeout: 20_000,
+    initializationTimeout: 10_000,
   };
 }
 

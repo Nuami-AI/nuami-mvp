@@ -24,16 +24,3 @@ export interface ContentListParams {
   limit?: number;
 }
 
-export interface ContentGenerateInput {
-  country: ContentCountry;
-  category: ContentCategory;
-  topic: string;
-  language?: ContentLanguage;
-}
-
-export class ContentGenerateError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "ContentGenerateError";
-  }
-}

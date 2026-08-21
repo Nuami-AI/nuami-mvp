@@ -2,9 +2,7 @@
 // full extraction pipeline.
 // Plan SC: FR-01 through FR-11.
 //
-// Next.js 16 App Router Route Handler. Node runtime is REQUIRED for the
-// Anthropic SDK (uses Node streams). Verified against
-// node_modules/next/dist/docs/01-app/01-getting-started/15-route-handlers.md.
+// Next.js 16 App Router Route Handler. Node runtime for OpenAI SDK + Prisma.
 
 import { NextResponse } from "next/server";
 
@@ -34,9 +32,9 @@ import { checkGate, logEvent as logUsageEvent } from "@/lib/usage/tracker";
 import { runGuidePipeline } from "@/lib/guide/pipeline";
 import type { StayType } from "@/lib/guide/types";
 
-export const runtime = "nodejs"; // Anthropic SDK requires Node
-export const dynamic = "force-dynamic"; // never cache — every call hits Claude
-export const maxDuration = 90;
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function POST(request: Request): Promise<Response> {
   const requestId = crypto.randomUUID();
@@ -215,6 +213,7 @@ export async function POST(request: Request): Promise<Response> {
   let claudeResult: { rawJson: string; tokensIn: number; tokensOut: number } | null = null;
   let templateResult: ExtractionResult | null = null;
   let pipelineMeta;
+  const pipelineStartedAt = Date.now();
   try {
     const pipeline = await runGuidePipeline({
       situation,
@@ -236,6 +235,11 @@ export async function POST(request: Request): Promise<Response> {
     claudeResult = pipeline.claude;
     templateResult = pipeline.template;
     pipelineMeta = pipeline.meta;
+    console.info("[extract] pipeline", {
+      requestId,
+      ms: Date.now() - pipelineStartedAt,
+      mode: pipeline.meta.generate.mode,
+    });
   } catch (err) {
     const code: ExtractErrorCode = err instanceof ClaudeParseError ? "CLAUDE_PARSE_FAILED" : "INTERNAL";
     return emitError(requestId, url || situation, url ? "youtube" : "unknown", startedAt, {

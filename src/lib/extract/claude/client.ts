@@ -2,9 +2,9 @@ import OpenAI from "openai";
 
 import { buildSystemPrompt, buildUserMessage, type PromptInput } from "./prompt";
 
-const MAX_TRANSCRIPT_CHARS = 32_000;
+const MAX_TRANSCRIPT_CHARS = 12_000;
 const DEFAULT_MODEL = "gpt-4o-mini";
-const MAX_OUTPUT_TOKENS = 3000;
+const MAX_OUTPUT_TOKENS = 1800;
 
 // Design Ref: §4.2 platform-pivot — situation added to PromptInput (required).
 export interface ClaudeExtractResult {
@@ -56,6 +56,7 @@ export async function claudeExtract(input: PromptInput): Promise<ClaudeExtractRe
       max_tokens: MAX_OUTPUT_TOKENS,
       temperature: 0.2,
       seed: 42,
+      response_format: { type: "json_object" },
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: buildUserMessage(input) },
@@ -63,7 +64,6 @@ export async function claudeExtract(input: PromptInput): Promise<ClaudeExtractRe
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    // Log the real cause so server logs are useful
     console.error("[claudeExtract] OpenAI API error:", msg);
     throw err;
   }
