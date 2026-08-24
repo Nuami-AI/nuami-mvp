@@ -11,7 +11,7 @@ export default function AdminPasswordPage() {
         <ChangePasswordForm
           next="/admin"
           title=""
-          description="현재 비밀번호를 확인한 뒤 8자 이상으로 바꿉니다. 임시 비밀번호(1234)로 들어온 기관 계정도 여기서 변경합니다."
+          description="현재 비밀번호를 확인한 뒤 8자 이상으로 바꿉니다."
         />
       </div>
     </AuthChrome>

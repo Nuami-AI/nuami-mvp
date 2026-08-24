@@ -15,7 +15,7 @@ export default async function ConsoleLogsPage() {
       email={session.email}
       active="logs"
       title="로그"
-      subtitle="콘솔·기관 계정 발급, 권한 변경 등 운영 이력입니다."
+      subtitle="계정 발급·권한 변경 이력입니다."
     >
       <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
         <table className="w-full text-sm">

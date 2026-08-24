@@ -11,6 +11,7 @@
     "auth:migrate-env": "tsx --tsconfig tsconfig.json scripts/migrate-env-accounts.ts",
     "auth:list": "tsx --tsconfig tsconfig.json scripts/list-auth-users.ts",
     "auth:reset-admin": "tsx --tsconfig tsconfig.json scripts/reset-admin-password.ts",
+    "auth:seed-demo": "tsx --tsconfig tsconfig.json scripts/seed-demo-accounts.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

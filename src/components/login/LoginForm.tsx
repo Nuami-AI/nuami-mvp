@@ -29,8 +29,8 @@ const DEFAULT_REDIRECT: Record<LoginAudience, string> = {
 
 const CAPTION: Record<LoginAudience, string> = {
   app: "",
-  admin: "Institution Admin",
-  console: "NUAMI Console",
+  admin: "기관 관리",
+  console: "내부 콘솔",
 };
 
 export function LoginForm({ audience }: { audience: LoginAudience }) {
@@ -107,36 +107,51 @@ export function LoginForm({ audience }: { audience: LoginAudience }) {
             <input type="hidden" name="redirect" value={redirectTo} />
             <input type="hidden" name="audience" value={audience} />
             <div className="overflow-hidden rounded-[8px] border border-line-normal bg-white">
+              <label htmlFor="email" className="sr-only">
+                {t("login.email.placeholder")}
+              </label>
               <input
                 id="email"
                 name="email"
-                type="text"
+                type="email"
                 inputMode="email"
                 autoComplete="username"
                 autoCapitalize="none"
                 autoCorrect="off"
+                spellCheck={false}
                 required
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? "login-error" : undefined}
                 placeholder={t("login.email.placeholder")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full border-0 bg-transparent px-4 py-[18px] text-[16px] text-text-primary placeholder:text-text-disabled focus:outline-none"
+                className="w-full border-0 bg-transparent px-4 py-[18px] text-[16px] text-text-primary placeholder:text-text-disabled focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-700"
               />
               <div className="h-px bg-line-normal" />
+              <label htmlFor="password" className="sr-only">
+                {t("login.password.placeholder")}
+              </label>
               <input
                 id="password"
                 name="password"
                 type="password"
                 autoComplete="current-password"
                 required
+                aria-invalid={error ? true : undefined}
+                aria-describedby={error ? "login-error" : undefined}
                 placeholder={t("login.password.placeholder")}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full border-0 bg-transparent px-4 py-[18px] text-[16px] text-text-primary placeholder:text-text-disabled focus:outline-none"
+                className="w-full border-0 bg-transparent px-4 py-[18px] text-[16px] text-text-primary placeholder:text-text-disabled focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent-700"
               />
             </div>
 
             {error ? (
-              <p className="mt-3 rounded-xl bg-danger-50 px-3 py-2.5 text-center text-[13px] font-medium text-danger-800">
+              <p
+                id="login-error"
+                role="alert"
+                className="mt-3 rounded-xl bg-danger-50 px-3 py-2.5 text-center text-[13px] font-medium text-danger-800"
+              >
                 {error}
               </p>
             ) : null}
@@ -154,7 +169,7 @@ export function LoginForm({ audience }: { audience: LoginAudience }) {
                   : "bg-button-disabled text-text-tertiary opacity-50"
               }`}
             >
-              {audience === "app" ? t("login.email.submit") : "Log In"}
+              {audience === "app" ? t("login.email.submit") : "로그인"}
             </button>
           </form>
 
@@ -176,13 +191,6 @@ export function LoginForm({ audience }: { audience: LoginAudience }) {
                 <p className="mt-8 text-[12px] text-text-disabled">{t("login.copyright")}</p>
               </div>
             </>
-          ) : audience === "admin" ? (
-            <div className="mt-auto pt-10 text-center">
-              <p className="text-[13px] text-text-secondary">기관 계정은 뉴아미가 발급합니다.</p>
-              <Link href="/admin/join" className="mt-2 inline-block text-[13px] font-semibold text-accent-700">
-                뉴아미에 문의하기
-              </Link>
-            </div>
           ) : null}
         </main>
       </div>

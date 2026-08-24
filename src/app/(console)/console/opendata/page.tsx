@@ -15,7 +15,7 @@ export default async function ConsoleOpenDataPage() {
       email={session.email}
       active="opendata"
       title="공공데이터 연동현황"
-      subtitle="어떤 데이터를 · 어디서 · 서울/부산/전국에 · MVP 어느 카드·시나리오에 쓰는지 한눈에 봅니다."
+      subtitle="연동 중인 공공데이터와 활용 위치를 확인합니다."
     >
       <OpenDataIntegrationsPanel rows={rows} syncSnapshot={cached ?? undefined} autoSync />
     </AdminShell>

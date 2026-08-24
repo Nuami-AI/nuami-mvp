@@ -42,7 +42,7 @@ export default async function ConsoleAccountsPage() {
       email={session.email}
       active="accounts"
       title="전체 계정"
-      subtitle="기관 담당자와 엔드유저를 구분해 보여 줍니다."
+      subtitle="기관 담당자와 이용자를 구분합니다."
     >
       <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
         <table className="w-full text-sm">

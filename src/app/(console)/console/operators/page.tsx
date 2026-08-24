@@ -16,7 +16,7 @@ export default async function ConsoleOperatorsPage() {
       active="operators"
       showOperators
       title="콘솔 접근자"
-      subtitle="admin@nuami.kr만 전체 권한입니다. 나머지는 console만 추가하세요."
+      subtitle="내부 콘솔에 들어올 수 있는 계정을 관리합니다."
     >
       <ConsoleOperatorsPanel
         operators={operators.map((row) => ({

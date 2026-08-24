@@ -145,8 +145,10 @@ export function SocialLoginHome({ configured }: { configured: OAuthProvider[] })
             <button
               type="button"
               onClick={() => setOpenLang((v) => !v)}
-              className="flex h-10 items-center gap-2 rounded-lg px-2 text-[14px] font-medium text-text-primary"
+              className="flex h-10 items-center gap-2 rounded-lg px-2 text-[14px] font-medium text-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-700"
               aria-expanded={openLang}
+              aria-haspopup="listbox"
+              aria-label="언어 선택"
             >
               <span className="relative size-4 overflow-clip">
                 <img src="/login/globe.svg" alt="" width={16} height={16} className="size-4" />
@@ -154,7 +156,11 @@ export function SocialLoginHome({ configured }: { configured: OAuthProvider[] })
               {langLabel}
             </button>
             {openLang ? (
-              <div className="absolute left-0 top-11 z-20 min-w-[148px] overflow-hidden rounded-lg border border-line-normal bg-white py-1 shadow-sm">
+              <div
+                role="listbox"
+                aria-label="언어"
+                className="absolute left-0 top-11 z-20 min-w-[148px] overflow-hidden rounded-lg border border-line-normal bg-white py-1 shadow-sm"
+              >
                 {LANG_OPTIONS.map((code) => (
                   <button
                     key={code}
@@ -166,6 +172,8 @@ export function SocialLoginHome({ configured }: { configured: OAuthProvider[] })
                     className={`block w-full px-3 py-2 text-left text-[14px] ${
                       lang === code ? "font-semibold text-accent-700" : "text-text-primary"
                     }`}
+                    role="option"
+                    aria-selected={lang === code}
                   >
                     {LANGUAGE_LABELS[code]}
                   </button>

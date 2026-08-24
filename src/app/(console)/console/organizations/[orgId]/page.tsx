@@ -26,7 +26,7 @@ export default async function ConsoleOrganizationStaffPage({
       email={session.email}
       active="organizations"
       title={institution.nameKo}
-      subtitle={`${institution.city} · ${institution.id} — 기관 담당자 계정 발급`}
+      subtitle={`${institution.city} · 기관 담당자`}
     >
       <Link href="/console/organizations" className="mb-4 inline-block text-sm text-gray-500 hover:text-gray-800">
         ← 기관 목록

@@ -19,7 +19,7 @@ export default async function InstitutionContentPage({
       active="content"
       showUsers={hasOrgPermission(membershipRole, "users.read")}
       title="콘텐츠"
-      subtitle="공식 홈페이지와 PDF를 등록하면 핵심만 학습합니다. 결과는 안내 지식에서 검수하세요."
+      subtitle="공식 홈페이지와 PDF를 등록합니다."
     >
       <KnowledgeManager lockedInstitutionId={institution.id} view="content" />
     </InstitutionShell>

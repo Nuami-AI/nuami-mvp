@@ -28,7 +28,7 @@ export default async function InstitutionUserDetailPage({
       active="users"
       showUsers
       title="사용자 상세"
-      subtitle="소속 기관이 일치하는 이용자만 조회됩니다."
+      subtitle="소속 이용자 정보입니다."
     >
       <div className="max-w-md rounded-xl border border-gray-200 bg-white px-5 py-4 space-y-2">
         <p className="text-sm font-semibold text-gray-900">{maskEmail(membership.email)}</p>

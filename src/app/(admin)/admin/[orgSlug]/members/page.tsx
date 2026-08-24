@@ -25,7 +25,7 @@ export default async function InstitutionMembersPage({
       active="members"
       showUsers={hasOrgPermission(membershipRole, "users.read")}
       title="멤버"
-      subtitle="대표와 관리자만 멤버를 추가하고 역할을 바꿀 수 있습니다. 비밀번호 초기화·비활성화·삭제도 가능합니다."
+      subtitle="멤버를 추가하고 역할을 관리합니다."
     >
       <OrgStaffMembersPanel
         organizationId={institution.id}

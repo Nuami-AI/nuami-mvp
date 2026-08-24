@@ -154,8 +154,8 @@ export function OrgStaffMembersPanel({
         <h2 className="text-sm font-semibold text-gray-900">{variant === "console" ? "기관 계정 추가" : "멤버 추가"}</h2>
         <p className="mt-1 text-[13px] text-gray-500">
           {variant === "console"
-            ? "담당자 이메일을 넣으면 기관 계정이 만들어집니다. 임시 비밀번호는 1234입니다."
-            : "대표와 관리자만 멤버를 추가하고 역할을 바꿀 수 있습니다. 점 세 개 메뉴에서 역할 변경·초기화·비활성화·활성화·삭제를 합니다."}
+            ? "담당자 이메일을 넣으면 기관 계정이 만들어집니다."
+            : "점 세 개 메뉴에서 역할 변경, 비밀번호 초기화, 비활성화, 삭제를 할 수 있습니다."}
         </p>
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
           <input
@@ -163,6 +163,7 @@ export function OrgStaffMembersPanel({
             ref={emailRef}
             type="email"
             placeholder="이메일"
+            aria-label="이메일"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="h-10 flex-1 rounded-lg border border-gray-200 px-3 text-sm"

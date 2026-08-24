@@ -53,12 +53,12 @@ export default async function ConsolePage() {
       email={session.email}
       active="users"
       title="이용 현황"
-      subtitle="등록된 테스터 계정의 사용 현황"
+      subtitle="등록된 이용자의 사용 현황"
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-7">
-        <StatCard label="총 유저" value={users.length} sub="등록된 계정" />
-        <StatCard label="총 사용 횟수" value={totalUse} sub="video_ai_use 합계" />
-        <StatCard label="페이월 노출" value={totalPaywall} sub="paywall_shown 합계" />
+        <StatCard label="총 이용자" value={users.length} />
+        <StatCard label="총 사용 횟수" value={totalUse} />
+        <StatCard label="페이월 노출" value={totalPaywall} />
         <StatCard label="CTA 전환율" value={totalPaywall > 0 ? `${Math.round((totalCta / totalPaywall) * 100)}%` : "—"} sub={`${totalCta}건 클릭`} />
       </div>
 
@@ -80,7 +80,7 @@ export default async function ConsolePage() {
             {users.length === 0 && (
               <tr>
                 <td colSpan={8} className="px-4 py-10 text-center text-sm text-gray-400">
-                  등록된 테스터가 없습니다.
+                  등록된 이용자가 없습니다.
                 </td>
               </tr>
             )}

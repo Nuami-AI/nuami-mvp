@@ -10,7 +10,7 @@ export default async function ConsoleAssetsPage() {
       email={session.email}
       active="assets"
       title="지식자료"
-      subtitle="외부 공식자료를 등록·검토한 뒤, 승인·반영된 항목만 AI 지식베이스에 사용합니다."
+      subtitle="검토가 끝난 자료만 지식베이스에 반영합니다."
     >
       <KnowledgeAssetsPanel />
     </AdminShell>

@@ -58,31 +58,44 @@ export function ChangePasswordForm({
     <div className="space-y-3">
       {title ? <p className="text-[14px] font-semibold text-text-primary">{title}</p> : null}
       {description ? <p className="text-[13px] leading-relaxed text-text-secondary">{description}</p> : null}
-      <input
-        type="password"
-        placeholder={currentLabel}
-        value={currentPassword}
-        onChange={(e) => setCurrentPassword(e.target.value)}
-        autoComplete="current-password"
-        className="h-11 w-full rounded-xl border border-line-neutral px-3 text-[14px]"
-      />
-      <input
-        type="password"
-        placeholder={nextLabel}
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        autoComplete="new-password"
-        className="h-11 w-full rounded-xl border border-line-neutral px-3 text-[14px]"
-      />
-      <input
-        type="password"
-        placeholder={confirmLabel}
-        value={confirm}
-        onChange={(e) => setConfirm(e.target.value)}
-        autoComplete="new-password"
-        className="h-11 w-full rounded-xl border border-line-neutral px-3 text-[14px]"
-      />
-      {error ? <p className="text-[13px] text-danger-800">{error}</p> : null}
+      <label className="block">
+        <span className="sr-only">{currentLabel}</span>
+        <input
+          type="password"
+          placeholder={currentLabel}
+          value={currentPassword}
+          onChange={(e) => setCurrentPassword(e.target.value)}
+          autoComplete="current-password"
+          className="h-11 w-full rounded-xl border border-line-neutral px-3 text-[14px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-700"
+        />
+      </label>
+      <label className="block">
+        <span className="sr-only">{nextLabel}</span>
+        <input
+          type="password"
+          placeholder={nextLabel}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="new-password"
+          className="h-11 w-full rounded-xl border border-line-neutral px-3 text-[14px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-700"
+        />
+      </label>
+      <label className="block">
+        <span className="sr-only">{confirmLabel}</span>
+        <input
+          type="password"
+          placeholder={confirmLabel}
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          autoComplete="new-password"
+          className="h-11 w-full rounded-xl border border-line-neutral px-3 text-[14px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-700"
+        />
+      </label>
+      {error ? (
+        <p role="alert" className="text-[13px] text-danger-800">
+          {error}
+        </p>
+      ) : null}
       <button
         type="button"
         disabled={!currentPassword || !password || !confirm || busy}

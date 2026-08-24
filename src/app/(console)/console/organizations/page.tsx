@@ -41,7 +41,7 @@ export default async function ConsoleOrganizationsPage() {
       email={session.email}
       active="organizations"
       title="기관"
-      subtitle="광역자치단체별로 보고, 헤더를 눌러 가나다·문서·지식·멤버 순으로 정렬할 수 있습니다."
+      subtitle="광역자치단체별로 기관을 확인합니다."
     >
       <ConsoleOrganizationsTable rows={rows} />
     </AdminShell>

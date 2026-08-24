@@ -30,7 +30,7 @@ export default async function InstitutionUsersPage({
       active="users"
       showUsers
       title="사용자"
-      subtitle="이 기관에 소속된 서비스 이용자만 표시합니다."
+      subtitle="이 기관에 소속된 이용자입니다."
     >
       <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
         <table className="w-full text-sm">

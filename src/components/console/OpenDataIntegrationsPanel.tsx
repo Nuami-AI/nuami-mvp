@@ -154,15 +154,6 @@ export function OpenDataIntegrationsPanel({
         />
       </div>
 
-      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-950">
-        <p className="font-medium">보안 · 등록 방식</p>
-        <p className="mt-1 text-amber-900/80">
-          API 키는 env/Vercel에만 둡니다. 콘솔에는 변수명·설정 여부·마스킹만 표시합니다.
-          새 공공데이터는 <strong>카탈로그에 등록</strong>해야 목록에 나타나며, env만 넣는다고
-          자동 추가되지 않습니다. 전국 API는 서울/부산용으로 중복 만들지 않습니다.
-        </p>
-      </div>
-
       <div className="flex flex-col gap-2">
         <FilterRow label="우선순위">
           {PRIORITIES.map((p) => (
@@ -219,9 +210,6 @@ export function OpenDataIntegrationsPanel({
                     </span>
                   </div>
                   <p className="mt-1 text-[12px] text-gray-500">{row.provider}</p>
-                  {row.notes ? (
-                    <p className="mt-1 text-[12px] text-gray-400">{row.notes}</p>
-                  ) : null}
                 </div>
                 {row.datasetUrl ? (
                   <a
@@ -235,43 +223,10 @@ export function OpenDataIntegrationsPanel({
                 ) : null}
               </div>
 
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <Meta label="env">
-                  <span className="font-mono text-[12px] text-gray-700">{row.envKey ?? "—"}</span>
-                </Meta>
-                <Meta label="키">
-                  <span className="font-mono text-[12px] text-gray-700">
-                    {row.publicNote ?? row.maskedKey ?? (row.envKey ? "미설정" : "—")}
-                  </span>
-                </Meta>
-                <Meta label="데이터셋 ID">
-                  <span className="font-mono text-[11px] text-gray-500">
-                    {row.datasetId ? `data.go.kr/${row.datasetId}` : "—"}
-                  </span>
-                </Meta>
-                <Meta label="마지막 동기화">
-                  <span className="text-[12px] text-gray-600">
-                    {formatSyncedAt(row.lastSyncedAt)}
-                  </span>
-                  {row.syncMessage ? (
-                    <p className="mt-0.5 text-[11px] text-gray-400">
-                      {row.syncSampleCount != null ? `${row.syncSampleCount}건 · ` : ""}
-                      {row.syncMessage}
-                    </p>
-                  ) : row.priority === "P0" ? (
-                    <p className="mt-0.5 text-[11px] text-gray-400">
-                      {pending ? "동기화 중…" : "P0 미동기화"}
-                    </p>
-                  ) : (
-                    <p className="mt-0.5 text-[11px] text-gray-400">P1+ · 요청 시 조회</p>
-                  )}
-                </Meta>
-              </div>
-
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <div>
                   <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-                    MVP 활용 위치
+                    활용 위치
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {row.mvpUsage.map((u) => (
@@ -305,7 +260,7 @@ export function OpenDataIntegrationsPanel({
         )}
       </div>
 
-      <p className="text-[12px] text-gray-400">{filtered.length}개 표시 · Catalog → API Module → env → Console</p>
+      <p className="text-[12px] text-gray-400">{filtered.length}개 표시</p>
     </div>
   );
 }
@@ -332,6 +287,7 @@ function Chip({
     <button
       type="button"
       onClick={onClick}
+      aria-pressed={active}
       className={`rounded-full px-2.5 py-1 text-[12px] font-medium transition-colors ${
         active
           ? "bg-gray-900 text-white"
@@ -340,15 +296,6 @@ function Chip({
     >
       {children}
     </button>
-  );
-}
-
-function Meta({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">{label}</p>
-      <div className="mt-0.5">{children}</div>
-    </div>
   );
 }
 

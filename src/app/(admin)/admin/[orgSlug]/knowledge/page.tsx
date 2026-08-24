@@ -19,7 +19,7 @@ export default async function InstitutionKnowledgePage({
       active="knowledge"
       showUsers={hasOrgPermission(membershipRole, "users.read")}
       title="안내 지식"
-      subtitle="학생에게 나가는 검증된 사실입니다. 항목을 열어 확인하고, 틀리면 삭제하세요."
+      subtitle="학생에게 안내되는 검증된 사실입니다."
     >
       <KnowledgeManager lockedInstitutionId={institution.id} view="knowledge" />
     </InstitutionShell>

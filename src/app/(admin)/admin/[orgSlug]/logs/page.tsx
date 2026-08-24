@@ -19,7 +19,7 @@ export default async function InstitutionLogsPage({
       active="logs"
       showUsers={hasOrgPermission(membershipRole, "users.read")}
       title="로그"
-      subtitle="업로드한 파일과 홈페이지에서 읽어 온 페이지 이력입니다."
+      subtitle="자료 등록·학습 이력입니다."
     >
       <KnowledgeManager lockedInstitutionId={institution.id} view="logs" />
     </InstitutionShell>

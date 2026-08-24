@@ -10,7 +10,7 @@ export default async function ConsoleProvidersPage() {
       email={session.email}
       active="providers"
       title="자료 제공처"
-      subtitle="공공기관·대학·지원기관·파트너·외부 전문가 등 출처를 내부에서만 관리합니다."
+      subtitle="지식자료의 출처를 관리합니다."
     >
       <KnowledgeProvidersPanel />
     </AdminShell>
