@@ -2,6 +2,7 @@ import { searchKakaoPlaces } from "@/lib/kakao/search";
 import {
   cityQueryLabel,
   hiraSidoCd,
+  isPhysicalPlaceName,
   pharmacySidoName,
   type CityRegion,
   type UserCoords,
@@ -120,4 +121,32 @@ export async function fetchNearbyPharmacies(
     "https://www.data.go.kr/data/15000576/openapi.do",
   );
   return { facilities: kakao.slice(0, 3), error };
+}
+
+export async function fetchNearbyPublicHealthCenters(
+  coords?: UserCoords,
+  region: CityRegion = "other",
+): Promise<{ facilities: PublicFacility[]; error?: string }> {
+  const city = cityQueryLabel(region);
+  const query = coords ? "보건소" : city ? `${city} 보건소` : "보건소";
+  const kakao = await searchKakaoPlaces(query, 6, coords ? { ...coords, radius: 8000 } : undefined);
+  const facilities = kakao.places
+    .filter((p) => isPhysicalPlaceName(p.placeName, p.roadAddress || p.address))
+    .map((place) => ({
+      name: place.placeName,
+      address: place.roadAddress || place.address,
+      phone: place.phone,
+      lat: place.lat,
+      lng: place.lng,
+      category: "보건소",
+      provider: "보건복지부 / 지자체 + 카카오 위치정보",
+      dataset: "보건소 기관 검색",
+      datasetUrl: "https://www.data.go.kr",
+      live: true,
+    } satisfies PublicFacility));
+
+  return {
+    facilities: facilities.slice(0, 4),
+    error: facilities.length ? undefined : kakao.error,
+  };
 }

@@ -17,7 +17,7 @@ export function AuthChrome({
   return (
     <div className="min-h-dvh w-full bg-background text-text-primary">
       <div className="mx-auto flex min-h-dvh w-full max-w-[448px] flex-col">
-        <header className="relative sticky top-0 z-10 flex h-16 items-center bg-white px-2">
+        <header className="relative sticky top-0 z-10 flex h-16 items-center px-2">
           <HeaderIconButton
             name="back"
             label="뒤로"

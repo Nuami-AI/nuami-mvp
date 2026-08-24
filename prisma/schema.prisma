@@ -193,3 +193,98 @@ model AuditLog {
   @@index([organizationId, createdAt])
   @@index([actorEmail, createdAt])
 }
+
+/// 내부 콘솔: 외부 자료 제공처 (공공기관·대학·전문가 등). 파트너 계정 없음.
+model KnowledgeProvider {
+  id          String   @id @default(cuid())
+  name        String
+  /// PUBLIC_AGENCY | UNIVERSITY | FOREIGNER_SUPPORT | PARTNER | EXPERT | OTHER
+  type        String
+  domain      String   @default("")
+  region      String   @default("")
+  description String?  @db.Text
+  /// ACTIVE | INACTIVE
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  assets KnowledgeAsset[]
+
+  @@index([type, status])
+  @@index([name])
+}
+
+/// 내부 콘솔: 검증 대기→승인→지식베이스 반영 워크플로 자료.
+model KnowledgeAsset {
+  id                  String    @id @default(cuid())
+  title               String
+  providerId          String
+  /// housing | stay | hospital | campus | bank | other
+  domain              String
+  region              String    @default("")
+  /// optional Institution.id
+  institutionId       String?
+  /// PDF | DOCUMENT | URL | TEXT
+  sourceType          String
+  contentText         String    @db.LongText
+  sourceUrl           String?   @db.VarChar(500)
+  fileName            String?
+  mimeType            String?
+  originalPublishedAt DateTime?
+  originalUpdatedAt   DateTime?
+  reviewerEmail       String?
+  reviewMemo          String?   @db.Text
+  /// PENDING_REVIEW | APPROVED | PUBLISHED | ON_HOLD | INACTIVE
+  status              String    @default("PENDING_REVIEW")
+  version             Int       @default(1)
+  publishedAt         DateTime?
+  createdBy           String
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  provider  KnowledgeProvider         @relation(fields: [providerId], references: [id], onDelete: Restrict)
+  versions  KnowledgeAssetVersion[]
+  opinions  ExpertOpinion[]
+
+  @@index([status, domain])
+  @@index([providerId])
+  @@index([institutionId, status])
+  @@index([updatedAt])
+}
+
+model KnowledgeAssetVersion {
+  id         String   @id @default(cuid())
+  assetId    String
+  version    Int
+  snapshot   String   @db.LongText
+  changedBy  String
+  changeNote String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  asset KnowledgeAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([assetId, version])
+  @@index([assetId, createdAt])
+}
+
+/// 외부 전문가 의견 — 내부 관리자가 대행 등록 (전문가 로그인 없음).
+model ExpertOpinion {
+  id            String   @id @default(cuid())
+  expertName    String
+  affiliation   String   @default("")
+  domain        String   @default("")
+  assetId       String?
+  opinion       String   @db.LongText
+  receivedAt    DateTime @default(now())
+  applied       Boolean  @default(false)
+  internalMemo  String?  @db.Text
+  createdBy     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  asset KnowledgeAsset? @relation(fields: [assetId], references: [id], onDelete: SetNull)
+
+  @@index([domain, applied])
+  @@index([assetId])
+  @@index([receivedAt])
+}

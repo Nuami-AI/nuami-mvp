@@ -4,7 +4,17 @@ import { BrandLogo } from "@/components/brand/BrandLogo";
 import { StatusBubble } from "@/components/ui/status-bubble";
 import { isSuperAdmin } from "@/lib/auth/access";
 
-type ConsoleNavId = "users" | "logs" | "organizations" | "knowledge" | "operators" | "accounts";
+type ConsoleNavId =
+  | "users"
+  | "logs"
+  | "organizations"
+  | "knowledge"
+  | "providers"
+  | "assets"
+  | "opinions"
+  | "opendata"
+  | "operators"
+  | "accounts";
 
 interface Props {
   email: string;
@@ -39,10 +49,16 @@ export default function AdminShell({ email, active, title, subtitle, showOperato
           <NavGroup label="운영">
             <SidebarItem href="/console" label="이용 현황" active={active === "users"} />
             <SidebarItem href="/console/logs" label="로그" active={active === "logs"} />
+            <SidebarItem href="/console/opendata" label="공공데이터 연동" active={active === "opendata"} />
           </NavGroup>
           <NavGroup label="기관">
             <SidebarItem href="/console/organizations" label="기관 목록" active={active === "organizations"} />
-            <SidebarItem href="/console/knowledge" label="자료 검수" active={active === "knowledge"} />
+            <SidebarItem href="/console/knowledge" label="기관 자료 검수" active={active === "knowledge"} />
+          </NavGroup>
+          <NavGroup label="지식베이스">
+            <SidebarItem href="/console/providers" label="자료 제공처" active={active === "providers"} />
+            <SidebarItem href="/console/assets" label="지식자료" active={active === "assets"} />
+            <SidebarItem href="/console/opinions" label="전문가 의견" active={active === "opinions"} />
           </NavGroup>
           {operators ? (
             <NavGroup label="계정">

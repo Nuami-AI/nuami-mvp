@@ -57,6 +57,14 @@ export interface PipelineMeta {
     reused: boolean;
     titles: string[];
   };
+  /** Console knowledge base sources used for this guide (PUBLISHED only). */
+  knowledgeSources?: Array<{
+    id: string;
+    title: string;
+    providerName: string;
+    version: number;
+    domain: string;
+  }>;
   openData?: {
     live: boolean;
     queriedAt: string;

@@ -2,6 +2,7 @@ import type { KakaoLocalPlace } from "@/types/kakao";
 import { withDistanceFromUser } from "@/lib/geo/distance";
 
 const KAKAO_KEYWORD_URL = "https://dapi.kakao.com/v2/local/search/keyword.json";
+const KAKAO_ADDRESS_URL = "https://dapi.kakao.com/v2/local/search/address.json";
 
 export interface KakaoSearchLocation {
   lat: number;
@@ -64,25 +65,38 @@ export async function searchKakaoPlaces(
     url.searchParams.set("sort", "distance");
   }
 
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: `KakaoAK ${apiKey}` },
-    cache: "no-store",
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 6000);
 
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    let message = `Kakao API ${res.status}`;
-    try {
-      const parsed = JSON.parse(body) as { message?: string };
-      if (parsed.message) message = parsed.message;
-    } catch {
-      /* ignore */
+  try {
+    const res = await fetch(url.toString(), {
+      headers: { Authorization: `KakaoAK ${apiKey}` },
+      cache: "no-store",
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      let message = `Kakao API ${res.status}`;
+      try {
+        const parsed = JSON.parse(body) as { message?: string };
+        if (parsed.message) message = parsed.message;
+      } catch {
+        /* ignore */
+      }
+      return { places: [], error: message };
     }
-    return { places: [], error: message };
-  }
 
-  const data = (await res.json()) as KakaoKeywordResponse;
-  return { places: (data.documents ?? []).map(toPlace) };
+    const data = (await res.json()) as KakaoKeywordResponse;
+    return { places: (data.documents ?? []).map(toPlace) };
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      return { places: [], error: "Kakao timeout" };
+    }
+    return { places: [], error: err instanceof Error ? err.message : "Kakao fetch failed" };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export async function searchKakaoPlacesMany(
@@ -125,4 +139,58 @@ export async function searchKakaoPlacesMany(
     : merged;
 
   return { places: sorted.slice(0, 12), error: sorted.length === 0 ? error : undefined };
+}
+
+interface KakaoAddressDocument {
+  address_name: string;
+  x: string;
+  y: string;
+  address_type: string;
+}
+
+interface KakaoAddressResponse {
+  documents: KakaoAddressDocument[];
+}
+
+export async function searchKakaoAddress(
+  query: string,
+): Promise<{ lat?: number; lng?: number; address?: string; error?: string }> {
+  const apiKey = getKakaoRestApiKey();
+  if (!apiKey || !query.trim()) return { error: "Kakao API key or query missing" };
+
+  const url = new URL(KAKAO_ADDRESS_URL);
+  url.searchParams.set("query", query.trim());
+  url.searchParams.set("size", "1");
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 6000);
+
+  try {
+    const res = await fetch(url.toString(), {
+      headers: { Authorization: `KakaoAK ${apiKey}` },
+      cache: "no-store",
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      return { error: `Kakao address API ${res.status}` };
+    }
+
+    const data = (await res.json()) as KakaoAddressResponse;
+    const doc = data.documents?.[0];
+    if (!doc) return { error: "no address match" };
+
+    return {
+      lat: Number.parseFloat(doc.y),
+      lng: Number.parseFloat(doc.x),
+      address: doc.address_name,
+    };
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      return { error: "Kakao address timeout" };
+    }
+    return { error: err instanceof Error ? err.message : "Kakao address failed" };
+  } finally {
+    clearTimeout(timer);
+  }
 }

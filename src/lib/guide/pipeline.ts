@@ -1,6 +1,10 @@
 import { claudeExtract, type ClaudeExtractResult } from "@/lib/extract/claude/client";
 import type { PromptInput } from "@/lib/extract/claude/prompt";
 import type { ExtractionResult } from "@/types/extraction";
+import {
+  formatPublishedKnowledgeFacts,
+  searchPublishedKnowledge,
+} from "@/lib/console-knowledge/service";
 import { regionFromCoords } from "@/lib/geo/region";
 import { formatInstitutionFacts, searchInstitutionKnowledge } from "@/lib/institution/search";
 import { learnFromOfficialSourcesOnMiss } from "@/lib/institution/sources";
@@ -57,11 +61,16 @@ export async function runGuidePipeline(input: GuidePipelineInput): Promise<Guide
   const city = coords ? regionFromCoords(coords.lat, coords.lng) : "other";
   const region: GuideRegion = city === "busan" ? "busan" : "other";
 
-  const [institutionHits, openData] = await Promise.all([
+  const [institutionHits, openData, publishedHits] = await Promise.all([
     input.universityId
       ? searchInstitutionKnowledge(input.universityId, input.situation, input.knowledgeId)
       : Promise.resolve([]),
     fetchOpenDataForScenario(search.primary?.id, coords),
+    searchPublishedKnowledge({
+      situation: input.situation,
+      institutionId: input.universityId,
+      limit: 4,
+    }).catch(() => []),
   ]);
 
   if (input.universityId && institutionHits.length === 0 && !input.knowledgeId) {
@@ -97,9 +106,11 @@ export async function runGuidePipeline(input: GuidePipelineInput): Promise<Guide
     .map((row) => `- ${row.name} | ${row.address ?? ""} | ${row.phone ?? ""} | ${row.provider} (${row.live ? "LIVE OpenAPI" : "official list"})`)
     .join("\n");
   const institutionFacts = formatInstitutionFacts(institutionHits);
+  const publishedFacts = formatPublishedKnowledgeFacts(publishedHits);
 
   const verifiedFacts = [
     institutionFacts,
+    publishedFacts,
     reasoned.scenario
       ? [
           "[VERIFIED PUBLIC DATA — do not contradict these facts]",
@@ -139,7 +150,8 @@ export async function runGuidePipeline(input: GuidePipelineInput): Promise<Guide
 
   const metaBase: Omit<PipelineMeta, "generate"> = {
     search: {
-      matched: Boolean(reasoned.scenario) || institutionHits.length > 0,
+      matched:
+        Boolean(reasoned.scenario) || institutionHits.length > 0 || publishedHits.length > 0,
       scenarioId: reasoned.scenario?.id,
       keywords: search.keywords,
     },
@@ -151,6 +163,10 @@ export async function runGuidePipeline(input: GuidePipelineInput): Promise<Guide
     sources: [
       ...(reasoned.scenario?.sources ?? []),
       ...institutionHits.map((hit) => ({ name: `${hit.institutionName} · ${hit.title}` })),
+      ...publishedHits.map((hit) => ({
+        name: `${hit.providerName} · ${hit.title}`,
+        url: hit.sourceUrl ?? undefined,
+      })),
       ...openData.facilities
         .map((row) => ({ name: `${row.provider} · ${row.dataset}`, url: row.datasetUrl }))
         .filter((row, idx, arr) => arr.findIndex((item) => item.name === row.name) === idx),
@@ -165,6 +181,13 @@ export async function runGuidePipeline(input: GuidePipelineInput): Promise<Guide
           titles: institutionHits.map((hit) => hit.title),
         }
       : undefined,
+    knowledgeSources: publishedHits.map((hit) => ({
+      id: hit.id,
+      title: hit.title,
+      providerName: hit.providerName,
+      version: hit.version,
+      domain: hit.domain,
+    })),
   };
 
   // Known scenarios (bank / residence / hospital): skip LLM entirely.
@@ -194,7 +217,10 @@ export async function runGuidePipeline(input: GuidePipelineInput): Promise<Guide
         ...metaBase,
         generate: {
           mode: "llm",
-          grounded: Boolean(reasoned.scenario) || institutionHits.length > 0,
+          grounded:
+            Boolean(reasoned.scenario) ||
+            institutionHits.length > 0 ||
+            publishedHits.length > 0,
         },
       },
     };

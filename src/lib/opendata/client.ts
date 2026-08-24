@@ -48,6 +48,7 @@ export function getDataGoKrKey(): string | undefined {
 export async function fetchDataGoKr(
   endpoint: string,
   params: Record<string, string>,
+  options?: { timeoutMs?: number },
 ): Promise<{ items: Record<string, string>[]; error?: string }> {
   const serviceKey = getDataGoKrKey();
   if (!serviceKey) {
@@ -63,10 +64,15 @@ export async function fetchDataGoKr(
     url.searchParams.set(key, value);
   }
 
+  const timeoutMs = options?.timeoutMs ?? 8000;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
     const res = await fetch(url.toString(), {
       headers: { Accept: "application/json, application/xml, text/xml, */*" },
-      next: { revalidate: 3600 },
+      cache: "no-store",
+      signal: controller.signal,
     });
     const text = await res.text();
     if (!res.ok) {
@@ -78,6 +84,11 @@ export async function fetchDataGoKr(
     }
     return { items: parseDataGoKrItems(text) };
   } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      return { items: [], error: `timeout ${timeoutMs}ms` };
+    }
     return { items: [], error: err instanceof Error ? err.message : "fetch failed" };
+  } finally {
+    clearTimeout(timer);
   }
 }

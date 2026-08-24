@@ -10,7 +10,7 @@ export default async function ConsoleKnowledgePage() {
       email={session.email}
       active="knowledge"
       title="자료 검수"
-      subtitle="기관 공식자료를 올리고 AI 판독·공공데이터 검증 후 소속 학생 가이드에 재사용합니다."
+      subtitle="기관에서 올린 공식자료를 검수합니다. 외부 제공 지식은 「지식자료」 메뉴를 사용하세요."
     >
       <KnowledgeManager />
     </AdminShell>
