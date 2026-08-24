@@ -26,8 +26,6 @@ export const viewport = {
   userScalable: false,
 };
 
-const GA_MEASUREMENT_ID = "G-3PJMG5D9JM";
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -56,20 +54,22 @@ export default function RootLayout({
     `,
           }}
         />
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-70WJ4NGL50"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-70WJ4NGL50');
+  `}
+        </Script>
       </head>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <LanguageProvider>{children}</LanguageProvider>
       </body>
-      <Script
-        src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-        strategy="afterInteractive"
-      />
-      <Script id="google-analytics" strategy="afterInteractive">
-        {`window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-gtag('config', '${GA_MEASUREMENT_ID}');`}
-      </Script>
     </html>
   );
 }
