@@ -60,7 +60,7 @@ export default function UniversityAffiliation({ mode = "modal" }: Props) {
   const [step, setStep] = useState<"ask" | "select" | "verify">(mode === "settings" ? "select" : "ask");
   const [query, setQuery] = useState("");
   const [institutions] = useState<InstitutionOption[]>(() =>
-    INSTITUTION_CATALOG.map((row) => ({
+    INSTITUTION_CATALOG.filter((row) => row.type === "university").map((row) => ({
       id: row.id,
       nameKo: row.nameKo,
       nameEn: row.nameEn,
@@ -71,7 +71,6 @@ export default function UniversityAffiliation({ mode = "modal" }: Props) {
     })),
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [studentId, setStudentId] = useState("");
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [verified, setVerified] = useState(false);
@@ -124,7 +123,6 @@ export default function UniversityAffiliation({ mode = "modal" }: Props) {
 
   const pickUniversity = (row: InstitutionOption) => {
     setSelectedId(row.id);
-    setDropdownOpen(false);
     setStudentId("");
     setVerifyError(null);
     setVerified(false);
@@ -134,7 +132,7 @@ export default function UniversityAffiliation({ mode = "modal" }: Props) {
   const submitStudentId = () => {
     const row = selectedRow;
     if (!row) return;
-    if (isMockVerifiedStudentId(studentId)) {
+    if (isMockVerifiedStudentId(studentId, row.id)) {
       persist({
         universityId: row.id,
         universityName: row.nameKo,
@@ -185,64 +183,57 @@ export default function UniversityAffiliation({ mode = "modal" }: Props) {
       ) : (
         <div className="mt-4 space-y-3">
           <div className="space-y-2">
-            <button
-              type="button"
-              onClick={() => setDropdownOpen((v) => !v)}
-              className="w-full rounded-xl border border-line-neutral bg-white px-3 py-2.5 text-left flex items-center justify-between gap-3"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                {selectedRow ? (
-                  <UniversitySymbol row={selectedRow} />
-                ) : (
-                  <div className="h-8 w-8 rounded-lg bg-accent-50 border border-accent-100" />
-                )}
+            {selectedRow ? (
+              <div className="w-full rounded-xl border border-line-neutral bg-white px-3 py-2.5 flex items-center gap-3">
+                <UniversitySymbol row={selectedRow} />
                 <div className="min-w-0">
-                  <p className="text-[14px] font-semibold text-text-primary truncate">
-                    {selectedRow ? selectedRow.nameKo : t("affiliation.search")}
+                  <p className="text-[14px] font-semibold text-text-primary truncate">{selectedRow.nameKo}</p>
+                  <p className="text-[11px] text-text-tertiary truncate">
+                    {verified ? t("affiliation.verified") : selectedRow.nameEn}
                   </p>
-                  {selectedRow ? (
-                    <p className="text-[11px] text-text-tertiary truncate">
-                      {verified ? t("affiliation.verified") : selectedRow.nameEn}
-                    </p>
-                  ) : null}
                 </div>
               </div>
-              <span className="text-text-tertiary">▾</span>
-            </button>
+            ) : null}
 
-            {dropdownOpen && (
-              <div className="rounded-xl border border-line-normal bg-white p-3 shadow-sm">
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder={t("affiliation.search")}
-                  className="w-full rounded-lg border border-line-neutral px-3 py-2 text-[14px]"
-                />
+            <div className="rounded-xl border border-line-normal bg-white p-3">
+              <label htmlFor="university-search" className="sr-only">
+                {t("affiliation.search")}
+              </label>
+              <input
+                id="university-search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t("affiliation.search")}
+                autoComplete="off"
+                autoFocus={step === "select"}
+                className="w-full rounded-lg border border-line-neutral px-3 py-2 text-[14px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-700"
+              />
 
-                <div className="mt-2 max-h-56 overflow-auto space-y-1">
-                  {filteredInstitutions.length === 0 ? (
-                    <p className="py-6 text-center text-[13px] text-text-tertiary">검색 결과가 없어요.</p>
-                  ) : (
-                    filteredInstitutions.map((row) => (
-                      <button
-                        key={row.id}
-                        type="button"
-                        onClick={() => pickUniversity(row)}
-                        className={`w-full rounded-xl border px-3 py-2.5 text-left flex items-center gap-3 ${
-                          selectedId === row.id ? "border-accent-700 bg-accent-50" : "border-line-neutral bg-white"
-                        }`}
-                      >
-                        <UniversitySymbol row={row} />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[14px] font-semibold text-text-primary truncate">{row.nameKo}</p>
-                          <p className="text-[11px] text-text-tertiary truncate">{row.nameEn}</p>
-                        </div>
-                      </button>
-                    ))
-                  )}
-                </div>
+              <div className="mt-2 max-h-56 overflow-auto space-y-1" role="listbox" aria-label={t("affiliation.settingsTitle")}>
+                {filteredInstitutions.length === 0 ? (
+                  <p className="py-6 text-center text-[13px] text-text-tertiary">검색 결과가 없어요.</p>
+                ) : (
+                  filteredInstitutions.map((row) => (
+                    <button
+                      key={row.id}
+                      type="button"
+                      role="option"
+                      aria-selected={selectedId === row.id}
+                      onClick={() => pickUniversity(row)}
+                      className={`w-full rounded-xl border px-3 py-2.5 text-left flex items-center gap-3 ${
+                        selectedId === row.id ? "border-accent-700 bg-accent-50" : "border-line-neutral bg-white"
+                      }`}
+                    >
+                      <UniversitySymbol row={row} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[14px] font-semibold text-text-primary truncate">{row.nameKo}</p>
+                        <p className="text-[11px] text-text-tertiary truncate">{row.city} · {row.nameEn}</p>
+                      </div>
+                    </button>
+                  ))
+                )}
               </div>
-            )}
+            </div>
           </div>
 
           {step === "verify" && selectedRow && !verified && (
@@ -258,7 +249,9 @@ export default function UniversityAffiliation({ mode = "modal" }: Props) {
                   if (e.key === "Enter") submitStudentId();
                 }}
                 placeholder={t("affiliation.studentIdPlaceholder")}
-                inputMode="numeric"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 className="w-full rounded-xl border border-line-neutral px-3 py-2.5 text-[14px]"
               />
               {verifyError ? (
