@@ -11,7 +11,9 @@ export interface SessionPayload {
 }
 
 export const COOKIE_NAME = "nuami-session";
-const MAX_AGE = 60 * 60 * 24 * 7; // 7 days in seconds
+/** Absolute session lifetime — auto logout after 1 hour. */
+export const SESSION_MAX_AGE_SECONDS = 60 * 60;
+const MAX_AGE = SESSION_MAX_AGE_SECONDS;
 
 function getSecret(): Uint8Array {
   const secret = process.env.SESSION_SECRET;
