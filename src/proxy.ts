@@ -130,6 +130,14 @@ export async function proxy(request: NextRequest) {
   const sessionCookie = request.cookies.get(COOKIE_NAME);
 
   if (!sessionCookie?.value) {
+    // app.nuami.kr/ must return 200 HTML (not 302). Hotjar checks the
+    // configured origin and will not treat a login redirect as installed.
+    if (kind === "app" && (pathname === "/" || pathname === "")) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      url.searchParams.set("redirect", "/");
+      return NextResponse.rewrite(url);
+    }
     return redirectToLogin(request, kind);
   }
 
