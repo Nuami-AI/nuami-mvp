@@ -1,5 +1,4 @@
 import { BeusableRum } from "@/components/analytics/BeusableRum";
-import { Hotjar } from "@/components/analytics/Hotjar";
 
 export const metadata = {
   title: "NUAMI Institution Admin",
@@ -10,7 +9,6 @@ export default function AdminGroupLayout({ children }: { children: React.ReactNo
   return (
     <>
       <BeusableRum product="admin" />
-      <Hotjar />
       {children}
     </>
   );

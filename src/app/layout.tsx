@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
+import { Hotjar } from "@/components/analytics/Hotjar";
 import { SyncStorageScope } from "@/components/auth/SyncStorageScope";
 import { LanguageProvider } from "@/lib/i18n";
 import "./globals.css";
@@ -51,6 +52,7 @@ export default function RootLayout({
     gtag('config', 'G-KTS5CVN20N');
   `}
         </Script>
+        <Hotjar />
       </head>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <LanguageProvider>

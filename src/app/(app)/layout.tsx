@@ -1,13 +1,7 @@
 import { BeusableRum } from "@/components/analytics/BeusableRum";
-import { Hotjar } from "@/components/analytics/Hotjar";
 
 function AppAnalytics() {
-  return (
-    <>
-      <BeusableRum product="app" />
-      <Hotjar />
-    </>
-  );
+  return <BeusableRum product="app" />;
 }
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
