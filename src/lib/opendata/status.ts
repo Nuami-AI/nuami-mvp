@@ -184,11 +184,11 @@ export const OPEN_DATA_INTEGRATIONS: OpenDataIntegration[] = [
     sourceType: "OPEN_API",
     status: "CONNECTED",
     priority: "P0",
-    envKey: "NEXT_PUBLIC_KAKAO_JS_KEY",
+    envKey: "KAKAO_JS_KEY",
     datasetUrl: "https://developers.kakao.com/docs/latest/ko/map/overview",
     mvpUsage: ["Map / Place Search"],
     scenarios: ["결과 화면 지도 표시"],
-    notes: "브라우저 공개키(NEXT_PUBLIC_*). 서버 REST 키와 분리.",
+    notes: "서버에서만 읽고 /api/kakao/places로 전달. REST 키와 분리.",
   },
   {
     id: "geo-road-name-address",

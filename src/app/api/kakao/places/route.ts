@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { isMappableQuery, resolveMapSearchQuery, type ResultVenue } from "@/lib/kakao/query-builder";
-import { getKakaoRestApiKey, searchKakaoPlacesMany } from "@/lib/kakao/search";
+import { getKakaoJsKey, getKakaoRestApiKey, searchKakaoPlacesMany } from "@/lib/kakao/search";
 import {
   detectAdminTask,
   isImmigrationCheckpoint,
@@ -72,8 +72,8 @@ export async function GET(request: Request): Promise<Response> {
       : undefined;
 
   const configured = Boolean(getKakaoRestApiKey());
-  const jsKeyConfigured = Boolean(process.env.NEXT_PUBLIC_KAKAO_JS_KEY);
-  const jsKey = process.env.NEXT_PUBLIC_KAKAO_JS_KEY ?? "";
+  const jsKey = getKakaoJsKey();
+  const jsKeyConfigured = Boolean(jsKey);
 
   if (!situation && !query && extra.length === 0) {
     return NextResponse.json({ places: [], configured, jsKeyConfigured, jsKey });

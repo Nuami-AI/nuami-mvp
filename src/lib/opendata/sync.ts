@@ -1,4 +1,4 @@
-import { searchKakaoPlaces, getKakaoRestApiKey } from "@/lib/kakao/search";
+import { searchKakaoPlaces, getKakaoJsKey, getKakaoRestApiKey } from "@/lib/kakao/search";
 import { fetchNearbyCommunityCenters } from "./admin";
 import { fetchNearbyImmigration } from "./agencies";
 import { getDataGoKrKey, fetchDataGoKr } from "./client";
@@ -133,9 +133,9 @@ async function probeIntegration(id: string, syncedAt: string): Promise<SyncProbe
         });
       }
       case "geo-kakao-map-js": {
-        const configured = Boolean(process.env.NEXT_PUBLIC_KAKAO_JS_KEY?.trim());
+        const configured = Boolean(getKakaoJsKey());
         return probeResult(id, configured, syncedAt, {
-          message: configured ? "JS 키 설정됨" : "NEXT_PUBLIC_KAKAO_JS_KEY 미설정",
+          message: configured ? "JS 키 설정됨" : "KAKAO_JS_KEY 미설정",
         });
       }
       case "geo-road-name-address": {
@@ -188,6 +188,6 @@ export function isOpenDataEnvReady(): { dataGoKr: boolean; kakaoRest: boolean; k
   return {
     dataGoKr: Boolean(getDataGoKrKey()),
     kakaoRest: Boolean(getKakaoRestApiKey()),
-    kakaoJs: Boolean(process.env.NEXT_PUBLIC_KAKAO_JS_KEY?.trim()),
+    kakaoJs: Boolean(getKakaoJsKey()),
   };
 }

@@ -48,24 +48,8 @@ function waitForKakaoMaps(maxMs = 8000): Promise<void> {
   });
 }
 
-async function diagnoseSdkLoadFailure(appKey: string): Promise<string> {
-  try {
-    const res = await fetch(sdkScriptUrl(appKey), { method: "GET", cache: "no-store" });
-    if (res.ok) return "카카오맵 SDK 스크립트 로드 실패";
-    const body = await res.text();
-    try {
-      const parsed = JSON.parse(body) as { message?: string };
-      if (parsed.message?.includes("domain mismatched")) {
-        return `도메인 불일치: ${window.location.origin} — 카카오 Developers Web 플랫폼에 이 주소를 등록해주세요.`;
-      }
-      if (parsed.message) return parsed.message;
-    } catch {
-      // ignore JSON parse errors
-    }
-  } catch {
-    // ignore network errors
-  }
-  return "카카오맵 SDK 스크립트 로드 실패";
+function sdkLoadFailureMessage(): string {
+  return `카카오맵이 ${window.location.origin} 에서 거부되었습니다. 카카오 Developers → 앱 설정 → 플랫폼 → Web 사이트 도메인에 이 주소를 추가해주세요.`;
 }
 
 function loadKakaoMapsScript(appKey: string, forceReload = false): Promise<void> {
@@ -89,9 +73,9 @@ function loadKakaoMapsScript(appKey: string, forceReload = false): Promise<void>
     script.src = expectedSrc;
     script.async = true;
     script.onload = () => waitForKakaoMaps().then(resolve).catch(reject);
-    script.onerror = async () => {
+    script.onerror = () => {
       removeKakaoSdkScript();
-      reject(new Error(await diagnoseSdkLoadFailure(appKey)));
+      reject(new Error(sdkLoadFailureMessage()));
     };
     document.head.appendChild(script);
   });
@@ -121,7 +105,7 @@ export default function KakaoMap({
   const [awaitingLocation, setAwaitingLocation] = useState(false);
   const [locationBased, setLocationBased] = useState(false);
   const [taskLabel, setTaskLabel] = useState<string | null>(null);
-  const [jsKey, setJsKey] = useState(process.env.NEXT_PUBLIC_KAKAO_JS_KEY ?? "");
+  const [jsKey, setJsKey] = useState("");
   const [apiError, setApiError] = useState<string | null>(null);
   const [sdkError, setSdkError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -340,7 +324,7 @@ export default function KakaoMap({
   if (!jsKey) {
     return (
       <div className={`rounded-xl border border-amber-200 bg-amber-50 p-4 text-[12px] text-amber-900 ${className}`}>
-        NEXT_PUBLIC_KAKAO_JS_KEY가 설정되지 않았습니다. .env에 추가 후 dev 서버를 재시작해주세요.
+        KAKAO_JS_KEY가 설정되지 않았습니다. .env에 추가 후 서버를 재시작해주세요.
       </div>
     );
   }
@@ -394,7 +378,7 @@ export default function KakaoMap({
             <p className="text-[13px] text-amber-900">{sdkError}</p>
             <p className="text-[12px] text-text-tertiary">
               JavaScript 키 Web 플랫폼에 <strong>{typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}</strong> 등록 여부와
-              .env.local의 <strong>NEXT_PUBLIC_KAKAO_JS_KEY</strong>가 최신 키인지 확인해주세요.
+              서버 환경변수 <strong>KAKAO_JS_KEY</strong>가 최신 키인지 확인해주세요.
             </p>
             <button
               type="button"

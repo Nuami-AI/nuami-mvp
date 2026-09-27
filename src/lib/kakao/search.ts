@@ -31,6 +31,10 @@ export function getKakaoRestApiKey(): string | undefined {
   return process.env.KAKAO_REST_API_KEY ?? process.env.KAKAO_MAP_API_KEY;
 }
 
+export function getKakaoJsKey(): string {
+  return process.env.KAKAO_JS_KEY?.trim() ?? "";
+}
+
 function toPlace(doc: KakaoKeywordDocument): KakaoLocalPlace {
   const distanceMeters = doc.distance ? Number.parseInt(doc.distance, 10) : undefined;
   return {
