@@ -65,7 +65,7 @@ export async function runGuidePipeline(input: GuidePipelineInput): Promise<Guide
     input.universityId
       ? searchInstitutionKnowledge(input.universityId, input.situation, input.knowledgeId)
       : Promise.resolve([]),
-    fetchOpenDataForScenario(search.primary?.id, coords),
+    fetchOpenDataForScenario(search.primary?.id, coords, input.situation),
     searchPublishedKnowledge({
       situation: input.situation,
       institutionId: input.universityId,
@@ -77,12 +77,18 @@ export async function runGuidePipeline(input: GuidePipelineInput): Promise<Guide
     scheduleMissLearn(input.universityId, input.situation);
   }
 
+  const isResidenceChange = search.primary?.id === "residence-change";
+
+  // Residence jurisdiction must come from the user's new address / open-data offices —
+  // never from university affiliation whereTo (e.g. international student center).
   const liveAgencies = unique([
-    ...institutionHits.flatMap((hit) => hit.whereTo),
+    ...(isResidenceChange ? [] : institutionHits.flatMap((hit) => hit.whereTo)),
     ...openData.facilities
       .filter((row) => !/하이코리아|전자민원|온라인/i.test(`${row.name} ${row.address ?? ""}`))
+      .filter((row) => !/국제학생|국제처|international\s*(student|office)|유학생\s*지원/i.test(row.name))
       .map((row) => row.name),
-  ]).slice(0, 4);
+  ]).slice(0, 6);
+
   const reasoned = reasonGuide({
     search,
     stayType,
@@ -90,12 +96,29 @@ export async function runGuidePipeline(input: GuidePipelineInput): Promise<Guide
     lifeStage: input.lifeStage,
     liveAgencies,
   });
+
   if (institutionHits.length > 0) {
-    reasoned.documents = unique([
-      ...institutionHits.flatMap((hit) => hit.documents),
-      ...reasoned.documents,
-    ]);
-    reasoned.notes.unshift(`${institutionHits[0].institutionName} 공식 안내를 우선 사용합니다.`);
+    if (isResidenceChange) {
+      // Source priority: law / HiKorea first; campus guides are supplementary only.
+      reasoned.notes.push(
+        `${institutionHits[0].institutionName} 안내는 참고용입니다. 체류·관할은 법령·HiKorea·지자체 공식 기준을 우선하며, 학교 주소로 관할을 추정하지 않습니다.`,
+      );
+      reasoned.documents = unique([
+        ...reasoned.documents,
+        ...institutionHits.flatMap((hit) => hit.documents),
+      ]);
+    } else {
+      reasoned.documents = unique([
+        ...institutionHits.flatMap((hit) => hit.documents),
+        ...reasoned.documents,
+      ]);
+      reasoned.notes.unshift(`${institutionHits[0].institutionName} 공식 안내를 우선 사용합니다.`);
+    }
+  }
+
+  // When address is unknown, do not fall back to scenario placeholder agencies as visit places.
+  if (isResidenceChange && openData.needAddressPrompt) {
+    reasoned.agencies = [];
   }
 
   const visitFacilities = openData.facilities.filter(
@@ -126,9 +149,14 @@ export async function runGuidePipeline(input: GuidePipelineInput): Promise<Guide
         ].join("\n")
       : "",
     facilityLines
-      ? `[NEARBY PHYSICAL OFFICES]\n${facilityLines}\nwhereTo MUST list only these nearby offices (or closer equivalents). Never put HiKorea/전자민원/온라인 in whereTo — that is an online option for checklist/context only.`
-      : "whereTo MUST be physical places near the user. Never list HiKorea/전자민원 as a place to visit on a map.",
-    "Action steps MUST use stage values prepare → move → apply → confirm in that order.",
+      ? `[NEARBY PHYSICAL OFFICES — task-capable jurisdiction offices only]\n${facilityLines}\nwhereTo MUST list only these offices. Never put airport/port immigration checkpoints, university international centers, or HiKorea/전자민원 in whereTo.`
+      : openData.needAddressPrompt
+        ? `[ADDRESS NEEDED]\n${openData.needAddressPrompt}\nwhereTo MUST be empty. Do NOT invent nearby immigration offices from GPS or university affiliation.`
+        : "whereTo MUST be physical places that can handle the user's admin task. Never list HiKorea/전자민원, university international centers, or airport/port checkpoints as visit places.",
+    isResidenceChange
+      ? "For residence-change Action steps MUST be prepare → move(방법 선택) → apply(신고) → confirm. Step titles: prepare documents; choose online(HiKorea) or visit jurisdiction offices; submit report; confirm result. Never send users to university international student centers as filing offices."
+      : "Action steps MUST use stage values prepare → move → apply → confirm in that order.",
+    "Source priority for stay/admin facts: current law/government → Ministry of Justice/HiKorea → local government → university guides (campus guides must not override official jurisdiction rules).",
   ].filter(Boolean).join("\n");
 
   const promptInput: PromptInput = { ...input, verifiedFacts, stayType };
@@ -136,6 +164,8 @@ export async function runGuidePipeline(input: GuidePipelineInput): Promise<Guide
   const openDataMeta = {
     live: openData.live,
     queriedAt: openData.queriedAt,
+    needAddressPrompt: openData.needAddressPrompt,
+    taskLabel: openData.taskLabel,
     facilities: visitFacilities.slice(0, 6).map((row) => ({
       name: row.name,
       address: row.address,
@@ -145,6 +175,10 @@ export async function runGuidePipeline(input: GuidePipelineInput): Promise<Guide
       dataset: row.dataset,
       datasetUrl: row.datasetUrl,
       live: row.live,
+      processableTasks: row.processableTasks,
+      hours: row.hours,
+      asOf: row.asOf,
+      distanceMeters: row.distanceMeters,
     })),
   };
 
@@ -162,14 +196,15 @@ export async function runGuidePipeline(input: GuidePipelineInput): Promise<Guide
     },
     sources: [
       ...(reasoned.scenario?.sources ?? []),
-      ...institutionHits.map((hit) => ({ name: `${hit.institutionName} · ${hit.title}` })),
+      ...openData.facilities
+        .map((row) => ({ name: `${row.provider} · ${row.dataset}`, url: row.datasetUrl }))
+        .filter((row, idx, arr) => arr.findIndex((item) => item.name === row.name) === idx),
       ...publishedHits.map((hit) => ({
         name: `${hit.providerName} · ${hit.title}`,
         url: hit.sourceUrl ?? undefined,
       })),
-      ...openData.facilities
-        .map((row) => ({ name: `${row.provider} · ${row.dataset}`, url: row.datasetUrl }))
-        .filter((row, idx, arr) => arr.findIndex((item) => item.name === row.name) === idx),
+      // University guides last for residence-change (official rules first).
+      ...institutionHits.map((hit) => ({ name: `${hit.institutionName} · ${hit.title}` })),
     ],
     asOf: reasoned.scenario?.asOf,
     openData: openDataMeta,
@@ -195,6 +230,7 @@ export async function runGuidePipeline(input: GuidePipelineInput): Promise<Guide
     const template = buildVerifiedTemplate(reasoned, {
       situation: input.situation,
       userLanguage: input.userLanguage,
+      needAddressPrompt: openData.needAddressPrompt,
     });
     if (template) {
       const mode = institutionHits.length > 0 ? "institution-cache" : "verified-template";
@@ -228,6 +264,7 @@ export async function runGuidePipeline(input: GuidePipelineInput): Promise<Guide
     const template = buildVerifiedTemplate(reasoned, {
       situation: input.situation,
       userLanguage: input.userLanguage,
+      needAddressPrompt: openData.needAddressPrompt,
     });
     if (template) {
       console.warn("[guide-pipeline] LLM unavailable, using verified template:", err instanceof Error ? err.message : err);

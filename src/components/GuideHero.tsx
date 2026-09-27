@@ -14,14 +14,26 @@ interface Props {
   estimatedMinutes?: number;
 }
 
-function ProcessFlow({ actions }: { actions: ActionStep[] }) {
+function ProcessFlow({
+  actions,
+  venue,
+}: {
+  actions: ActionStep[];
+  venue: ResultVenue;
+}) {
   const { t } = useLanguage();
   const stageOrder = ["prepare", "move", "apply", "confirm"] as const;
   const hasStages = actions.some((step) => step.stage);
+  const stageKey = (stage: (typeof stageOrder)[number]) => {
+    if (venue === "immigration" && (stage === "move" || stage === "apply")) {
+      return `results.stage.${stage}.immigration` as Parameters<typeof t>[0];
+    }
+    return `results.stage.${stage}` as Parameters<typeof t>[0];
+  };
   const steps = hasStages
     ? stageOrder.map((stage, idx) => ({
         step: idx + 1,
-        action: t(`results.stage.${stage}` as Parameters<typeof t>[0]),
+        action: t(stageKey(stage)),
       }))
     : actions.slice(0, 5);
   if (steps.length === 0) return null;
@@ -93,7 +105,7 @@ export default function GuideHero({ situationLabel, summary, venue, actions, est
       </div>
 
       <div className="px-4 pb-4">
-        <ProcessFlow actions={actions} />
+        <ProcessFlow actions={actions} venue={venue} />
       </div>
     </div>
   );

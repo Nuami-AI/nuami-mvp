@@ -173,71 +173,142 @@ function bankPack(lang: Lang, stayType: StayType, documents: string[], agencies:
   return packs[lang];
 }
 
-function residencePack(lang: Lang, documents: string[], agencies: string[]): Pack {
-  const office = agencies[0] ?? "가까운 출입국·외국인청";
+function residenceVisitPlaces(agencies: string[]): string[] {
+  return agencies.filter(
+    (name) =>
+      name.trim() &&
+      !/하이코리아|hikorea|전자민원|온라인/i.test(name) &&
+      !/국제학생|국제처|international\s*(student|office)|유학생\s*지원/i.test(name) &&
+      // Generic labels are guidance text, not mappable offices
+      !/^새\s*체류지|^관할\s|^체류민원을\s*처리/i.test(name),
+  );
+}
+
+function residencePack(
+  lang: Lang,
+  documents: string[],
+  agencies: string[],
+  opts?: { needAddress?: boolean },
+): Pack {
+  const visitPlaces = residenceVisitPlaces(agencies);
+  const needAddress = Boolean(opts?.needAddress) || visitPlaces.length === 0;
+  const visitHint = visitPlaces.slice(0, 3).join(", ");
+  const whereTo = needAddress ? [] : visitPlaces;
+
   const packs: Record<Lang, Pack> = {
     ko: {
-      summary: `이사 후 15일 안에 체류지 변경을 신고해야 합니다. 서류 준비 후 ${office}에서 신청하고 접수 결과를 확인하세요. 일부 건은 HiKorea 전자민원으로도 가능합니다.`,
+      summary: needAddress
+        ? "체류지 변경 신고가 필요할 수 있어요. 전입한 날부터 15일 이내 신고해야 합니다. 정확한 관할기관을 찾으려면 새로 이사한 주소나 지역을 알려주세요. 온라인은 HiKorea 전자민원을 이용할 수 있습니다."
+        : `이사 후 15일 안에 체류지 변경을 신고하세요. 온라인(HiKorea) 또는 방문(${visitHint})으로 신고한 뒤 처리 결과를 확인합니다.`,
       documents,
-      whereTo: agencies,
-      checklist: ["전입 날짜를 확인한다", "임대차계약서 또는 숙소확인서를 출력한다", "15일 기한을 달력에 표시한다", "가능하면 HiKorea(hikorea.go.kr)에서 전자민원도 확인한다"],
+      whereTo: whereTo,
+      checklist: [
+        "전입 날짜를 확인하고 15일 기한을 표시한다",
+        "상황에 맞는 체류지 입증서류(계약서·숙소제공확인서·기숙사 증빙 등)를 준비한다",
+        "HiKorea(hikorea.go.kr) 온라인 신청 가능 여부를 확인한다",
+        needAddress
+          ? "새 주소·지역을 알려 관할 방문 기관을 찾는다"
+          : "방문 시 관할 행정복지센터·구청·출입국관서 중 선택한다",
+      ],
       estimatedMinutes: 90,
       actions: [
-        step(1, "prepare", "외국인등록증·계약서·신고서를 준비한다", "전입한 날이 기준일입니다. 15일을 넘기지 마세요."),
-        step(2, "move", `${office}으로 간다`, "전자민원이 되면 방문 없이 HiKorea에서 신청할 수 있습니다."),
-        step(3, "apply", "체류지 변경 신고를 제출한다", "새 주소와 숙소 증빙을 함께 냅니다."),
-        step(4, "confirm", "접수증·등록증 기재 내용을 확인한다", "미신고 시 과태료가 부과될 수 있습니다."),
+        step(
+          1,
+          "prepare",
+          "외국인등록증과 체류지 입증서류를 준비한다",
+          "전입한 날부터 15일 이내 신고해야 합니다. 입증서류는 임대차계약서·숙소제공확인서·기숙사 증빙 등 상황에 맞는 공식 서류를 준비하세요.",
+        ),
+        step(
+          2,
+          "move",
+          "온라인 또는 관할기관 방문 중 신고 방법을 선택한다",
+          needAddress
+            ? "온라인 신청이 가능하면 HiKorea 전자민원을 이용할 수 있습니다. 방문 관할기관은 새 주소를 알려주시면 안내합니다."
+            : `온라인: HiKorea 전자민원. 방문: ${visitHint}. 공항·항만 입국심사장은 제외합니다.`,
+        ),
+        step(
+          3,
+          "apply",
+          "체류지 변경 신고를 제출한다",
+          "새 주소와 체류지 입증서류를 확인해 제출하세요. 온라인은 전자민원 입력, 방문은 창구 제출로 진행합니다.",
+        ),
+        step(
+          4,
+          "confirm",
+          "변경된 체류지 정보를 확인한다",
+          "신고가 정상 처리되었는지 결과를 확인하세요. 온라인·방문에 따라 확인 방법이 다를 수 있습니다.",
+        ),
       ],
       phrases: [
-        { meaning: "체류지 변경 신고하러 왔어요", pronunciation: "체류지 변경 신고하러 왔어요", context: "출입국 창구" },
+        { meaning: "체류지 변경 신고하러 왔어요", pronunciation: "체류지 변경 신고하러 왔어요", context: "관할 창구" },
         { meaning: "여기가 새 주소예요", pronunciation: "새 주소예요", context: "서류 제출 시" },
       ],
       tips: [
         { title: "기한은 15일", desc: "전입한 날부터 계산합니다. 주말이 끼면 미리 신청하세요.", cat: "Time" },
         { title: "과태료", desc: "기한을 넘기면 과태료가 부과될 수 있습니다.", cat: "Other" },
+        { title: "학교 ≠ 관할", desc: "대학 인증·국제처는 체류지 신고기관이 아닙니다. 새 주소 관할을 기준으로 하세요.", cat: "Other" },
       ],
       contexts: [
-        { theme: "왜 체류지 신고가 필요한가", explanation: "외국인등록 정보는 실제 거주지를 기준으로 관리됩니다. 이사만 하고 신고하지 않으면 공문서와 은행·학교 주소가 어긋납니다.", example: "원룸 계약 후 15일 안에 HiKorea 또는 출입국에 새 주소를 넣습니다." },
+        {
+          theme: "왜 체류지 신고가 필요한가",
+          explanation:
+            "외국인등록 정보는 실제 거주지를 기준으로 관리됩니다. 이사만 하고 신고하지 않으면 공문서와 은행·학교 주소가 어긋납니다.",
+          example: "원룸 계약 후 15일 안에 HiKorea 또는 관할 방문 기관에 새 주소를 넣습니다.",
+        },
       ],
     },
     en: {
-      summary: `Report your new residence within 15 days of moving in. Prepare documents, apply at ${office}, then confirm the receipt. Some cases can also be filed on HiKorea.`,
+      summary: needAddress
+        ? "You may need to report a residence change within 15 days of moving in. Tell us your new address or district so we can find the right office. Online filing via HiKorea may be available."
+        : `Report your residence change within 15 days. File online (HiKorea) or visit (${visitHint}), then check the result.`,
       documents,
-      whereTo: agencies,
-      checklist: ["Check your move-in date", "Print the lease or dorm confirmation", "Mark the 15-day deadline", "Check HiKorea (hikorea.go.kr) if online filing is available"],
+      whereTo: whereTo,
+      checklist: [
+        "Confirm move-in date and the 15-day deadline",
+        "Prepare proof of residence that fits your case (lease, lodging confirmation, dorm proof, etc.)",
+        "Check HiKorea (hikorea.go.kr) for online filing",
+        needAddress ? "Share your new address/district for visit offices" : "Choose a local community center, district office, or civil immigration office",
+      ],
       estimatedMinutes: 90,
       actions: [
-        step(1, "prepare", "Prepare ARC, lease, and the report form", "The clock starts on the move-in date. Do not miss 15 days."),
-        step(2, "move", `Go to ${office}`, "Online filing on HiKorea is available for some cases."),
-        step(3, "apply", "Submit the residence change report", "Bring proof of the new address."),
-        step(4, "confirm", "Check the receipt and ARC details", "Late filing can lead to a fine."),
+        step(1, "prepare", "Prepare your ARC and proof of residence", "You must report within 15 days of moving in. Use the documents that match your situation under official rules."),
+        step(2, "move", "Choose online filing or an in-person visit", needAddress
+          ? "If available, use HiKorea e-application. Share your new address to find visit offices."
+          : `Online: HiKorea. Visit: ${visitHint}. Airport/port checkpoints are excluded.`),
+        step(3, "apply", "Submit the residence change report", "Confirm the new address and proof documents. Online vs visit steps differ."),
+        step(4, "confirm", "Confirm the updated residence information", "Check that the report was processed. Confirmation differs for online vs visit."),
       ],
       phrases: [
-        { meaning: "I'm here to report my new address", pronunciation: "체류지 변경 신고하러 왔어요", context: "Immigration desk" },
+        { meaning: "I'm here to report my new address", pronunciation: "체류지 변경 신고하러 왔어요", context: "Filing desk" },
         { meaning: "This is my new address", pronunciation: "새 주소예요", context: "When submitting papers" },
       ],
       tips: [
         { title: "15-day deadline", desc: "Count from the day you moved in.", cat: "Time" },
         { title: "Fines", desc: "Missing the deadline can result in a fine.", cat: "Other" },
+        { title: "Campus ≠ jurisdiction", desc: "University offices guide you; they are not the filing authority.", cat: "Other" },
       ],
       contexts: [
-        { theme: "Why residence reporting matters", explanation: "Your ARC is tied to your actual address. Schools, banks, and mail use this record.", example: "After signing a lease, file the new address within 15 days." },
+        { theme: "Why residence reporting matters", explanation: "Your ARC is tied to your actual address. Schools, banks, and mail use this record.", example: "After signing a lease, file within 15 days." },
       ],
     },
     ja: {
-      summary: `転入日から15日以内に住居地変更を届け出ます。書類を揃えて${office}で申請し、受付を確認します。一部はHiKorea電子申請も可能です。`,
+      summary: needAddress
+        ? "転入日から15日以内に住居地変更の届出が必要です。正確な管轄機関を案内するため、新しい住所や地域を教えてください。HiKorea電子申請も利用できる場合があります。"
+        : `転入日から15日以内に住居地変更を届け出ます。オンライン(HiKorea)または訪問(${visitHint})で申請し、結果を確認します。`,
       documents,
-      whereTo: agencies,
-      checklist: ["転入日を確認", "契約書または寮確認書を印刷", "15日期限をカレンダーに記入"],
+      whereTo: whereTo,
+      checklist: ["転入日と15日期限を確認", "状況に合う居住地証明書類を準備", "HiKorea電子申請の可否を確認"],
       estimatedMinutes: 90,
       actions: [
-        step(1, "prepare", "登録証・契約書・申告書を準備する", "転入日が起算日です。15日を超えないでください。"),
-        step(2, "move", `${office}へ行く`, "電子申請ができる場合があります。"),
-        step(3, "apply", "住居地変更を提出する", "新しい住所の証明を添えます。"),
-        step(4, "confirm", "受付証と記載内容を確認する", "未申告は過料の対象になり得ます。"),
+        step(1, "prepare", "登録証と居住地証明書類を準備する", "転入日から15日以内に届け出ます。契約書・宿所提供確認書・寮証明など状況に合う公式書類を用意します。"),
+        step(2, "move", "オンラインまたは管轄機関訪問を選ぶ", needAddress
+          ? "可能な場合はHiKorea電子申請を利用できます。訪問先は新住所を教えてください。"
+          : `オンライン: HiKorea。訪問: ${visitHint}。空港・港の審査場は対象外です。`),
+        step(3, "apply", "住居地変更を提出する", "新しい住所と証明書類を確認して提出します。"),
+        step(4, "confirm", "変更された住居地情報を確認する", "届出が正しく処理されたか結果を確認します。"),
       ],
       phrases: [
-        { meaning: "住居地変更の届出に来ました", pronunciation: "체류지 변경 신고하러 왔어요", context: "出入国窓口" },
+        { meaning: "住居地変更の届出に来ました", pronunciation: "체류지 변경 신고하러 왔어요", context: "窓口" },
         { meaning: "新しい住所です", pronunciation: "새 주소예요", context: "書類提出時" },
       ],
       tips: [
@@ -245,23 +316,27 @@ function residencePack(lang: Lang, documents: string[], agencies: string[]): Pac
         { title: "過料", desc: "期限を過ぎると過料の可能性があります。", cat: "Other" },
       ],
       contexts: [
-        { theme: "なぜ届出が必要か", explanation: "外国人登録は実際の居住地で管理されます。引越しだけして届け出ないと公式記録がずれます。" },
+        { theme: "なぜ届出が必要か", explanation: "外国人登録は実際の居住地で管理されます。" },
       ],
     },
     vi: {
-      summary: `Phải khai báo thay đổi nơi cư trú trong 15 ngày sau khi chuyển đến. Chuẩn bị giấy tờ, nộp tại ${office} rồi kiểm tra biên nhận. Một số hồ sơ có thể nộp trên HiKorea.`,
+      summary: needAddress
+        ? "Bạn có thể cần khai báo thay đổi nơi cư trú trong 15 ngày sau khi chuyển đến. Hãy cho biết địa chỉ/khu vực mới để tìm đúng cơ quan. Có thể nộp online trên HiKorea."
+        : `Khai báo thay đổi nơi cư trú trong 15 ngày. Nộp online (HiKorea) hoặc đến (${visitHint}), rồi kiểm tra kết quả.`,
       documents,
-      whereTo: agencies,
-      checklist: ["Xác nhận ngày chuyển đến", "In hợp đồng thuê hoặc giấy ký túc xá", "Đánh dấu hạn 15 ngày"],
+      whereTo: whereTo,
+      checklist: ["Xác nhận ngày chuyển đến và hạn 15 ngày", "Chuẩn bị giấy chứng minh nơi ở phù hợp tình huống", "Kiểm tra HiKorea nếu nộp online được"],
       estimatedMinutes: 90,
       actions: [
-        step(1, "prepare", "Chuẩn bị ARC, hợp đồng và tờ khai", "Tính từ ngày chuyển đến, không quá 15 ngày."),
-        step(2, "move", `Đến ${office}`, "Một số trường hợp nộp online được."),
-        step(3, "apply", "Nộp khai báo thay đổi nơi cư trú", "Mang giấy chứng minh địa chỉ mới."),
-        step(4, "confirm", "Kiểm tra biên nhận và thông tin trên ARC", "Nộp trễ có thể bị phạt."),
+        step(1, "prepare", "Chuẩn bị ARC và giấy chứng minh nơi cư trú", "Phải khai báo trong 15 ngày kể từ ngày chuyển đến. Dùng giấy tờ phù hợp theo quy định chính thức."),
+        step(2, "move", "Chọn nộp online hoặc đến cơ quan có thẩm quyền", needAddress
+          ? "Nếu được, dùng HiKorea. Cho biết địa chỉ mới để tìm nơi nộp trực tiếp."
+          : `Online: HiKorea. Trực tiếp: ${visitHint}. Không dùng cửa khẩu sân bay/cảng.`),
+        step(3, "apply", "Nộp khai báo thay đổi nơi cư trú", "Kiểm tra địa chỉ mới và giấy chứng minh rồi nộp."),
+        step(4, "confirm", "Xác nhận thông tin nơi cư trú đã đổi", "Kiểm tra kết quả xử lý. Cách xác nhận có thể khác giữa online và trực tiếp."),
       ],
       phrases: [
-        { meaning: "Tôi đến khai báo đổi nơi cư trú", pronunciation: "체류지 변경 신고하러 왔어요", context: "Quầy xuất nhập cảnh" },
+        { meaning: "Tôi đến khai báo đổi nơi cư trú", pronunciation: "체류지 변경 신고하러 왔어요", context: "Quầy tiếp nhận" },
         { meaning: "Đây là địa chỉ mới", pronunciation: "새 주소예요", context: "Khi nộp giấy" },
       ],
       tips: [
@@ -269,23 +344,27 @@ function residencePack(lang: Lang, documents: string[], agencies: string[]): Pac
         { title: "Phạt", desc: "Nộp trễ có thể bị phạt hành chính.", cat: "Other" },
       ],
       contexts: [
-        { theme: "Vì sao phải khai báo nơi ở", explanation: "Thông tin đăng ký người nước ngoài gắn với nơi ở thực tế. Nhà trường và ngân hàng dùng địa chỉ này." },
+        { theme: "Vì sao phải khai báo nơi ở", explanation: "Thông tin đăng ký gắn với nơi ở thực tế." },
       ],
     },
     zh: {
-      summary: `搬入后15日内须申报居留地变更。备齐材料后到${office}申请，并确认受理结果。部分事项也可在HiKorea网上办理。`,
+      summary: needAddress
+        ? "搬入后15日内可能需要申报居留地变更。请告知新地址或地区以便查找管辖机关。也可通过HiKorea网上办理。"
+        : `请在搬入后15日内申报居留地变更。可网上(HiKorea)或前往(${visitHint})办理，并确认结果。`,
       documents,
-      whereTo: agencies,
-      checklist: ["确认搬入日期", "打印租赁合同或宿舍证明", "在日历上标出15日期限"],
+      whereTo: whereTo,
+      checklist: ["确认搬入日期与15日期限", "按情况准备居留地证明材料", "确认HiKorea是否可网上申请"],
       estimatedMinutes: 90,
       actions: [
-        step(1, "prepare", "准备登录证、合同和申报表", "从搬入日起算，不要超过15天。"),
-        step(2, "move", `前往${office}`, "部分情况可网上申请。"),
-        step(3, "apply", "提交居留地变更申报", "一并提交新地址证明。"),
-        step(4, "confirm", "核对受理凭证和登录证记载", "逾期可能被罚款。"),
+        step(1, "prepare", "准备外国人登录证和居留地证明材料", "须自搬入日起15日内申报。按官方标准准备合同、住宿确认书、宿舍证明等适用材料。"),
+        step(2, "move", "选择网上申请或前往管辖机关", needAddress
+          ? "如可网上办理，请使用HiKorea。提供新地址后可再案内到访机关。"
+          : `网上：HiKorea。到访：${visitHint}。不含机场/港口入境检查设施。`),
+        step(3, "apply", "提交居留地变更申报", "核对新地址与证明材料后提交。网上与到访流程不同。"),
+        step(4, "confirm", "确认已变更的居留地信息", "确认申报已正常处理。网上与到访的确认方式可能不同。"),
       ],
       phrases: [
-        { meaning: "我来申报居留地变更", pronunciation: "체류지 변경 신고하러 왔어요", context: "出入境窗口" },
+        { meaning: "我来申报居留地变更", pronunciation: "체류지 변경 신고하러 왔어요", context: "窗口" },
         { meaning: "这是新地址", pronunciation: "새 주소예요", context: "提交材料时" },
       ],
       tips: [
@@ -293,7 +372,7 @@ function residencePack(lang: Lang, documents: string[], agencies: string[]): Pac
         { title: "罚款", desc: "逾期可能被处以罚款。", cat: "Other" },
       ],
       contexts: [
-        { theme: "为什么要申报居留地", explanation: "外国人登录以实际住址管理。只搬家不申报，学校和银行记录会对不上。" },
+        { theme: "为什么要申报居留地", explanation: "外国人登录以实际住址管理。" },
       ],
     },
   };
@@ -433,7 +512,7 @@ function hospitalPack(lang: Lang, documents: string[], agencies: string[]): Pack
 
 export function buildVerifiedTemplate(
   reasoned: ReasonedGuide,
-  input: { situation: string; userLanguage: string },
+  input: { situation: string; userLanguage: string; needAddressPrompt?: string },
 ): ExtractionResult | null {
   if (!reasoned.scenario) return null;
   const lang = langOf(input.userLanguage);
@@ -444,7 +523,9 @@ export function buildVerifiedTemplate(
     reasoned.scenario.id === "bank-account"
       ? bankPack(lang, reasoned.stayType, documents, agencies)
       : reasoned.scenario.id === "residence-change"
-        ? residencePack(lang, documents, agencies)
+        ? residencePack(lang, documents, agencies, {
+            needAddress: Boolean(input.needAddressPrompt),
+          })
         : hospitalPack(lang, documents, agencies);
 
   return {

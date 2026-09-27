@@ -118,6 +118,9 @@ export default function KakaoMap({
   const mapRef = useRef<MapInstance | null>(null);
   const [places, setPlaces] = useState<KakaoLocalPlace[]>([]);
   const [sortedByDistance, setSortedByDistance] = useState(false);
+  const [awaitingLocation, setAwaitingLocation] = useState(false);
+  const [locationBased, setLocationBased] = useState(false);
+  const [taskLabel, setTaskLabel] = useState<string | null>(null);
   const [jsKey, setJsKey] = useState(process.env.NEXT_PUBLIC_KAKAO_JS_KEY ?? "");
   const [apiError, setApiError] = useState<string | null>(null);
   const [sdkError, setSdkError] = useState<string | null>(null);
@@ -130,6 +133,11 @@ export default function KakaoMap({
     return withDistanceFromUser(places, userCoords.lat, userCoords.lng);
   }, [places, userCoords]);
 
+  const situationForSearch = useMemo(
+    () => (situation ?? query).trim(),
+    [situation, query],
+  );
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -138,7 +146,7 @@ export default function KakaoMap({
     mapRef.current = null;
 
     const params = new URLSearchParams();
-    params.set("situation", (situation ?? query).trim());
+    params.set("situation", situationForSearch);
     params.set("venue", venue);
     if (query.trim()) params.set("q", query.trim());
     for (const q of additionalQueries) {
@@ -158,10 +166,16 @@ export default function KakaoMap({
         jsKey?: string;
         error?: string;
         sortedByDistance?: boolean;
+        awaitingLocation?: boolean;
+        locationBased?: boolean;
+        taskLabel?: string;
       }) => {
         if (cancelled) return;
         setPlaces(data.places ?? []);
         setSortedByDistance(Boolean(data.sortedByDistance));
+        setAwaitingLocation(Boolean(data.awaitingLocation));
+        setLocationBased(Boolean(data.locationBased));
+        setTaskLabel(data.taskLabel ?? null);
         setApiError(data.error ?? null);
         if (data.jsKey) setJsKey(data.jsKey);
       })
@@ -175,7 +189,7 @@ export default function KakaoMap({
     return () => {
       cancelled = true;
     };
-  }, [query, situation, venue, additionalQueries.join("|"), userCoords?.lat, userCoords?.lng]);
+  }, [query, situationForSearch, venue, additionalQueries.join("|"), userCoords?.lat, userCoords?.lng]);
 
   useLayoutEffect(() => {
     if (loading || displayPlaces.length === 0 || !jsKey || !containerRef.current) return;
@@ -278,11 +292,11 @@ export default function KakaoMap({
     return () => observer.disconnect();
   }, [mapReady]);
 
-  if (loading) {
+  if (loading || locationStatus === "prompting") {
     return (
       <div className={`relative w-full h-[280px] rounded-xl overflow-hidden bg-infoBox border border-line-neutral animate-pulse ${className}`}>
         <div className="absolute inset-0 flex items-center justify-center text-[13px] text-text-tertiary">
-          카카오맵 불러오는 중…
+          {locationStatus === "prompting" ? t("results.location.loading") : "카카오맵 불러오는 중…"}
         </div>
       </div>
     );
@@ -291,7 +305,25 @@ export default function KakaoMap({
   if (places.length === 0) {
     return (
       <div className={`rounded-xl border border-line-neutral bg-infoBox p-5 text-center text-[13px] text-text-secondary ${className}`}>
-        {apiError ? (
+        {awaitingLocation || !userCoords ? (
+          <>
+            {taskLabel ? (
+              <p className="mb-2 text-[12px] font-semibold text-accent-700">{taskLabel}</p>
+            ) : null}
+            <p className="text-text-primary leading-relaxed">
+              {locationStatus === "denied"
+                ? t("results.location.denied")
+                : t("results.location.prompt")}
+            </p>
+            <button
+              type="button"
+              onClick={requestLocation}
+              className="mt-3 rounded-lg bg-accent-700 px-3 py-1.5 text-[12px] font-semibold text-white"
+            >
+              {t("results.location.requestBtn")}
+            </button>
+          </>
+        ) : apiError ? (
           <>
             <p className="text-amber-900">{apiError}</p>
             <p className="mt-2 text-[12px] text-text-tertiary">
@@ -299,7 +331,7 @@ export default function KakaoMap({
             </p>
           </>
         ) : (
-          "검색 결과 장소가 없습니다. 검색어를 더 구체적으로 입력해보세요."
+          t("results.places.empty")
         )}
       </div>
     );
@@ -315,11 +347,14 @@ export default function KakaoMap({
 
   return (
     <div className={className}>
-      {locationStatus === "prompting" && (
-        <div className="mb-3 rounded-xl border border-line-neutral bg-infoBox px-4 py-3 text-[13px] text-text-secondary">
-          {t("results.location.loading")}
-        </div>
-      )}
+      {taskLabel ? (
+        <p className="mb-2 text-[12px] font-semibold text-accent-700">{taskLabel}</p>
+      ) : null}
+      {locationBased ? (
+        <p className="mb-2 text-[12px] text-text-secondary leading-relaxed">
+          {t("results.places.locationBasedNote")}
+        </p>
+      ) : null}
       {(locationStatus === "idle" || locationStatus === "denied") && !userCoords && (
         <div className="mb-3 rounded-xl border border-accent-100 bg-accent-50 px-4 py-3">
           <p className="text-[13px] text-text-secondary leading-relaxed">
@@ -394,9 +429,24 @@ export default function KakaoMap({
               <p className="text-[12px] text-text-secondary mt-0.5 truncate">
                 {place.roadAddress || place.address}
               </p>
-              {place.category && (
-                <p className="text-[11px] text-text-disabled mt-0.5">{place.category}</p>
+              {place.processableTasks && place.processableTasks.length > 0 ? (
+                <p className="text-[11px] text-emerald-800 mt-0.5">
+                  {place.processableTasks.join(" · ")}
+                </p>
+              ) : null}
+              {place.hours ? (
+                <p className="text-[11px] text-text-tertiary mt-0.5">{place.hours}</p>
+              ) : null}
+              {(place.provider || place.dataset || place.asOf) && (
+                <p className="text-[10px] text-text-disabled mt-0.5">
+                  {[place.provider, place.dataset, place.asOf ? `기준 ${place.asOf}` : null]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
               )}
+              {!place.processableTasks?.length && place.category ? (
+                <p className="text-[11px] text-text-disabled mt-0.5">{place.category}</p>
+              ) : null}
             </div>
           </a>
         ))}

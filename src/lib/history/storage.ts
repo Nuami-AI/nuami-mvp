@@ -1,15 +1,29 @@
 "use client";
 
 import { VIDEO_RESEARCH_TOPICS } from "@/lib/shopping/video-research";
+import { scopedStorageKey } from "@/lib/user/storage-scope";
 import type { ExtractionResult } from "@/types/extraction";
 import type { HistoryLinkListEntry, HistorySummaryEntry } from "@/types/history";
 import type { SavedItem } from "@/types/saves";
 
-const STORAGE_KEY = "nuami_history_v1";
-const VIDEO_LINKS_KEY = "nuami-video-links";
-const SAVES_KEY = "nuami_saves_v1";
-const SEED_KEY = "nuami_history_seeded_v1";
+const STORAGE_BASE = "nuami_history_v1";
+const VIDEO_LINKS_BASE = "nuami-video-links";
+const SAVES_BASE = "nuami_saves_v1";
+const SEED_BASE = "nuami_history_seeded_v1";
 const MAX_SUMMARIES = 50;
+
+function historyKey() {
+  return scopedStorageKey(STORAGE_BASE);
+}
+function savesKey() {
+  return scopedStorageKey(SAVES_BASE);
+}
+function seedKey() {
+  return scopedStorageKey(SEED_BASE);
+}
+function videoLinksKey() {
+  return scopedStorageKey(VIDEO_LINKS_BASE);
+}
 
 function now(): string {
   return new Date().toISOString();
@@ -18,7 +32,7 @@ function now(): string {
 function loadSummariesRaw(): HistorySummaryEntry[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(historyKey());
     if (!raw) return [];
     const parsed = JSON.parse(raw) as HistorySummaryEntry[];
     return Array.isArray(parsed) ? parsed : [];
@@ -28,7 +42,7 @@ function loadSummariesRaw(): HistorySummaryEntry[] {
 }
 
 function persistSummaries(entries: HistorySummaryEntry[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries.slice(0, MAX_SUMMARIES)));
+  localStorage.setItem(historyKey(), JSON.stringify(entries.slice(0, MAX_SUMMARIES)));
 }
 
 function normalizeUrl(url: string): string {
@@ -53,10 +67,10 @@ export function listSummaryHistory(): HistorySummaryEntry[] {
 
 function seedHistoryFromSaves(): void {
   if (typeof window === "undefined") return;
-  if (localStorage.getItem(SEED_KEY)) return;
+  if (localStorage.getItem(seedKey())) return;
 
   try {
-    const raw = localStorage.getItem(SAVES_KEY);
+    const raw = localStorage.getItem(savesKey());
     if (raw) {
       const saves = JSON.parse(raw) as SavedItem[];
       for (const item of saves) {
@@ -68,9 +82,9 @@ function seedHistoryFromSaves(): void {
         });
       }
     }
-    localStorage.setItem(SEED_KEY, "1");
+    localStorage.setItem(seedKey(), "1");
   } catch {
-    localStorage.setItem(SEED_KEY, "1");
+    localStorage.setItem(seedKey(), "1");
   }
 }
 
@@ -163,7 +177,7 @@ export function clearSummaryHistory(): void {
 export function loadLinkListHistory(): HistoryLinkListEntry[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(VIDEO_LINKS_KEY);
+    const raw = localStorage.getItem(videoLinksKey());
     if (!raw) return [];
     const all = JSON.parse(raw) as Record<string, string[]>;
     const entries: HistoryLinkListEntry[] = [];

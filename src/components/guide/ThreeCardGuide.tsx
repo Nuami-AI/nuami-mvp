@@ -5,7 +5,6 @@ import type { ExtractionResult } from "@/types/extraction";
 import SaveableItemCard, { InfoItemCard } from "@/components/SaveableItemCard";
 import { SectionCard } from "@/components/ui/section-card";
 import { ActionStepper, ContextCallout } from "@/components/results-shared";
-import GuideFeedback from "@/components/guide/GuideFeedback";
 import PublicDataPanel from "@/components/guide/PublicDataPanel";
 import { isPhysicalPlaceName } from "@/lib/geo/region";
 
@@ -22,6 +21,7 @@ interface Props {
   actionsTitle: string;
   systemContextLabel: string;
   sourceUrl?: string;
+  venue?: "store" | "bank" | "hospital" | "immigration" | "default";
   t: (k: TranslationKey) => string;
 }
 
@@ -31,6 +31,7 @@ export default function ThreeCardGuide({
   actionsTitle,
   systemContextLabel,
   sourceUrl,
+  venue,
   t,
 }: Props) {
   const sc = data.situation;
@@ -111,7 +112,7 @@ export default function ThreeCardGuide({
       {pipeline?.openData && <PublicDataPanel openData={pipeline.openData} t={t} />}
 
       {data.actions.length > 0 ? (
-        <ActionStepper actions={data.actions} title={`② ${actionsTitle}`} t={t} />
+        <ActionStepper actions={data.actions} title={`② ${actionsTitle}`} t={t} venue={venue} />
       ) : (
         <div className="bg-infoBox rounded-2xl border-2 border-line-neutral p-5 text-[13px] text-text-secondary text-center">
           행동 단계가 아직 없어요. 상황을 더 구체적으로 입력해보세요.
@@ -164,12 +165,6 @@ export default function ThreeCardGuide({
           {pipeline.sources.map((s) => s.name).join(" · ")}
         </p>
       )}
-
-      <GuideFeedback
-        situation={situationLabel}
-        scenarioId={pipeline?.search.scenarioId}
-        t={t}
-      />
     </div>
   );
 }

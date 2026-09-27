@@ -9,6 +9,11 @@ export interface PublicFacility {
   dataset: string;
   datasetUrl?: string;
   live: boolean;
+  processableTasks?: string[];
+  hours?: string;
+  asOf?: string;
+  distanceMeters?: number;
+  role?: string;
 }
 
 export interface OpenDataResult {
@@ -16,4 +21,6 @@ export interface OpenDataResult {
   queriedAt: string;
   facilities: PublicFacility[];
   errors: string[];
+  needAddressPrompt?: string;
+  taskLabel?: string;
 }

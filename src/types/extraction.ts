@@ -73,6 +73,8 @@ export interface GuidePipelineMeta {
   openData?: {
     live: boolean;
     queriedAt: string;
+    needAddressPrompt?: string;
+    taskLabel?: string;
     facilities: Array<{
       name: string;
       address?: string;
@@ -82,6 +84,10 @@ export interface GuidePipelineMeta {
       dataset: string;
       datasetUrl?: string;
       live: boolean;
+      processableTasks?: string[];
+      hours?: string;
+      asOf?: string;
+      distanceMeters?: number;
     }>;
   };
 }

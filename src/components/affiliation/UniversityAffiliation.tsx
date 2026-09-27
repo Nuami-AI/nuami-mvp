@@ -87,6 +87,21 @@ export default function UniversityAffiliation({ mode = "modal" }: Props) {
     if (!prefs.universityAsked) setOpen(true);
   }, [mode]);
 
+  useEffect(() => {
+    const sync = () => {
+      const prefs = loadPreferences();
+      if (mode === "settings") {
+        setSelectedId(prefs.universityVerified ? prefs.universityId : null);
+        setVerified(prefs.universityVerified === true);
+        return;
+      }
+      if (!prefs.universityAsked) setOpen(true);
+      else setOpen(false);
+    };
+    window.addEventListener("nuami-storage-scope", sync);
+    return () => window.removeEventListener("nuami-storage-scope", sync);
+  }, [mode]);
+
   const filteredInstitutions = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return institutions;

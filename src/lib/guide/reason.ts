@@ -14,9 +14,8 @@ function notesForStayType(stayType: StayType, scenarioId?: string): string[] {
   if (scenarioId === "residence-change") {
     return [
       "D-2·D-4 모두 이사 후 15일 이내 체류지 변경 신고 대상이다.",
-      stayType === "D-2"
-        ? "기숙사면 학교 생활관 확인서를, 원룸이면 임대차계약서를 준비한다."
-        : "숙소 계약서 또는 기숙사/하숙 확인서를 빠뜨리지 않는다.",
+      "체류지 입증서류는 임대차계약서·숙소제공확인서·기숙사 증빙 등 상황에 맞는 공식 서류를 준비한다(모든 서류가 무조건 필요하지는 않다).",
+      "대학 국제처·국제학생지원센터는 신고기관이 아니며, 관할은 새 체류지 주소 기준이다.",
     ];
   }
   if (scenarioId === "hospital" && stayType !== "other") {

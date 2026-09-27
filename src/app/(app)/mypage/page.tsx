@@ -9,6 +9,7 @@ import UniversityAffiliation from "@/components/affiliation/UniversityAffiliatio
 import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
 import { PageHeader } from "@/components/ui/page-header";
 import { useLanguage } from "@/lib/i18n";
+import { clearActiveUserEmail } from "@/lib/user/storage-scope";
 
 export default function MypagePage() {
   const { t } = useLanguage();
@@ -21,6 +22,7 @@ export default function MypagePage() {
       body: "audience=app",
       redirect: "manual",
     }).catch(() => {});
+    clearActiveUserEmail();
     router.push("/login");
   }
 

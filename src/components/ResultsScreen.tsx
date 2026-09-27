@@ -13,6 +13,10 @@ import { detectResultVenue, type ResultVenue } from "@/lib/results/venue-context
 import { summarizeSituationQuery } from "@/lib/results/encouragement";
 import { resolveMapSearchQuery } from "@/lib/kakao/query-builder";
 import { isPhysicalPlaceName } from "@/lib/geo/region";
+import GuideFeedbackModal, {
+  markGuideFeedbackOffered,
+  shouldOfferGuideFeedback,
+} from "@/components/guide/GuideFeedback";
 
 interface Props {
   data: ExtractionResult;
@@ -26,12 +30,11 @@ function venueKey(venue: ResultVenue, base: string): TranslationKey {
   return `${base}.${venue}` as TranslationKey;
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
-
 export default function ResultsScreen({ data, onBack, situation, sourceUrl }: Props) {
   const { t } = useLanguage();
   const { save: persistSave } = useSaves();
   const [guideSaved, setGuideSaved] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const [displayName, setDisplayName] = useState<string | null>(null);
   const [shareToast, setShareToast] = useState(false);
@@ -64,6 +67,24 @@ export default function ResultsScreen({ data, onBack, situation, sourceUrl }: Pr
   });
   const mapQuery = mapSearch.primary || situationLabel;
 
+  const requestLeave = useCallback(() => {
+    if (feedbackOpen) {
+      onBack();
+      return;
+    }
+    if (shouldOfferGuideFeedback(situationLabel)) {
+      markGuideFeedbackOffered(situationLabel);
+      setFeedbackOpen(true);
+      return;
+    }
+    onBack();
+  }, [feedbackOpen, onBack, situationLabel]);
+
+  const finishFeedbackAndLeave = useCallback(() => {
+    setFeedbackOpen(false);
+    onBack();
+  }, [onBack]);
+
   const handleShare = useCallback(async () => {
     const text = `${heroTitle}\n${sc.summary}`;
     try {
@@ -85,7 +106,7 @@ export default function ResultsScreen({ data, onBack, situation, sourceUrl }: Pr
 
       <div className="sticky top-0 md:top-14 z-20 h-16 bg-white">
         <div className="mx-auto flex h-full w-full max-w-[1024px] items-center justify-between px-2">
-          <HeaderIconButton name="back" label={t("common.back")} onClick={onBack} />
+          <HeaderIconButton name="back" label={t("common.back")} onClick={requestLeave} />
           <div className="flex items-center">
             <HeaderIconButton
               name="bookmark"
@@ -120,8 +141,6 @@ export default function ResultsScreen({ data, onBack, situation, sourceUrl }: Pr
       )}
 
       <div className="w-full max-w-[1200px] mx-auto pb-24 md:pb-16">
-
-        {/* ── Hero ── */}
         <section className="px-4 lg:px-0 mt-5">
           <h1 className="text-[20px] font-bold text-text-primary leading-snug">
             {heroTitle}
@@ -138,13 +157,20 @@ export default function ResultsScreen({ data, onBack, situation, sourceUrl }: Pr
           mapQuery={mapQuery}
           destinationCountry={data.video.destinationCountry}
           sourceUrl={sourceUrl}
-          onBack={onBack}
+          onBack={requestLeave}
           t={t}
         />
-
       </div>
 
       <BottomNav active="guide" />
+
+      <GuideFeedbackModal
+        open={feedbackOpen}
+        situation={situationLabel}
+        scenarioId={data.pipeline?.search.scenarioId}
+        t={t}
+        onFinished={finishFeedbackAndLeave}
+      />
     </div>
   );
 }

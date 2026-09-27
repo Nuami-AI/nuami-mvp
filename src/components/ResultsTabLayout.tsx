@@ -116,6 +116,7 @@ export default function ResultsTabLayout({
               actionsTitle={actionsTitle}
               systemContextLabel={systemContextLabel}
               sourceUrl={sourceUrl}
+              venue={venue}
               t={t}
             />
           </div>
@@ -130,7 +131,7 @@ export default function ResultsTabLayout({
               </p>
             </div>
 
-            {(visitPlaces.length > 0 || mapQuery) ? (
+            {(visitPlaces.length > 0 || mapQuery || venue === "immigration" || Boolean(data.pipeline?.openData?.needAddressPrompt)) ? (
               <>
                 <PlacesMap
                   situation={situationLabel}

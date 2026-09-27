@@ -24,6 +24,9 @@ export function useHistory() {
   useEffect(() => {
     refresh();
     setMounted(true);
+    const onScope = () => refresh();
+    window.addEventListener("nuami-storage-scope", onScope);
+    return () => window.removeEventListener("nuami-storage-scope", onScope);
   }, [refresh]);
 
   const remove = useCallback(

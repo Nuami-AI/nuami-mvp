@@ -34,7 +34,7 @@ const PLACE_INTENT_RULES: { pattern: RegExp; query: string }[] = [
   { pattern: /약국|pharmacy|薬局|ドラッグストア/i, query: "약국" },
   { pattern: /병원|의원|clinic|hospital|病院|クリニック/i, query: "병원" },
   { pattern: /은행|bank|account|계좌|銀行/i, query: "은행" },
-  { pattern: /체류지|전입|출입국|immigration|주소\s*변경|하이코리아/i, query: "출입국외국인청" },
+  { pattern: /체류지|전입|출입국|immigration|주소\s*변경|하이코리아|chuyển nhà|đổi địa chỉ/i, query: "행정복지센터" },
   { pattern: /올리브영|올영|olive\s*young|oliveyoung|드럭스토어|화장품|뷰티/i, query: "올리브영" },
   { pattern: /다이소|daiso/i, query: "다이소" },
   { pattern: /지하철|subway|metro|地下鉄|駅/i, query: "지하철역" },
@@ -160,7 +160,7 @@ function extractAreaHints(situation: string): string[] {
     }
   }
   const areaMatch = situation.match(
-    /(서울|부산|대구|인천|광주|대전|울산|세종|강남|홍대|명동|이태원|신촌|성수|여의도|홍대입구|강남역|서울역)[^\s,]*/g,
+    /(서울|부산|대구|인천|광주|대전|울산|세종|강남|홍대|명동|이태원|신촌|성수|여의도|홍대입구|강남역|서울역|금정|해운대|동래|부산진|사하|사상|연제|수영|영도|기장|관악|마포|송파|영등포)[^\s,]*(?:구|군|시|역)?/g,
   );
   if (areaMatch) hints.push(...areaMatch);
   return hints;
@@ -177,7 +177,7 @@ function venueDefaults(venue: ResultVenue, situation: string): string[] {
   if (venue === "store") return ["올리브영", "드럭스토어"];
   if (venue === "bank") return ["은행"];
   if (venue === "hospital") return ["병원", "약국"];
-  if (venue === "immigration") return ["출입국외국인청"];
+  if (venue === "immigration") return ["행정복지센터", "주민센터"];
 
   return [];
 }
@@ -205,7 +205,7 @@ export function buildKakaoSearchQueries({
   }
 
   if (venue === "immigration") {
-    queries.push("출입국외국인청");
+    queries.push("행정복지센터", "주민센터");
   }
 
   queries.push(...extractPlaceIntentQueries(trimmed));
@@ -281,10 +281,11 @@ export function resolveMapSearchQuery({
   let primary = "";
   const isImmigrationSearch =
     venue === "immigration" ||
+    intents.includes("행정복지센터") ||
     intents.includes("출입국외국인청") ||
-    mappableWhere.some((item) => /출입국|immigration/i.test(item));
+    mappableWhere.some((item) => /출입국|immigration|행정복지|주민센터|체류지|전입/i.test(item));
   if (isImmigrationSearch) {
-    primary = "출입국외국인청";
+    primary = areaHints[0] ? `${areaHints[0]} 행정복지센터` : "행정복지센터";
   } else if (places[0]?.nameKo?.trim() && isMappableQuery(places[0].nameKo)) {
     primary = places[0].nameKo.trim();
   } else if (places[0]?.name?.trim() && isMappableQuery(places[0].name)) {

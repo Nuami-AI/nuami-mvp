@@ -68,6 +68,8 @@ export interface PipelineMeta {
   openData?: {
     live: boolean;
     queriedAt: string;
+    needAddressPrompt?: string;
+    taskLabel?: string;
     facilities: Array<{
       name: string;
       address?: string;
@@ -77,6 +79,10 @@ export interface PipelineMeta {
       dataset: string;
       datasetUrl?: string;
       live: boolean;
+      processableTasks?: string[];
+      hours?: string;
+      asOf?: string;
+      distanceMeters?: number;
     }>;
   };
 }

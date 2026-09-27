@@ -8,5 +8,6 @@ export async function GET(request: Request): Promise<Response> {
   return NextResponse.json({
     authenticated: Boolean(session),
     role: session?.role ?? null,
+    email: session?.email ?? null,
   });
 }

@@ -1,17 +1,22 @@
 "use client";
 
+import { scopedStorageKey } from "@/lib/user/storage-scope";
 import type { SavedItem } from "@/types/saves";
 
-const STORAGE_KEY = "nuami_saves_v1";
+const STORAGE_BASE = "nuami_saves_v1";
 
 function now() {
   return new Date().toISOString();
 }
 
+function storageKey() {
+  return scopedStorageKey(STORAGE_BASE);
+}
+
 function loadAll(): SavedItem[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey());
     if (!raw) return [];
     return JSON.parse(raw) as SavedItem[];
   } catch {
@@ -20,7 +25,7 @@ function loadAll(): SavedItem[] {
 }
 
 function persist(items: SavedItem[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  localStorage.setItem(storageKey(), JSON.stringify(items));
 }
 
 export function listSaves(): SavedItem[] {

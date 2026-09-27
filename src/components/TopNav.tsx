@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { useCampusAffiliation } from "@/hooks/useCampusAffiliation";
 import { useLanguage } from "@/lib/i18n";
+import { clearActiveUserEmail } from "@/lib/user/storage-scope";
 import type { NavTabId } from "./nav-tabs";
 
 const BASE_LINKS: { id: NavTabId; labelKey: "nav.home" | "nav.guide" | "nav.culture" | "nav.bookmarks" | "nav.mypage"; href: string }[] = [
@@ -27,6 +28,7 @@ export default function TopNav({ active = "home" }: { active?: NavTabId }) {
       body: "audience=app",
       redirect: "manual",
     }).catch(() => {});
+    clearActiveUserEmail();
     router.push("/login");
   }
 

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
+import { SyncStorageScope } from "@/components/auth/SyncStorageScope";
 import { LanguageProvider } from "@/lib/i18n";
 import "./globals.css";
 
@@ -38,22 +39,6 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <script
-          type="text/javascript"
-          dangerouslySetInnerHTML={{
-            __html: `
-      (function(w, d, a){
-          w.__beusablerumclient__ = {
-              load : function(src){
-                  var b = d.createElement("script");
-                  b.src = src; b.async=true; b.type = "text/javascript";
-                  d.getElementsByTagName("head")[0].appendChild(b);
-              }
-          };w.__beusablerumclient__.load(a + "?url=" + encodeURIComponent(d.URL));
-      })(window, document, "//rum.beusable.net/load/b260824e143014u852");
-    `,
-          }}
-        />
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-KTS5CVN20N"
           strategy="afterInteractive"
@@ -68,7 +53,9 @@ export default function RootLayout({
         </Script>
       </head>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
-        <LanguageProvider>{children}</LanguageProvider>
+        <LanguageProvider>
+          <SyncStorageScope>{children}</SyncStorageScope>
+        </LanguageProvider>
       </body>
     </html>
   );

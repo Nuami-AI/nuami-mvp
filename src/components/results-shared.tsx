@@ -49,10 +49,12 @@ export function ActionStepper({
   actions,
   title,
   t,
+  venue,
 }: {
   actions: ActionStep[];
   title: string;
   t: (k: TranslationKey) => string;
+  venue?: "store" | "bank" | "hospital" | "immigration" | "default";
 }) {
   const [completed, setCompleted] = useState<Set<number>>(() => new Set());
   const [activeIdx, setActiveIdx] = useState(0);
@@ -69,8 +71,12 @@ export function ActionStepper({
 
   const stages: BehaviorStage[] = ["prepare", "move", "apply", "confirm"];
   const hasStages = actions.some((a) => a.stage);
-  const stageLabel = (stage: BehaviorStage): TranslationKey =>
-    (`results.stage.${stage}`) as TranslationKey;
+  const stageLabel = (stage: BehaviorStage): TranslationKey => {
+    if (venue === "immigration" && (stage === "move" || stage === "apply")) {
+      return `results.stage.${stage}.immigration` as TranslationKey;
+    }
+    return `results.stage.${stage}` as TranslationKey;
+  };
   const stageTone = (stage: BehaviorStage): StatusTone => {
     if (stage === "prepare") return "ready";
     if (stage === "confirm") return "done";

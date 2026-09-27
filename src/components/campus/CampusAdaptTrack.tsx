@@ -10,15 +10,16 @@ import {
   type GuideSection,
 } from "@/lib/guide/adapt-cards";
 import type { CampusTheme } from "@/lib/institution/campus-theme";
+import { scopedStorageKey } from "@/lib/user/storage-scope";
 
 const LEGACY_DONE_KEY = "nuami-guide-done";
 const LEGACY_BONUS_KEY = "nuami-guide-bonus-claimed";
 
 function doneKey(universityId: string) {
-  return `nuami-campus-done:${universityId}`;
+  return scopedStorageKey(`nuami-campus-done:${universityId}`);
 }
 function bonusKey(universityId: string) {
-  return `nuami-campus-bonus:${universityId}`;
+  return scopedStorageKey(`nuami-campus-bonus:${universityId}`);
 }
 
 function loadSet(key: string, fallbackKey?: string): Set<string> {

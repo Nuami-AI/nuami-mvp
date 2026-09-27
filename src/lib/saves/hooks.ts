@@ -21,10 +21,15 @@ export function useSaves() {
   useEffect(() => {
     refresh();
     const onStorage = (e: StorageEvent) => {
-      if (e.key === "nuami_saves_v1") refresh();
+      if (e.key?.startsWith("nuami_saves_v1")) refresh();
     };
+    const onScope = () => refresh();
     window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+    window.addEventListener("nuami-storage-scope", onScope);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("nuami-storage-scope", onScope);
+    };
   }, [refresh]);
 
   const save = useCallback(

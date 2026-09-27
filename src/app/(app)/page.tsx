@@ -13,6 +13,7 @@ import UniversityAffiliation from "@/components/affiliation/UniversityAffiliatio
 import { useLanguage, getUserLanguageCode } from "@/lib/i18n";
 import { addSummaryHistory } from "@/lib/history/storage";
 import { loadPreferences } from "@/lib/user/preferences";
+import { scopedStorageKey } from "@/lib/user/storage-scope";
 import type { ExtractError, ExtractResponse, ExtractionResult } from "@/types/extraction";
 import type { UsageInfo } from "@/types/usage";
 
@@ -50,14 +51,15 @@ function HomeContent() {
 
     try {
       const prefs = loadPreferences();
-      if (window.localStorage.getItem("nuami_last_search")) {
+      const lastSearchKey = scopedStorageKey("nuami_last_search");
+      if (window.localStorage.getItem(lastSearchKey)) {
         fetch("/api/usage/event", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ action: "guide_researched", metadata: { situation: trimmedSituation } }),
         }).catch(() => {});
       }
-      window.localStorage.setItem("nuami_last_search", trimmedSituation);
+      window.localStorage.setItem(lastSearchKey, trimmedSituation);
 
       const coords = await new Promise<{ lat: number; lng: number } | null>((resolve) => {
         if (!navigator.geolocation) {

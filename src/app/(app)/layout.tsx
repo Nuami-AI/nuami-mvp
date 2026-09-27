@@ -1,7 +1,19 @@
+import { BeusableRum } from "@/components/analytics/BeusableRum";
+
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   if (process.env.NODE_ENV === "production") {
-    return children;
+    return (
+      <>
+        <BeusableRum product="app" />
+        {children}
+      </>
+    );
   }
   const { default: MobilePreviewFrame } = await import("@/components/dev/MobilePreviewFrame");
-  return <MobilePreviewFrame>{children}</MobilePreviewFrame>;
+  return (
+    <>
+      <BeusableRum product="app" />
+      <MobilePreviewFrame>{children}</MobilePreviewFrame>
+    </>
+  );
 }
