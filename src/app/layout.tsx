@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
+import { BeusableRum } from "@/components/analytics/BeusableRum";
 import { Hotjar } from "@/components/analytics/Hotjar";
 import { SyncStorageScope } from "@/components/auth/SyncStorageScope";
 import { LanguageProvider } from "@/lib/i18n";
@@ -53,6 +54,7 @@ export default function RootLayout({
   `}
         </Script>
         <Hotjar />
+        <BeusableRum />
       </head>
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <LanguageProvider>
