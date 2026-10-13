@@ -20,6 +20,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "NUAMI — 현지 생활 가이드",
   description: "영상에서 현지 생활 정보를 추출하고, 유학생 적응 가이드를 제공합니다",
+  manifest: "/site.webmanifest",
 };
 
 export const viewport = {

@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { BrandLogo } from "@/components/brand/BrandLogo";
-import { homeHrefForRole } from "@/lib/hosts";
 import { LANGUAGE_LABELS, useLanguage, type Language } from "@/lib/i18n";
 import type { OAuthProvider } from "@/lib/auth/oauth-providers";
 import type { TranslationKey } from "@/lib/i18n";
@@ -106,12 +105,11 @@ export function SocialLoginHome({ configured }: { configured: OAuthProvider[] })
       .then((r) => r.json())
       .then((data: { authenticated?: boolean; role?: "admin" | "tester" | null }) => {
         if (!data.authenticated) return;
-        const href = homeHrefForRole(data.role === "admin" ? "admin" : "tester");
-        if (href.startsWith("http")) window.location.replace(href);
-        else router.replace(href);
+        const href = redirect.startsWith("/") && !redirect.startsWith("//") ? redirect : "/";
+        router.replace(href.startsWith("/admin") || href.startsWith("/console") ? "/" : href);
       })
       .catch(() => {});
-  }, [router]);
+  }, [redirect, router]);
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {

@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { isInternalAccount } from "@/lib/auth/access";
 import { consumeChallenge, issueChallenge, verifyChallenge } from "@/lib/auth/challenge";
 import { TEMP_ORG_PASSWORD } from "@/lib/auth/issue-org-staff";
 import { hashPassword, isValidEmail, isValidPassword, verifyPassword } from "@/lib/auth/password";
@@ -66,7 +65,7 @@ export async function POST(request: Request): Promise<Response> {
     const opts = sessionCookieOptions(token, false, request.headers.get("host") ?? "", requestIsHttps(request));
     const cookieStore = await cookies();
     cookieStore.set(opts);
-    const redirect = next || (isInternalAccount(session.role) ? "/console" : "/mypage");
+    const redirect = next || "/mypage";
     const res = NextResponse.json({ ok: true, redirect });
     res.cookies.set(opts);
     return res;

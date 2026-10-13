@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { NuamiLoginLogo } from "@/components/login/NuamiLoginLogo";
 import { HeaderIconButton } from "@/components/ui/header-icon";
-import { homeHrefForRole } from "@/lib/hosts";
 import type { LoginAudience } from "@/lib/auth/access";
 import { useLanguage } from "@/lib/i18n";
 
@@ -59,12 +58,17 @@ export function LoginForm({ audience }: { audience: LoginAudience }) {
       .then((r) => r.json())
       .then((data: { authenticated?: boolean; role?: "admin" | "tester" | null }) => {
         if (!data.authenticated) return;
-        const href = homeHrefForRole(data.role === "admin" ? "admin" : "tester");
-        if (href.startsWith("http")) window.location.replace(href);
-        else router.replace(href);
+        const href =
+          redirectTo.startsWith("/") &&
+          !redirectTo.startsWith("//") &&
+          !redirectTo.startsWith("/admin") &&
+          !redirectTo.startsWith("/console")
+            ? redirectTo
+            : "/";
+        router.replace(href);
       })
       .catch(() => {});
-  }, [audience, router]);
+  }, [audience, redirectTo, router]);
 
   return (
     <div className="min-h-dvh w-full bg-background text-text-primary">

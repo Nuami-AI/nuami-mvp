@@ -81,21 +81,3 @@ export function publicOrigin(request: Request): string {
   if (!host) return new URL(request.url).origin;
   return `${proto}://${host}`;
 }
-
-export function homeHrefForRole(role: "admin" | "tester"): string {
-  if (typeof window === "undefined") return role === "admin" ? "/console" : "/";
-  const host = window.location.hostname;
-  const protocol = window.location.protocol;
-  if (role === "admin") {
-    const consoleHost = productHost("console", host);
-    if (consoleHost && host !== consoleHost && !isLoopbackHost(host)) {
-      return `${protocol}//${consoleHost}/`;
-    }
-    return "/console";
-  }
-  const appHost = productHost("app", host);
-  if (appHost && host !== appHost && !isLoopbackHost(host)) {
-    return `${protocol}//${appHost}/`;
-  }
-  return "/";
-}
