@@ -12,7 +12,7 @@ export type UsageAction =
   | "guide_rated"
   | "guide_researched";
 
-const USAGE_LIMIT = parseInt(process.env.USAGE_LIMIT ?? "3", 10);
+const USAGE_LIMIT = parseInt(process.env.USAGE_LIMIT ?? "100", 10);
 
 export async function getCount(userEmail: string, action: UsageAction): Promise<number> {
   return prisma.usageEvent.count({

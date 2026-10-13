@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { randomBytes } from "node:crypto";
 
 import { sessionRoleOf } from "@/lib/auth/accounts";
-import { isInternalAccount } from "@/lib/auth/access";
 import { isOAuthProvider, OAUTH_PROVIDERS, type OAuthProvider } from "@/lib/auth/oauth-providers";
 import { createSession, requestIsHttps, sessionCookieOptions } from "@/lib/auth/session";
 import { publicOrigin } from "@/lib/hosts";
@@ -312,7 +311,7 @@ export async function redirectWithAppSession(
   redirectTo: string,
 ) {
   const token = await createSession(email, role);
-  const dest = isInternalAccount(role) ? "/console" : safeAppRedirect(redirectTo);
+  const dest = safeAppRedirect(redirectTo);
   const response = NextResponse.redirect(new URL(dest, `${publicOrigin(request)}/`), 303);
   response.cookies.set(sessionCookieOptions(token, false, request.headers.get("host") ?? "", requestIsHttps(request)));
   response.cookies.set(oauthStateCookie({ nonce: "", provider: "google", redirect: "/" }, request, true));

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
-import { verifyPassword } from "@/lib/auth/password";
+import { TEMP_ORG_PASSWORD } from "@/lib/auth/issue-org-staff";
+import { hashPassword, isValidEmail, verifyPassword } from "@/lib/auth/password";
 
 export type AccountType = "END_USER" | "ORG_STAFF" | "INTERNAL";
 
@@ -10,6 +11,27 @@ export interface Account {
 
 export function sessionRoleOf(accountType: string | null | undefined): Account["role"] {
   return accountType === "INTERNAL" ? "admin" : "tester";
+}
+
+/** Super-admin console: set temp password 1234 and require change on next login. */
+export async function resetAuthUserPassword(email: string, actorEmail: string): Promise<{ email: string }> {
+  const normalized = email.trim().toLowerCase();
+  const actor = actorEmail.trim().toLowerCase();
+  if (!isValidEmail(normalized)) throw new Error("올바른 이메일을 입력하세요.");
+  if (normalized === actor) throw new Error("자기 계정은 초기화할 수 없습니다.");
+
+  const user = await prisma.authUser.findUnique({ where: { email: normalized } });
+  if (!user) throw new Error("계정을 찾을 수 없습니다.");
+  if (user.status !== "ACTIVE") throw new Error("비활성화된 계정은 초기화할 수 없습니다.");
+
+  await prisma.authUser.update({
+    where: { email: normalized },
+    data: {
+      passwordHash: hashPassword(TEMP_ORG_PASSWORD),
+      passwordMustChange: true,
+    },
+  });
+  return { email: user.email };
 }
 
 export type LoginLookup =

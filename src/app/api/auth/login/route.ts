@@ -130,9 +130,6 @@ async function destinationFor(input: {
     return adminLandingPath(input.email);
   }
 
-  if (isInternalAccount(input.role)) {
-    return input.mustChangePassword ? "/console/password" : "/console";
-  }
   if (input.mustChangePassword) return "/password";
   if (input.redirect.startsWith("/console") || input.redirect.startsWith("/admin")) return "/";
   return safeRedirect(input.redirect);
