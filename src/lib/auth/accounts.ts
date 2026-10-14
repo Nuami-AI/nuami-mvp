@@ -188,8 +188,8 @@ export async function updateManagedAccount(input: {
   const creditsLimit =
     input.creditsLimit === undefined ? undefined : parseCreditsLimit(input.creditsLimit) ?? defaultCreditsLimit();
   const isTest = input.isTest === undefined ? user.isTest : parseFlag(input.isTest);
-  const usingTempPassword =
-    Boolean(user.passwordHash) && verifyPassword(TEMP_ORG_PASSWORD, user.passwordHash);
+  const passwordHash = user.passwordHash;
+  const usingTempPassword = passwordHash ? verifyPassword(TEMP_ORG_PASSWORD, passwordHash) : false;
   const organizationId = input.organizationId?.trim() ?? "";
   if (kinds.has("org") && !organizationId) throw new Error("기관을 선택하세요.");
 
