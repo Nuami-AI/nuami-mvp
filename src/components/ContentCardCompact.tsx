@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { formatKstDate } from "@/lib/datetime";
 import { useLanguage } from "@/lib/i18n";
 import type { ContentPost } from "@/lib/content/types";
 import type { TranslationKey } from "@/lib/i18n/ko";
@@ -25,11 +26,7 @@ export default function ContentCardCompact({ post, compact = false }: Props) {
   const catLabel = t(catKey) ?? post.category;
 
   const date = post.createdAt
-    ? new Date(post.createdAt).toLocaleDateString("ko-KR", {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-      }).replace(/\. /g, ".").replace(/\.$/, "")
+    ? formatKstDate(post.createdAt, "").replace(/\. /g, ".").replace(/\.$/, "")
     : "";
 
   const href = `/content/${post.id}?country=${post.country}&category=${post.category}`;

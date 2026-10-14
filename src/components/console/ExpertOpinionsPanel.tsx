@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ASSET_DOMAIN_LABEL, ASSET_DOMAINS, type AssetDomain } from "@/lib/console-knowledge/types";
+import { formatKstDate } from "@/lib/datetime";
 
 interface AssetOpt {
   id: string;
@@ -221,7 +222,7 @@ export function ExpertOpinionsPanel() {
                       ? ASSET_DOMAIN_LABEL[row.domain as AssetDomain] ?? row.domain
                       : "분야 미지정"}
                     {" · "}
-                    {new Date(row.receivedAt).toLocaleDateString("ko-KR")}
+                    {formatKstDate(row.receivedAt)}
                     {row.asset ? ` · 자료: ${row.asset.title}` : ""}
                   </p>
                   <p className="mt-2 whitespace-pre-wrap text-[13px] text-gray-800">{row.opinion}</p>

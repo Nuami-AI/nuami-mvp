@@ -4,6 +4,7 @@ import InstitutionShell from "@/components/admin/InstitutionShell";
 import { hasOrgPermission, maskEmail } from "@/lib/auth/access";
 import { resolveOrgAccess } from "@/lib/auth/page-session";
 import { getActiveEndUserInOrganization } from "@/lib/auth/tenant";
+import { formatKstDate } from "@/lib/datetime";
 import { getAdminUserDetails } from "@/lib/usage/tracker";
 
 export default async function InstitutionUserDetailPage({
@@ -32,10 +33,8 @@ export default async function InstitutionUserDetailPage({
     >
       <div className="max-w-md rounded-xl border border-gray-200 bg-white px-5 py-4 space-y-2">
         <p className="text-sm font-semibold text-gray-900">{maskEmail(membership.email)}</p>
-        <p className="text-xs text-gray-500">가입 {membership.joinedAt.toLocaleDateString("ko-KR")}</p>
-        <p className="text-xs text-gray-500">
-          최근 이용 {usage?.lastSeenAt ? usage.lastSeenAt.toLocaleDateString("ko-KR") : "—"}
-        </p>
+        <p className="text-xs text-gray-500">가입 {formatKstDate(membership.joinedAt)}</p>
+        <p className="text-xs text-gray-500">최근 이용 {formatKstDate(usage?.lastSeenAt)}</p>
         <p className="text-xs text-gray-500">이용 횟수 {usage?.video_ai_use ?? 0}</p>
       </div>
     </InstitutionShell>

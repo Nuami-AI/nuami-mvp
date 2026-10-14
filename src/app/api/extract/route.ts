@@ -329,9 +329,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   // --- 8. Log usage event for tester ----------------------------------------
-  if (session.role === "tester") {
-    await logUsageEvent(session.email, "video_ai_use", { situation, url: url || undefined });
-  }
+  await logUsageEvent(session.email, "video_ai_use", { situation, url: url || undefined });
 
   // --- 9. Log + respond ------------------------------------------------------
   logEvent({

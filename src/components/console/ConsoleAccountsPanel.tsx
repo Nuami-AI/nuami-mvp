@@ -4,6 +4,8 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode }
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 
+import { formatKstDateTime } from "@/lib/datetime";
+
 export interface ConsoleAccountRow {
   email: string;
   kind: "org" | "end" | "console";
@@ -17,12 +19,13 @@ export interface ConsoleAccountRow {
   isTest: boolean;
   creditsUsed: number;
   creditsLimit: number;
+  lastLoginAt: string | null;
   createdAt: string;
 }
 
 type Kind = ConsoleAccountRow["kind"];
 type AccountType = ConsoleAccountRow["accountType"];
-type SortKey = "email" | "kind" | "org" | "credits" | "status" | "login";
+type SortKey = "email" | "kind" | "org" | "credits" | "status" | "login" | "lastLogin";
 type SortDir = "asc" | "desc";
 
 const KIND_RANK: Record<Kind, number> = { end: 0, org: 1, console: 2 };
@@ -33,6 +36,7 @@ function kindRank(row: ConsoleAccountRow): number {
   if (kinds.includes("org")) return KIND_RANK.org;
   return KIND_RANK.end;
 }
+
 
 function orgName(row: ConsoleAccountRow): string {
   return row.orgs[0]?.nameKo ?? "";
@@ -57,6 +61,8 @@ function compareAccounts(a: ConsoleAccountRow, b: ConsoleAccountRow, key: SortKe
       return (a.status === "ACTIVE" ? 0 : 1) - (b.status === "ACTIVE" ? 0 : 1);
     case "login":
       return (a.provider || "이메일").localeCompare(b.provider || "이메일", "ko");
+    case "lastLogin":
+      return (a.lastLoginAt ?? "").localeCompare(b.lastLoginAt ?? "");
   }
 }
 
@@ -105,12 +111,14 @@ export function ConsoleAccountsPanel({
   protectedEmail,
   institutions,
   defaultCredits,
+  showLastLogin,
 }: {
   rows: ConsoleAccountRow[];
   actorEmail: string;
   protectedEmail: string;
   institutions: Array<{ id: string; nameKo: string }>;
   defaultCredits: number;
+  showLastLogin: boolean;
 }) {
   const router = useRouter();
   const [error, setError] = useState("");
@@ -289,13 +297,16 @@ export function ConsoleAccountsPanel({
               <SortTh label="크레딧" column="credits" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
               <SortTh label="상태" column="status" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
               <SortTh label="로그인" column="login" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+              {showLastLogin ? (
+                <SortTh label="마지막 로그인" column="lastLogin" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+              ) : null}
               <th className="px-4 py-3 text-right text-[11px] font-semibold text-gray-400 uppercase"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {visibleRows.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-sm text-gray-400">
+                <td colSpan={showLastLogin ? 8 : 7} className="px-4 py-10 text-center text-sm text-gray-400">
                   {rows.length === 0 ? "계정이 없습니다." : "선택한 구분에 해당하는 계정이 없습니다."}
                 </td>
               </tr>
@@ -339,6 +350,11 @@ export function ConsoleAccountsPanel({
                       <StatusBadge status={row.status} />
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-500">{row.provider ? row.provider : "이메일"}</td>
+                    {showLastLogin ? (
+                      <td className="px-4 py-3 text-xs tabular-nums text-gray-500">
+                        {formatKstDateTime(row.lastLoginAt)}
+                      </td>
+                    ) : null}
                     <td className="px-2 py-2 text-right">
                       <KebabMenu
                         open={openMenu === row.email}

@@ -15,18 +15,7 @@ import {
   type OpenDataStatusRow,
   type Priority,
 } from "@/lib/opendata/status";
-
-function formatSyncedAt(iso?: string): string {
-  if (!iso) return "—";
-  try {
-    return new Intl.DateTimeFormat("ko-KR", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    }).format(new Date(iso));
-  } catch {
-    return iso;
-  }
-}
+import { formatKstDateTime } from "@/lib/datetime";
 
 function statusTone(status: OpenDataStatus): StatusTone {
   if (status === "CONNECTED") return "done";
@@ -119,7 +108,7 @@ export function OpenDataIntegrationsPanel({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="text-[13px] text-gray-500">
           P0 헬스체크 · 마지막 동기화{" "}
-          <span className="font-medium text-gray-700">{formatSyncedAt(snapshot?.syncedAt)}</span>
+          <span className="font-medium text-gray-700">{formatKstDateTime(snapshot?.syncedAt)}</span>
           {snapshot ? (
             <span className="ml-2 text-gray-400">
               ({snapshot.summary.ok}/{snapshot.summary.total} 성공)

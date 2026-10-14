@@ -163,6 +163,7 @@ model AuthUser {
   isTest           Boolean  @default(false)
   /// null = 환경변수 USAGE_LIMIT 기본값 사용
   creditsLimit     Int?
+  lastLoginAt      DateTime?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

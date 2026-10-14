@@ -84,6 +84,7 @@ export interface TesterStats {
 export interface AdminUserDetail extends TesterStats {
   firstSeenAt: Date | null;
   lastSeenAt: Date | null;
+  lastLoginAt: Date | null;
   creditsUsed: number;
   creditsLimit: number;
   creditsRemaining: number;
@@ -124,11 +125,9 @@ export async function getAdminStats(testerEmails: string[]): Promise<TesterStats
 export async function getAdminUserDetails(emails: string[]): Promise<AdminUserDetail[]> {
   if (emails.length === 0) return [];
 
-  const actions = TESTER_STAT_ACTIONS;
-
   const rows = await prisma.usageEvent.groupBy({
     by: ["userEmail", "action"],
-    where: { userEmail: { in: emails } },
+    where: { userEmail: { in: emails }, action: { in: [...TESTER_STAT_ACTIONS] } },
     _count: { id: true },
   });
   const usageWindows = await prisma.usageEvent.groupBy({
@@ -138,36 +137,35 @@ export async function getAdminUserDetails(emails: string[]): Promise<AdminUserDe
   });
   const creditRows = await prisma.authUser.findMany({
     where: { email: { in: emails } },
-    select: { email: true, creditsLimit: true, createdAt: true },
+    select: { email: true, creditsLimit: true, createdAt: true, lastLoginAt: true },
   });
   const creditsByEmail = new Map(creditRows.map((row) => [row.email.toLowerCase(), row.creditsLimit]));
   const joinedByEmail = new Map(creditRows.map((row) => [row.email.toLowerCase(), row.createdAt]));
+  const lastLoginByEmail = new Map(creditRows.map((row) => [row.email.toLowerCase(), row.lastLoginAt]));
   const lastUsedByEmail = new Map(
     usageWindows.map((row) => [row.userEmail.toLowerCase(), row._max.createdAt ?? null]),
   );
+  const counts = new Map<string, number>();
+  for (const row of rows) {
+    counts.set(`${row.userEmail.toLowerCase()}:${row.action}`, row._count.id);
+  }
 
   return emails.map((email) => {
     const key = email.toLowerCase();
     const stat: TesterStats = {
       email,
-      video_ai_use: 0,
-      paywall_shown: 0,
-      paywall_cta_click: 0,
-      paywall_dismiss: 0,
+      video_ai_use: counts.get(`${key}:video_ai_use`) ?? 0,
+      paywall_shown: counts.get(`${key}:paywall_shown`) ?? 0,
+      paywall_cta_click: counts.get(`${key}:paywall_cta_click`) ?? 0,
+      paywall_dismiss: counts.get(`${key}:paywall_dismiss`) ?? 0,
     };
-    for (const action of actions) {
-      const row = rows.find(
-        (r: { userEmail: string; action: string; _count: { id: number } }) =>
-          r.userEmail.toLowerCase() === key && r.action === action,
-      );
-      if (row) stat[action] = row._count.id;
-    }
     const creditsUsed = stat.video_ai_use;
     const creditsLimit = resolveCreditsLimit(creditsByEmail.get(key));
     return {
       ...stat,
       firstSeenAt: joinedByEmail.get(key) ?? null,
       lastSeenAt: lastUsedByEmail.get(key) ?? null,
+      lastLoginAt: lastLoginByEmail.get(key) ?? null,
       creditsUsed,
       creditsLimit,
       creditsRemaining: Math.max(0, creditsLimit - creditsUsed),

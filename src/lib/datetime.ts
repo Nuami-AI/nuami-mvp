@@ -1,0 +1,54 @@
+export const KST = "Asia/Seoul";
+
+const DATE_TIME: Intl.DateTimeFormatOptions = {
+  timeZone: KST,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+};
+
+const DATE_ONLY: Intl.DateTimeFormatOptions = {
+  timeZone: KST,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+};
+
+const COMPACT: Intl.DateTimeFormatOptions = {
+  timeZone: KST,
+  month: "short",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+};
+
+function toDate(value: Date | string | number | null | undefined): Date | null {
+  if (value == null || value === "") return null;
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/** 2026. 10. 14. 13:56 — 콘솔·로그·계정 공통 */
+export function formatKstDateTime(value: Date | string | number | null | undefined, empty = "—"): string {
+  const date = toDate(value);
+  if (!date) return empty;
+  return date.toLocaleString("ko-KR", DATE_TIME);
+}
+
+/** 2026. 10. 14. */
+export function formatKstDate(value: Date | string | number | null | undefined, empty = "—"): string {
+  const date = toDate(value);
+  if (!date) return empty;
+  return date.toLocaleDateString("ko-KR", DATE_ONLY);
+}
+
+/** 10월 14일 13:56 — 히스토리 등 짧은 표시 */
+export function formatKstCompact(value: Date | string | number | null | undefined, empty = ""): string {
+  const date = toDate(value);
+  if (!date) return empty;
+  return date.toLocaleString("ko-KR", COMPACT);
+}

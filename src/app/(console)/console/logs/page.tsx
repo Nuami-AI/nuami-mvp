@@ -1,6 +1,7 @@
 import AdminShell from "@/components/admin/AdminShell";
 import { auditActionLabel, auditActorTypeLabel } from "@/lib/auth/audit-labels";
 import { requireSuperAdminSession } from "@/lib/auth/page-session";
+import { formatKstDateTime } from "@/lib/datetime";
 import { getInstitution } from "@/lib/institution/catalog";
 import { prisma } from "@/lib/db";
 
@@ -42,7 +43,7 @@ export default async function ConsoleLogsPage() {
                 return (
                   <tr key={row.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-xs tabular-nums text-gray-500 whitespace-nowrap">
-                      {row.createdAt.toLocaleString("ko-KR")}
+                      {formatKstDateTime(row.createdAt)}
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-800">{row.actorEmail}</td>
                     <td className="px-4 py-3 text-xs text-gray-500">{auditActorTypeLabel(row.actorType)}</td>

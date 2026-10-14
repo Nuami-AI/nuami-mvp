@@ -1,19 +1,9 @@
 import AdminShell from "@/components/admin/AdminShell";
+import { isSuperAdmin } from "@/lib/auth/access";
 import { requireConsoleSession } from "@/lib/auth/page-session";
 import { listUsageAccounts } from "@/lib/auth/accounts";
+import { formatKstDateTime } from "@/lib/datetime";
 import { getAdminUserDetails } from "@/lib/usage/tracker";
-
-function formatDate(date: Date | null): string {
-  if (!date) return "—";
-  return date.toLocaleString("ko-KR", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-}
 
 function CreditBar({ used, limit }: { used: number; limit: number }) {
   const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
@@ -42,10 +32,13 @@ function StatCard({ label, value, sub }: { label: string; value: string | number
 
 export default async function ConsolePage() {
   const session = await requireConsoleSession();
+  const showLastLogin = isSuperAdmin(session.email);
   const accounts = await listUsageAccounts();
   const kindByEmail = Object.fromEntries(accounts.map((row) => [row.email.toLowerCase(), row.kind]));
   const testerEmails = accounts.map((row) => row.email);
-  const users = await getAdminUserDetails(testerEmails);
+  const users = (await getAdminUserDetails(testerEmails)).map((user) =>
+    showLastLogin ? user : { ...user, lastLoginAt: null },
+  );
 
   const totalUse = users.reduce((s, u) => s + u.video_ai_use, 0);
   const totalPaywall = users.reduce((s, u) => s + u.paywall_shown, 0);
@@ -73,6 +66,9 @@ export default async function ConsolePage() {
               <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">구분</th>
               <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">가입일</th>
               <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">마지막 사용</th>
+              {showLastLogin ? (
+                <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">마지막 로그인</th>
+              ) : null}
               <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">크래딧</th>
               <th className="px-4 py-3 text-center text-[11px] font-semibold text-gray-400 uppercase tracking-wide">페이월 노출</th>
               <th className="px-4 py-3 text-center text-[11px] font-semibold text-gray-400 uppercase tracking-wide">CTA 클릭</th>
@@ -82,7 +78,7 @@ export default async function ConsolePage() {
           <tbody className="divide-y divide-gray-100">
             {users.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-10 text-center text-sm text-gray-400">
+                <td colSpan={showLastLogin ? 9 : 8} className="px-4 py-10 text-center text-sm text-gray-400">
                   등록된 이용자가 없습니다.
                 </td>
               </tr>
@@ -96,11 +92,16 @@ export default async function ConsolePage() {
                   <KindBadge kind={kindByEmail[u.email.toLowerCase()] ?? "end"} />
                 </td>
                 <td className="px-4 py-3 text-xs text-gray-500 tabular-nums">
-                  {formatDate(u.firstSeenAt)}
+                  {formatKstDateTime(u.firstSeenAt)}
                 </td>
                 <td className="px-4 py-3 text-xs text-gray-500 tabular-nums">
-                  {formatDate(u.lastSeenAt)}
+                  {formatKstDateTime(u.lastSeenAt)}
                 </td>
+                {showLastLogin ? (
+                  <td className="px-4 py-3 text-xs text-gray-500 tabular-nums">
+                    {formatKstDateTime(u.lastLoginAt)}
+                  </td>
+                ) : null}
                 <td className="px-4 py-3">
                   <CreditBar used={u.creditsUsed} limit={u.creditsLimit} />
                 </td>
@@ -122,7 +123,14 @@ export default async function ConsolePage() {
   );
 }
 
-function KindBadge({ kind }: { kind: "org" | "end" }) {
+function KindBadge({ kind }: { kind: "org" | "end" | "console" }) {
+  if (kind === "console") {
+    return (
+      <span className="inline-flex rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-800">
+        콘솔
+      </span>
+    );
+  }
   if (kind === "org") {
     return (
       <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">

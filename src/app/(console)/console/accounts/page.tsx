@@ -23,6 +23,7 @@ export default async function ConsoleAccountsPage() {
         passwordMustChange: true,
         isTest: true,
         creditsLimit: true,
+        lastLoginAt: true,
         createdAt: true,
       },
       orderBy: { createdAt: "asc" },
@@ -74,6 +75,7 @@ export default async function ConsoleAccountsPage() {
       isTest: row.isTest,
       creditsUsed: usedByEmail.get(key) ?? 0,
       creditsLimit: resolveCreditsLimit(row.creditsLimit),
+      lastLoginAt: row.lastLoginAt?.toISOString() ?? null,
       createdAt: row.createdAt.toISOString(),
     };
   });
@@ -91,6 +93,7 @@ export default async function ConsoleAccountsPage() {
         protectedEmail={SUPER_ADMIN_EMAIL}
         institutions={INSTITUTION_CATALOG.map((row) => ({ id: row.id, nameKo: row.nameKo }))}
         defaultCredits={defaultCreditsLimit()}
+        showLastLogin={isSuperAdmin(session.email)}
       />
     </AdminShell>
   );

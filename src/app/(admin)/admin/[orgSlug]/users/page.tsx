@@ -5,6 +5,7 @@ import InstitutionShell from "@/components/admin/InstitutionShell";
 import { hasOrgPermission, maskEmail } from "@/lib/auth/access";
 import { resolveOrgAccess } from "@/lib/auth/page-session";
 import { listActiveEndUsersByOrganization } from "@/lib/auth/tenant";
+import { formatKstDate } from "@/lib/datetime";
 import { institutionAdminPath } from "@/lib/institution/catalog";
 import { getAdminUserDetails } from "@/lib/usage/tracker";
 
@@ -60,10 +61,10 @@ export default async function InstitutionUsersPage({
                       </Link>
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-500">
-                      {row.joinedAt.toLocaleDateString("ko-KR")}
+                      {formatKstDate(row.joinedAt)}
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-500">
-                      {usage?.lastSeenAt ? usage.lastSeenAt.toLocaleDateString("ko-KR") : "—"}
+                      {formatKstDate(usage?.lastSeenAt)}
                     </td>
                     <td className="px-4 py-3 text-center text-xs tabular-nums">{usage?.video_ai_use ?? 0}</td>
                   </tr>

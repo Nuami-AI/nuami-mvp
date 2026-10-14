@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { formatKstDateTime } from "@/lib/datetime";
 import { KNOWLEDGE_CATEGORY_LABEL, type KnowledgeCategory } from "@/lib/institution/catalog";
 
 interface InstitutionRow {
@@ -81,13 +82,7 @@ function categoryLabel(category: string): string {
 }
 
 function formatWhen(value?: string): string {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("ko-KR", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
+  return formatKstDateTime(value, "");
 }
 
 function originLabel(row: KnowledgeRow): string {

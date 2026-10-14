@@ -1,5 +1,6 @@
 "use client";
 
+import { formatKstCompact } from "@/lib/datetime";
 import { VIDEO_RESEARCH_TOPICS } from "@/lib/shopping/video-research";
 import { scopedStorageKey } from "@/lib/user/storage-scope";
 import type { ExtractionResult } from "@/types/extraction";
@@ -204,14 +205,5 @@ export function loadLinkListHistory(): HistoryLinkListEntry[] {
 }
 
 export function formatHistoryDate(iso: string): string {
-  try {
-    return new Intl.DateTimeFormat("ko-KR", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(iso));
-  } catch {
-    return "";
-  }
+  return formatKstCompact(iso);
 }

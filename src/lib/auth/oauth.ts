@@ -313,6 +313,10 @@ export async function redirectWithAppSession(
   role: "admin" | "tester",
   redirectTo: string,
 ) {
+  await prisma.authUser.update({
+    where: { email: email.toLowerCase() },
+    data: { lastLoginAt: new Date() },
+  }).catch(() => {});
   const token = await createSession(email, role);
   const dest = safeAppRedirect(redirectTo);
   const response = NextResponse.redirect(new URL(dest, `${publicOrigin(request)}/`), 303);

@@ -276,12 +276,13 @@ export async function loginAccount(email: string, password: string): Promise<Log
   if (!verifyPassword(password, user.passwordHash)) return { ok: false, reason: "wrong_password" };
   const usingTempPassword = verifyPassword(TEMP_ORG_PASSWORD, user.passwordHash);
   const mustChangePassword = user.passwordMustChange && !user.isTest && usingTempPassword;
-  if (user.passwordMustChange && !mustChangePassword) {
-    await prisma.authUser.update({
-      where: { email: normalized },
-      data: { passwordMustChange: false },
-    });
-  }
+  await prisma.authUser.update({
+    where: { email: normalized },
+    data: {
+      lastLoginAt: new Date(),
+      ...(user.passwordMustChange && !mustChangePassword ? { passwordMustChange: false } : {}),
+    },
+  });
   return {
     ok: true,
     account: { email: user.email, role: sessionRoleOf(user.accountType) },
@@ -294,7 +295,7 @@ export async function listAppUserEmails(): Promise<string[]> {
   return rows.map((row) => row.email);
 }
 
-export type UsageAccountKind = "org" | "end";
+export type UsageAccountKind = "org" | "end" | "console";
 
 /** AuthUser 타입이 비어 있어도, 기관 멤버십이 있으면 기관 계정으로 봅니다. */
 export function accountKindOf(accountType: string, hasOrgStaff: boolean): "console" | "org" | "end" {
@@ -324,7 +325,6 @@ export async function healOrgStaffAccountTypes(): Promise<void> {
 export async function listUsageAccounts(): Promise<Array<{ email: string; kind: UsageAccountKind }>> {
   await healOrgStaffAccountTypes();
   const users = await prisma.authUser.findMany({
-    where: { status: "ACTIVE", accountType: { not: "INTERNAL" } },
     select: { email: true, accountType: true },
     orderBy: { createdAt: "asc" },
   });
@@ -332,6 +332,6 @@ export async function listUsageAccounts(): Promise<Array<{ email: string; kind: 
   const staffEmails = await activeOrgStaffEmails();
   return users.map((row) => ({
     email: row.email,
-    kind: accountKindOf(row.accountType, staffEmails.has(row.email.toLowerCase())) === "org" ? "org" : "end",
+    kind: accountKindOf(row.accountType, staffEmails.has(row.email.toLowerCase())),
   }));
 }
