@@ -114,10 +114,17 @@ async function main() {
       !(await orgStaffMayAccess(staffA, KOREA, "dashboard")),
     );
 
+    const { isMockVerifiedStudentId, isVerifiedStudentId } = await import("../src/lib/institution/verify");
+    assert("학교 목업 학번", isMockVerifiedStudentId("korea1234", "korea-university"));
+    assert("일반 계정 nuami 학번 불가", !isVerifiedStudentId("nuami", "korea-university"));
+    assert("콘솔 계정 nuami 학번 가능", isVerifiedStudentId("nuami", "korea-university", { allowConsoleBypass: true }));
+    assert("콘솔이어도 임의 학번 불가", !isVerifiedStudentId("nope", "korea-university", { allowConsoleBypass: true }));
+
     assert("이메일 마스킹", maskEmail("jay@nuami.kr") === "j***@nuami.kr");
     assert("슈퍼어드민 이메일", isSuperAdmin("admin@nuami.kr"));
     assert("슈퍼어드민만 기관+콘솔", canAccessInstitutionAdmin({ email: "admin@nuami.kr", role: "admin", hasOrgMembership: false }));
-    assert("콘솔 접근자는 기관 어드민 불가", !canAccessInstitutionAdmin({ email: "ops@nuami.kr", role: "admin", hasOrgMembership: false }));
+    assert("콘솔 접근자는 기관 없이 기관 어드민 불가", !canAccessInstitutionAdmin({ email: "ops@nuami.kr", role: "admin", hasOrgMembership: false }));
+    assert("콘솔+기관은 기관 어드민 가능", canAccessInstitutionAdmin({ email: "ops@nuami.kr", role: "admin", hasOrgMembership: true }));
     assert("엔드유저는 기관 어드민 불가", !canAccessInstitutionAdmin({ email: "jay@nuami.kr", role: "tester", hasOrgMembership: false }));
     assert("기관계정은 기관 어드민 가능", canAccessInstitutionAdmin({ email: "staff@uni.ac.kr", role: "tester", hasOrgMembership: true }));
     assert("A기관 사용자 상세는 A기관 id로만", Boolean(await getActiveEndUserInOrganization(endA.id, KOREA)));

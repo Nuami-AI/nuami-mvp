@@ -1,10 +1,11 @@
 import AdminShell from "@/components/admin/AdminShell";
-import { requireConsoleSession } from "@/lib/auth/page-session";
+import { auditActionLabel, auditActorTypeLabel } from "@/lib/auth/audit-labels";
+import { requireSuperAdminSession } from "@/lib/auth/page-session";
 import { getInstitution } from "@/lib/institution/catalog";
 import { prisma } from "@/lib/db";
 
 export default async function ConsoleLogsPage() {
-  const session = await requireConsoleSession();
+  const session = await requireSuperAdminSession();
   const rows = await prisma.auditLog.findMany({
     orderBy: { createdAt: "desc" },
     take: 200,
@@ -44,8 +45,8 @@ export default async function ConsoleLogsPage() {
                       {row.createdAt.toLocaleString("ko-KR")}
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-800">{row.actorEmail}</td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{row.actorType}</td>
-                    <td className="px-4 py-3 text-xs font-medium text-gray-800">{row.action}</td>
+                    <td className="px-4 py-3 text-xs text-gray-500">{auditActorTypeLabel(row.actorType)}</td>
+                    <td className="px-4 py-3 text-xs font-medium text-gray-800">{auditActionLabel(row.action)}</td>
                     <td className="px-4 py-3 text-xs text-gray-500">
                       {org ? org.nameKo : row.organizationId ?? "—"}
                       {row.resourceId ? ` · ${row.resourceId}` : ""}

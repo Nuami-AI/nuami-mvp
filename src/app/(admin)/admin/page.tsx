@@ -9,11 +9,11 @@ export default async function InstitutionAdminIndexPage() {
   const session = await getSessionFromCookies();
   if (!session) redirect("/admin/login?redirect=/admin");
   if (session.mustChangePassword) redirect("/admin/password");
-  if (isInternalAccount(session.role) && !isSuperAdmin(session.email)) {
-    redirect("/console/organizations");
-  }
 
   const orgs = await listSessionOrganizations(session);
+  if (orgs.length === 0 && isInternalAccount(session.role) && !isSuperAdmin(session.email)) {
+    redirect("/console/organizations");
+  }
 
   if (orgs.length === 1) {
     redirect(institutionAdminPath(orgs[0]));

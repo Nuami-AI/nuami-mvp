@@ -14,6 +14,14 @@ export type UsageAction =
 
 const USAGE_LIMIT = parseInt(process.env.USAGE_LIMIT ?? "100", 10);
 
+export function defaultCreditsLimit(): number {
+  return Number.isFinite(USAGE_LIMIT) && USAGE_LIMIT > 0 ? USAGE_LIMIT : 100;
+}
+
+export function resolveCreditsLimit(stored: number | null | undefined): number {
+  return stored != null && stored > 0 ? stored : defaultCreditsLimit();
+}
+
 export async function getCount(userEmail: string, action: UsageAction): Promise<number> {
   return prisma.usageEvent.count({
     where: { userEmail, action },
@@ -42,13 +50,18 @@ export interface GateResult {
 }
 
 export async function checkGate(userEmail: string): Promise<GateResult> {
-  const [used, bonusCount] = await Promise.all([
+  const [used, bonusCount, user] = await Promise.all([
     getCount(userEmail, "video_ai_use"),
     getCount(userEmail, "guide_bonus_claimed"),
+    prisma.authUser.findUnique({ where: { email: userEmail }, select: { creditsLimit: true } }),
   ]);
-  const effectiveLimit = USAGE_LIMIT + bonusCount * 2;
+  const effectiveLimit = resolveCreditsLimit(user?.creditsLimit) + bonusCount * 2;
   const allowed = used < effectiveLimit;
   return { allowed, used, limit: effectiveLimit, remaining: Math.max(0, effectiveLimit - used) };
+}
+
+export async function resetCreditsUsed(userEmail: string): Promise<void> {
+  await prisma.usageEvent.deleteMany({ where: { userEmail, action: "video_ai_use" } });
 }
 
 export async function claimGuideBonus(
@@ -118,20 +131,23 @@ export async function getAdminUserDetails(emails: string[]): Promise<AdminUserDe
     where: { userEmail: { in: emails } },
     _count: { id: true },
   });
-  const firstEvents = await prisma.usageEvent.findMany({
+  const usageWindows = await prisma.usageEvent.groupBy({
+    by: ["userEmail"],
     where: { userEmail: { in: emails } },
-    orderBy: { createdAt: "asc" },
-    distinct: ["userEmail"],
-    select: { userEmail: true, createdAt: true },
+    _max: { createdAt: true },
   });
-  const lastEvents = await prisma.usageEvent.findMany({
-    where: { userEmail: { in: emails } },
-    orderBy: { createdAt: "desc" },
-    distinct: ["userEmail"],
-    select: { userEmail: true, createdAt: true },
+  const creditRows = await prisma.authUser.findMany({
+    where: { email: { in: emails } },
+    select: { email: true, creditsLimit: true, createdAt: true },
   });
+  const creditsByEmail = new Map(creditRows.map((row) => [row.email.toLowerCase(), row.creditsLimit]));
+  const joinedByEmail = new Map(creditRows.map((row) => [row.email.toLowerCase(), row.createdAt]));
+  const lastUsedByEmail = new Map(
+    usageWindows.map((row) => [row.userEmail.toLowerCase(), row._max.createdAt ?? null]),
+  );
 
   return emails.map((email) => {
+    const key = email.toLowerCase();
     const stat: TesterStats = {
       email,
       video_ai_use: 0,
@@ -140,19 +156,21 @@ export async function getAdminUserDetails(emails: string[]): Promise<AdminUserDe
       paywall_dismiss: 0,
     };
     for (const action of actions) {
-      const row = rows.find((r: { userEmail: string; action: string; _count: { id: number } }) => r.userEmail === email && r.action === action);
+      const row = rows.find(
+        (r: { userEmail: string; action: string; _count: { id: number } }) =>
+          r.userEmail.toLowerCase() === key && r.action === action,
+      );
       if (row) stat[action] = row._count.id;
     }
-    const firstSeenAt = firstEvents.find((e: { userEmail: string; createdAt: Date }) => e.userEmail === email)?.createdAt ?? null;
-    const lastSeenAt = lastEvents.find((e: { userEmail: string; createdAt: Date }) => e.userEmail === email)?.createdAt ?? null;
     const creditsUsed = stat.video_ai_use;
+    const creditsLimit = resolveCreditsLimit(creditsByEmail.get(key));
     return {
       ...stat,
-      firstSeenAt,
-      lastSeenAt,
+      firstSeenAt: joinedByEmail.get(key) ?? null,
+      lastSeenAt: lastUsedByEmail.get(key) ?? null,
       creditsUsed,
-      creditsLimit: USAGE_LIMIT,
-      creditsRemaining: Math.max(0, USAGE_LIMIT - creditsUsed),
+      creditsLimit,
+      creditsRemaining: Math.max(0, creditsLimit - creditsUsed),
     };
   });
 }

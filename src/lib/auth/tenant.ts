@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 import { hasOrgPermission, isSuperAdmin, type OrgPermission } from "@/lib/auth/access";
-import { getInstitution, organizationSlugOf } from "@/lib/institution/catalog";
+import { getInstitution, NUAMI_ORG_ID, organizationSlugOf } from "@/lib/institution/catalog";
 
 export async function getActiveStaffMembership(email: string, organizationId: string) {
   return prisma.organizationMember.findFirst({
@@ -19,6 +19,11 @@ export async function listActiveStaffOrganizations(email: string) {
   });
 }
 
+export async function hasNuamiOrgAccess(email: string): Promise<boolean> {
+  const member = await getActiveStaffMembership(email, NUAMI_ORG_ID);
+  return Boolean(member);
+}
+
 export async function hasInactiveStaffMembership(email: string): Promise<boolean> {
   const row = await prisma.organizationMember.findFirst({
     where: { email: email.toLowerCase(), status: "INACTIVE" },
@@ -28,7 +33,7 @@ export async function hasInactiveStaffMembership(email: string): Promise<boolean
 }
 
 export async function adminLandingPath(email: string): Promise<string> {
-  if (isSuperAdmin(email)) return "/admin";
+  if (isSuperAdmin(email) || (await hasNuamiOrgAccess(email))) return "/admin";
   const memberships = await listActiveStaffOrganizations(email);
   if (memberships.length === 1) {
     const org = getInstitution(memberships[0].organizationId);

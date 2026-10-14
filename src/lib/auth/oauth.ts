@@ -277,16 +277,19 @@ export async function upsertSocialUser(provider: OAuthProvider, profile: SocialP
   });
   if (byProvider) {
     if (byProvider.status !== "ACTIVE") {
-      await prisma.authUser.update({ where: { id: byProvider.id }, data: { status: "ACTIVE" } });
+      throw new Error("ACCOUNT_INACTIVE");
     }
     return { email: byProvider.email, role: sessionRoleOf(byProvider.accountType) };
   }
 
   const byEmail = await prisma.authUser.findUnique({ where: { email } });
   if (byEmail) {
+    if (byEmail.status !== "ACTIVE") {
+      throw new Error("ACCOUNT_INACTIVE");
+    }
     await prisma.authUser.update({
       where: { id: byEmail.id },
-      data: { provider, providerAccountId: profile.id, status: "ACTIVE" },
+      data: { provider, providerAccountId: profile.id },
     });
     return { email: byEmail.email, role: sessionRoleOf(byEmail.accountType) };
   }

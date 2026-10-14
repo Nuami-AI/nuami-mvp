@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLanguage } from "@/lib/i18n";
 import { INSTITUTION_CATALOG, institutionLogoSrc } from "@/lib/institution/catalog";
-import { isMockVerifiedStudentId } from "@/lib/institution/verify";
 import { loadPreferences, savePreferences } from "@/lib/user/preferences";
 
 interface InstitutionOption {
@@ -74,6 +73,7 @@ export default function UniversityAffiliation({ mode = "modal" }: Props) {
   const [studentId, setStudentId] = useState("");
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [verified, setVerified] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
     if (mode === "settings") {
@@ -144,30 +144,38 @@ export default function UniversityAffiliation({ mode = "modal" }: Props) {
     setStep("verify");
   };
 
-  const submitStudentId = () => {
+  const submitStudentId = async () => {
     const row = selectedRow;
-    if (!row) return;
-    if (isMockVerifiedStudentId(studentId, row.id)) {
-      persist({
-        universityId: row.id,
-        universityName: row.nameKo,
-        universityAsked: true,
-        universityVerified: true,
-      });
-      void fetch("/api/me/affiliation", {
+    if (!row || verifying) return;
+    setVerifying(true);
+    setVerifyError(null);
+    try {
+      const res = await fetch("/api/me/affiliation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ organizationId: row.id }),
+        body: JSON.stringify({ organizationId: row.id, studentId }),
       });
-      setVerified(true);
-      setVerifyError(null);
-      if (mode === "modal") setOpen(false);
-      return;
+      if (res.ok) {
+        persist({
+          universityId: row.id,
+          universityName: row.nameKo,
+          universityAsked: true,
+          universityVerified: true,
+        });
+        setVerified(true);
+        if (mode === "modal") setOpen(false);
+        return;
+      }
+      persist({ universityId: null, universityName: null, universityAsked: true, universityVerified: false });
+      void fetch("/api/me/affiliation", { method: "DELETE" });
+      setVerified(false);
+      setVerifyError(t("affiliation.verifyFail"));
+    } catch {
+      setVerified(false);
+      setVerifyError(t("affiliation.verifyFail"));
+    } finally {
+      setVerifying(false);
     }
-    persist({ universityId: null, universityName: null, universityAsked: true, universityVerified: false });
-    void fetch("/api/me/affiliation", { method: "DELETE" });
-    setVerified(false);
-    setVerifyError(t("affiliation.verifyFail"));
   };
 
   if (!open) return null;
@@ -261,7 +269,7 @@ export default function UniversityAffiliation({ mode = "modal" }: Props) {
                   setVerifyError(null);
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") submitStudentId();
+                  if (e.key === "Enter") void submitStudentId();
                 }}
                 placeholder={t("affiliation.studentIdPlaceholder")}
                 autoCapitalize="none"
@@ -276,8 +284,8 @@ export default function UniversityAffiliation({ mode = "modal" }: Props) {
               )}
               <button
                 type="button"
-                disabled={!studentId.trim()}
-                onClick={submitStudentId}
+                disabled={!studentId.trim() || verifying}
+                onClick={() => void submitStudentId()}
                 className="w-full rounded-xl bg-accent-700 py-3 text-[14px] font-semibold text-white disabled:opacity-50"
               >
                 {t("affiliation.verifyCta")}

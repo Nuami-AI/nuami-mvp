@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { isInternalAccount, isSuperAdmin, staffCan, type OrgPermission } from "@/lib/auth/access";
-import { getActiveStaffMembership, listActiveStaffOrganizations, writeAudit } from "@/lib/auth/tenant";
+import { getActiveStaffMembership, hasNuamiOrgAccess, listActiveStaffOrganizations, writeAudit } from "@/lib/auth/tenant";
+import { isNuamiOrganization } from "@/lib/institution/catalog";
 import { getSessionFromRequest, type SessionPayload } from "@/lib/auth/session";
 
 const FORBIDDEN = NextResponse.json({ error: "FORBIDDEN", message: "접근 권한이 없습니다." }, { status: 403 });
@@ -37,7 +38,10 @@ export async function requireOrgAccess(
   const mapped: OrgPermission =
     permission === "write" ? "content.write" : permission === "read" ? "content.read" : permission;
 
-  if (isSuperAdmin(session.email)) {
+  if (isSuperAdmin(session.email) || (await hasNuamiOrgAccess(session.email))) {
+    if (isNuamiOrganization(organizationId)) {
+      return { session: null, membershipRole: null, error: FORBIDDEN };
+    }
     await writeAudit({
       actorEmail: session.email,
       actorType: "INTERNAL",
@@ -45,9 +49,16 @@ export async function requireOrgAccess(
       action: "org.access",
       resourceType: "organization",
       resourceId: organizationId,
-      metadata: { permission: mapped, via: "super-admin" },
+      metadata: {
+        permission: mapped,
+        via: isSuperAdmin(session.email) ? "super-admin" : "nuami-org",
+      },
     }).catch(() => {});
-    return { session, membershipRole: "NUAMI_SUPER_ADMIN", error: null };
+    return {
+      session,
+      membershipRole: isSuperAdmin(session.email) ? "NUAMI_SUPER_ADMIN" : "ORG_ADMIN",
+      error: null,
+    };
   }
 
   const member = await getActiveStaffMembership(session.email, organizationId);
@@ -58,7 +69,7 @@ export async function requireOrgAccess(
 }
 
 export async function listAccessibleOrganizationIds(session: SessionPayload): Promise<string[] | "all"> {
-  if (isSuperAdmin(session.email)) return "all";
+  if (isSuperAdmin(session.email) || (await hasNuamiOrgAccess(session.email))) return "all";
   const rows = await listActiveStaffOrganizations(session.email);
   return rows.map((row) => row.organizationId);
 }

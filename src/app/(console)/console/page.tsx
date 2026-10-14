@@ -5,10 +5,13 @@ import { getAdminUserDetails } from "@/lib/usage/tracker";
 
 function formatDate(date: Date | null): string {
   if (!date) return "—";
-  return date.toLocaleDateString("ko-KR", {
+  return date.toLocaleString("ko-KR", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
   });
 }
 

@@ -33,8 +33,8 @@ export default function InstitutionShell({
   const base = institutionAdminPath(institution);
   const canMembers = hasOrgPermission(membershipRole, "users.write");
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <aside className="w-52 shrink-0 flex flex-col border-r border-gray-200 bg-white">
+    <div className="flex h-svh overflow-hidden bg-gray-50">
+      <aside className="flex h-full w-52 shrink-0 flex-col border-r border-gray-200 bg-white">
         <div className="px-5 py-5 border-b border-gray-100">
           <Link href={base} className="inline-flex items-center gap-2.5">
             <img
@@ -58,7 +58,7 @@ export default function InstitutionShell({
           </Link>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-0.5">
+        <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4 space-y-0.5">
           <SidebarItem href={base} label="대시보드" active={active === "dashboard"} />
           <SidebarItem href={`${base}/content`} label="콘텐츠" active={active === "content"} />
           <SidebarItem href={`${base}/knowledge`} label="안내 지식" active={active === "knowledge"} />
@@ -87,15 +87,13 @@ export default function InstitutionShell({
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto">
-        <div className="px-8 py-7">
-          <div className="mb-6">
-            <h1 className="text-xl font-bold text-gray-900">{title}</h1>
-            <p className="mt-0.5 text-sm text-gray-400">{subtitle}</p>
-          </div>
-          {children}
-        </div>
-      </main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="flex h-[120px] shrink-0 flex-col justify-center border-b border-gray-200 bg-white px-8">
+          <h1 className="truncate text-xl font-bold text-gray-900">{title}</h1>
+          <p className="mt-0.5 truncate text-sm text-gray-400">{subtitle}</p>
+        </header>
+        <main className="min-h-0 flex-1 overflow-auto px-8 py-6">{children}</main>
+      </div>
     </div>
   );
 }

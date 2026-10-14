@@ -1,10 +1,11 @@
 import AdminShell from "@/components/admin/AdminShell";
 import { ConsoleAccountsPanel } from "@/components/console/ConsoleAccountsPanel";
-import { isSuperAdmin } from "@/lib/auth/access";
-import { accountKindOf, healOrgStaffAccountTypes } from "@/lib/auth/accounts";
+import { isSuperAdmin, SUPER_ADMIN_EMAIL } from "@/lib/auth/access";
+import { accountKindOf, healOrgStaffAccountTypes, kindsOfAccount } from "@/lib/auth/accounts";
 import { requireConsoleSession } from "@/lib/auth/page-session";
-import { getInstitution } from "@/lib/institution/catalog";
+import { INSTITUTION_CATALOG, getInstitution, institutionLogoSrc } from "@/lib/institution/catalog";
 import { prisma } from "@/lib/db";
+import { defaultCreditsLimit, resolveCreditsLimit } from "@/lib/usage/tracker";
 import { redirect } from "next/navigation";
 
 export default async function ConsoleAccountsPage() {
@@ -12,7 +13,7 @@ export default async function ConsoleAccountsPage() {
   if (!isSuperAdmin(session.email)) redirect("/console");
   await healOrgStaffAccountTypes();
 
-  const [rows, members] = await Promise.all([
+  const [rows, members, usage] = await Promise.all([
     prisma.authUser.findMany({
       select: {
         email: true,
@@ -20,6 +21,8 @@ export default async function ConsoleAccountsPage() {
         status: true,
         provider: true,
         passwordMustChange: true,
+        isTest: true,
+        creditsLimit: true,
         createdAt: true,
       },
       orderBy: { createdAt: "asc" },
@@ -28,25 +31,49 @@ export default async function ConsoleAccountsPage() {
       where: { status: "ACTIVE" },
       select: { email: true, organizationId: true },
     }),
+    prisma.usageEvent.groupBy({
+      by: ["userEmail"],
+      where: { action: "video_ai_use" },
+      _count: { id: true },
+    }),
   ]);
 
-  const orgsByEmail = new Map<string, string[]>();
+  const orgsByEmail = new Map<string, Array<{ id: string; nameKo: string; logoSrc: string }>>();
+  const orgIdByEmail = new Map<string, string>();
   for (const member of members) {
-    const name = getInstitution(member.organizationId)?.nameKo ?? member.organizationId;
+    const org = getInstitution(member.organizationId);
     const list = orgsByEmail.get(member.email.toLowerCase()) ?? [];
-    list.push(name);
+    list.push({
+      id: member.organizationId,
+      nameKo: org?.nameKo ?? member.organizationId,
+      logoSrc: org ? institutionLogoSrc(org.city, org.logoFile ?? org.id) : "",
+    });
     orgsByEmail.set(member.email.toLowerCase(), list);
+    if (!orgIdByEmail.has(member.email.toLowerCase())) {
+      orgIdByEmail.set(member.email.toLowerCase(), member.organizationId);
+    }
   }
+  const usedByEmail = new Map(usage.map((row) => [row.userEmail.toLowerCase(), row._count.id]));
 
   const accounts = rows.map((row) => {
-    const orgs = orgsByEmail.get(row.email.toLowerCase()) ?? [];
+    const key = row.email.toLowerCase();
+    const orgs = orgsByEmail.get(key) ?? [];
+    const accountType = (row.accountType === "ORG_STAFF" || row.accountType === "INTERNAL"
+      ? row.accountType
+      : "END_USER") as "END_USER" | "ORG_STAFF" | "INTERNAL";
     return {
       email: row.email,
       kind: accountKindOf(row.accountType, orgs.length > 0),
+      kinds: kindsOfAccount(row.accountType, orgs.length > 0),
+      accountType,
       orgs,
+      organizationId: orgIdByEmail.get(key) ?? "",
       status: row.status,
       provider: row.provider ?? "",
       passwordMustChange: row.passwordMustChange,
+      isTest: row.isTest,
+      creditsUsed: usedByEmail.get(key) ?? 0,
+      creditsLimit: resolveCreditsLimit(row.creditsLimit),
       createdAt: row.createdAt.toISOString(),
     };
   });
@@ -56,9 +83,15 @@ export default async function ConsoleAccountsPage() {
       email={session.email}
       active="accounts"
       title="전체 계정"
-      subtitle="기관 담당자와 이용자를 구분합니다. 비밀번호는 1234로 초기화할 수 있습니다."
+      subtitle="슈퍼 어드민만 계정을 추가·수정·삭제하고 크레딧을 바꿀 수 있습니다."
     >
-      <ConsoleAccountsPanel rows={accounts} />
+      <ConsoleAccountsPanel
+        rows={accounts}
+        actorEmail={session.email}
+        protectedEmail={SUPER_ADMIN_EMAIL}
+        institutions={INSTITUTION_CATALOG.map((row) => ({ id: row.id, nameKo: row.nameKo }))}
+        defaultCredits={defaultCreditsLimit()}
+      />
     </AdminShell>
   );
 }

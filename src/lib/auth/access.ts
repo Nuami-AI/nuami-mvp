@@ -30,14 +30,13 @@ export function canAccessConsole(role: SessionRole | string | null | undefined):
   return isInternalAccount(role);
 }
 
-/** admin.nuami.kr — 기관 담당자 + admin@nuami.kr. 일반 콘솔 접근자·엔드유저 불가. */
+/** admin.nuami.kr — 기관 멤버십이 있는 계정 + admin@nuami.kr. */
 export function canAccessInstitutionAdmin(input: {
   email: string;
   role: SessionRole | string | null | undefined;
   hasOrgMembership: boolean;
 }): boolean {
   if (isSuperAdmin(input.email)) return true;
-  if (isInternalAccount(input.role)) return false;
   return input.hasOrgMembership;
 }
 

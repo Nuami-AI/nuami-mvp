@@ -31,7 +31,10 @@ export async function GET(
     const profile = await exchangeOAuth(provider, code, request, nonce);
     const account = await upsertSocialUser(provider, profile);
     return redirectWithAppSession(request, account.email, account.role, stored.redirect);
-  } catch {
+  } catch (err) {
+    if (err instanceof Error && err.message === "ACCOUNT_INACTIVE") {
+      return oauthFail(request, "ACCOUNT_INACTIVE");
+    }
     return oauthFail(request, "OAUTH_FAILED");
   }
 }

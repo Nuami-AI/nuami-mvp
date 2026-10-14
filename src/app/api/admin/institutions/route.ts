@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/lib/auth/session";
 import { listAccessibleOrganizationIds } from "@/lib/auth/require-admin";
 import { prisma } from "@/lib/db";
-import { INSTITUTION_CATALOG } from "@/lib/institution/catalog";
+import { schoolInstitutions } from "@/lib/institution/catalog";
 import { ensureInstitutions } from "@/lib/institution/seed";
 
 export const runtime = "nodejs";
@@ -40,9 +40,10 @@ export async function GET(request: Request): Promise<Response> {
     knowledgeCounts.map((row) => [row.institutionId, row._count._all]),
   );
 
+  const catalog = schoolInstitutions();
   const rows = access === "all"
-    ? INSTITUTION_CATALOG
-    : INSTITUTION_CATALOG.filter((row) => access.includes(row.id));
+    ? catalog
+    : catalog.filter((row) => access.includes(row.id));
 
   return NextResponse.json({
     institutions: rows.map((row) => ({

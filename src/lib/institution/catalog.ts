@@ -17,12 +17,23 @@ export const CITY_DIR: Record<string, string> = {
   부산: "busan",
 };
 
+export const NUAMI_ORG_ID = "nuami";
+
+export function isNuamiOrganization(id: string | null | undefined): boolean {
+  return (id ?? "").trim().toLowerCase() === NUAMI_ORG_ID;
+}
+
 export function institutionLogoSrc(city: string, logoFile: string): string {
+  if (logoFile === NUAMI_ORG_ID || isNuamiOrganization(city)) {
+    return "/brand/nuami-logo-color.svg";
+  }
   const dir = CITY_DIR[city] ?? city.toLowerCase();
   return `/university/${dir}/${logoFile}.svg`;
 }
 
 export const INSTITUTION_CATALOG: InstitutionSeed[] = [
+  { id: NUAMI_ORG_ID, nameKo: "뉴아미", nameEn: "NUAMI", aliases: ["nuami", "nüami"], city: "전국", type: "support-org", logoFile: "nuami" },
+
   // ── 서울 ──────────────────────────────────────────────────────────────────
   { id: "korea-university",    nameKo: "고려대학교",     nameEn: "Korea University",                aliases: ["고려대", "KU"],           city: "서울", type: "university", logoFile: "korea-university" },
   { id: "yonsei-university",   nameKo: "연세대학교",     nameEn: "Yonsei University",               aliases: ["연세대"],                  city: "서울", type: "university", logoFile: "yonsei-university" },
@@ -102,6 +113,11 @@ export function parseJsonArray(raw: string | null | undefined): string[] {
 
 export function getInstitution(id: string): InstitutionSeed | undefined {
   return INSTITUTION_CATALOG.find((row) => row.id === id);
+}
+
+/** 학생·기관 어드민에서 고르는 학교 목록. 뉴아미 자체는 제외. */
+export function schoolInstitutions(): InstitutionSeed[] {
+  return INSTITUTION_CATALOG.filter((row) => !isNuamiOrganization(row.id));
 }
 
 /** ASCII slug for /campus/{slug} and /admin/{slug}. Korean names stay aliases only. */

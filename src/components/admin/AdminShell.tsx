@@ -13,7 +13,6 @@ type ConsoleNavId =
   | "assets"
   | "opinions"
   | "opendata"
-  | "operators"
   | "accounts";
 
 interface Props {
@@ -21,16 +20,15 @@ interface Props {
   active: ConsoleNavId;
   title: string;
   subtitle: string;
-  showOperators?: boolean;
+  actions?: React.ReactNode;
   children: React.ReactNode;
 }
 
-export default function AdminShell({ email, active, title, subtitle, showOperators, children }: Props) {
+export default function AdminShell({ email, active, title, subtitle, actions, children }: Props) {
   const superAdmin = isSuperAdmin(email);
-  const operators = showOperators ?? superAdmin;
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <aside className="w-52 shrink-0 flex flex-col border-r border-gray-200 bg-white">
+    <div className="flex h-svh overflow-hidden bg-gray-50">
+      <aside className="flex h-full w-52 shrink-0 flex-col border-r border-gray-200 bg-white">
         <div className="px-5 py-5 border-b border-gray-100">
           <Link href="/console" className="inline-flex">
             <BrandLogo className="h-7" />
@@ -45,10 +43,12 @@ export default function AdminShell({ email, active, title, subtitle, showOperato
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-4">
+        <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4 space-y-4">
           <NavGroup label="운영">
             <SidebarItem href="/console" label="이용 현황" active={active === "users"} />
-            <SidebarItem href="/console/logs" label="로그" active={active === "logs"} />
+            {superAdmin ? (
+              <SidebarItem href="/console/logs" label="로그" active={active === "logs"} />
+            ) : null}
             <SidebarItem href="/console/opendata" label="공공데이터 연동" active={active === "opendata"} />
           </NavGroup>
           <NavGroup label="기관">
@@ -60,10 +60,9 @@ export default function AdminShell({ email, active, title, subtitle, showOperato
             <SidebarItem href="/console/assets" label="지식자료" active={active === "assets"} />
             <SidebarItem href="/console/opinions" label="전문가 의견" active={active === "opinions"} />
           </NavGroup>
-          {operators ? (
+          {superAdmin ? (
             <NavGroup label="계정">
               <SidebarItem href="/console/accounts" label="전체 계정" active={active === "accounts"} />
-              <SidebarItem href="/console/operators" label="콘솔 접근자" active={active === "operators"} />
             </NavGroup>
           ) : null}
         </nav>
@@ -81,15 +80,18 @@ export default function AdminShell({ email, active, title, subtitle, showOperato
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto">
-        <div className="px-8 py-7">
-          <div className="mb-6">
-            <h1 className="text-xl font-bold text-gray-900">{title}</h1>
-            <p className="mt-0.5 text-sm text-gray-400">{subtitle}</p>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="flex h-[120px] shrink-0 items-center justify-between gap-4 border-b border-gray-200 bg-white px-8">
+          <div className="min-w-0">
+            <h1 className="truncate text-xl font-bold text-gray-900">{title}</h1>
+            <p className="mt-0.5 truncate text-sm text-gray-400">{subtitle}</p>
           </div>
-          {children}
-        </div>
-      </main>
+          <div id="admin-shell-actions" className="shrink-0">
+            {actions}
+          </div>
+        </header>
+        <main className="min-h-0 flex-1 overflow-auto px-8 py-6">{children}</main>
+      </div>
     </div>
   );
 }

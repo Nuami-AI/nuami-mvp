@@ -14,6 +14,7 @@ const ERROR_COPY: Record<string, string> = {
   OAUTH_FAILED: "소셜 로그인에 실패했어요. 다시 시도해주세요.",
   OAUTH_DENIED: "로그인이 취소되었어요.",
   PROVIDER_NOT_CONFIGURED: "이 로그인 방식은 아직 준비 중이에요.",
+  ACCOUNT_INACTIVE: "비활성화된 계정입니다.",
 };
 
 const LAST_PROVIDER_KEY = "last-login-provider";

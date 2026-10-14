@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { INSTITUTION_CATALOG } from "./catalog";
+import { getInstitution, INSTITUTION_CATALOG } from "./catalog";
 import { KOREA_UNIVERSITY_SAMPLE } from "./samples";
 
 let seedPromise: Promise<void> | null = null;
@@ -15,6 +15,28 @@ export function ensureInstitutions(): Promise<void> {
     throw error;
   });
   return seedPromise;
+}
+
+/** 카탈로그에 있는 기관 한 건을 DB에 없으면 넣습니다. 계정 발급 시 FK를 맞춥니다. */
+export async function ensureOrganization(id: string): Promise<void> {
+  const row = getInstitution(id);
+  if (!row) return;
+  const exists = await prisma.institution.findUnique({ where: { id }, select: { id: true } });
+  if (exists) return;
+  try {
+    await prisma.institution.create({
+      data: {
+        id: row.id,
+        nameKo: row.nameKo,
+        nameEn: row.nameEn,
+        aliases: JSON.stringify(row.aliases),
+        city: row.city,
+        type: row.type,
+      },
+    });
+  } catch {
+    // 동시에 만든 경우
+  }
 }
 
 async function seedOnce(): Promise<void> {

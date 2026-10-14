@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `AuthUser` ADD COLUMN `isTest` BOOLEAN NOT NULL DEFAULT false;

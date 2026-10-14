@@ -4,7 +4,6 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { COOKIE_NAME, verifySession } from "@/lib/auth/session";
 import { isNuamiOperator } from "@/lib/auth/roles";
-import { isSuperAdmin } from "@/lib/auth/access";
 import {
   hostKind,
   isAppOnlyPath,
@@ -167,19 +166,6 @@ export async function proxy(request: NextRequest) {
           ? "/admin/password"
           : "/password";
     return NextResponse.redirect(new URL(dest, request.url));
-  }
-
-  if (
-    isNuamiOperator(payload.role) &&
-    !isSuperAdmin(payload.email) &&
-    (pathname === "/admin" ||
-      (pathname.startsWith("/admin/") &&
-        pathname !== "/admin/login" &&
-        pathname !== "/admin/denied" &&
-        pathname !== "/admin/join" &&
-        pathname !== "/admin/password"))
-  ) {
-    return NextResponse.redirect(new URL("/console/organizations", request.url));
   }
 
   return NextResponse.next();
