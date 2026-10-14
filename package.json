@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma migrate deploy && next build",
     "start": "next start",
     "lint": "eslint",
+    "db:clone": "tsx --tsconfig tsconfig.json scripts/db-clone-prod-to-dev.ts",
+    "db:migrate": "prisma migrate deploy",
     "test:access": "tsx --tsconfig tsconfig.json scripts/auth-access-check.ts",
     "auth:migrate-env": "tsx --tsconfig tsconfig.json scripts/migrate-env-accounts.ts",
     "auth:list": "tsx --tsconfig tsconfig.json scripts/list-auth-users.ts",
@@ -15,6 +17,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.133.0",
     "@prisma/adapter-mariadb": "^7.7.0",
     "@prisma/client": "^7.7.0",
     "@radix-ui/react-slot": "^1.2.4",
@@ -22,7 +25,7 @@
     "clsx": "^2.1.1",
     "jose": "^6.2.2",
     "next": "16.2.4",
-    "openai": "^6.34.0",
+    "openai": "^6.49.0",
     "prisma": "^7.7.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",

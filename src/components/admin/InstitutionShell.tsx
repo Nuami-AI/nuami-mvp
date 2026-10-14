@@ -33,7 +33,7 @@ export default function InstitutionShell({
   const base = institutionAdminPath(institution);
   const canMembers = hasOrgPermission(membershipRole, "users.write");
   return (
-    <div className="flex h-svh overflow-hidden bg-gray-50">
+    <div className="flex h-svh overflow-hidden bg-gray-50 text-sm">
       <aside className="flex h-full w-52 shrink-0 flex-col border-r border-gray-200 bg-white">
         <div className="px-5 py-5 border-b border-gray-100">
           <Link href={base} className="inline-flex items-center gap-2.5">
@@ -45,7 +45,7 @@ export default function InstitutionShell({
               className="h-10 w-10 shrink-0 object-contain"
             />
             <span className="min-w-0">
-              <span className="block text-sm font-bold leading-tight text-gray-900">{institution.nameKo}</span>
+              <span className="block font-bold leading-tight text-gray-900">{institution.nameKo}</span>
               <span className="mt-0.5 block truncate text-[11px] text-gray-500" title={email}>
                 {email}
               </span>
@@ -89,8 +89,8 @@ export default function InstitutionShell({
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-[120px] shrink-0 flex-col justify-center border-b border-gray-200 bg-white px-8">
-          <h1 className="truncate text-xl font-bold text-gray-900">{title}</h1>
-          <p className="mt-0.5 truncate text-sm text-gray-400">{subtitle}</p>
+          <h1 className="truncate text-base font-bold text-gray-900">{title}</h1>
+          <p className="mt-0.5 truncate text-gray-400">{subtitle}</p>
         </header>
         <main className="min-h-0 flex-1 overflow-auto px-8 py-6">{children}</main>
       </div>
@@ -102,7 +102,7 @@ function SidebarItem({ href, label, active }: { href: string; label: string; act
   return (
     <Link
       href={href}
-      className={`flex items-center rounded-lg px-3 py-2 text-sm transition-colors ${
+      className={`flex items-center rounded-lg px-3 py-2 transition-colors ${
         active
           ? "bg-gray-100 text-gray-900 font-medium"
           : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"

@@ -301,7 +301,7 @@ function SummaryCard({
     <div className="rounded-xl border border-gray-200 bg-white px-4 py-3">
       <p className="text-[11px] font-medium uppercase tracking-wide text-gray-400">{label}</p>
       <p
-        className={`mt-1 text-2xl font-semibold tabular-nums ${
+        className={`mt-1 text-lg font-semibold tabular-nums ${
           tone === "warn" ? "text-amber-700" : tone === "ok" ? "text-emerald-700" : "text-gray-900"
         }`}
       >

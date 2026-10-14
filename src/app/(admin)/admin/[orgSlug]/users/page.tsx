@@ -34,19 +34,19 @@ export default async function InstitutionUsersPage({
       subtitle="이 기관에 소속된 이용자입니다."
     >
       <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-        <table className="w-full text-sm">
+        <table className="admin-table">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase">표시명</th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase">가입</th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase">최근 이용</th>
-              <th className="px-4 py-3 text-center text-[11px] font-semibold text-gray-400 uppercase">이용 횟수</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">표시명</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">가입</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">최근 이용</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400">이용 횟수</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {memberships.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-10 text-center text-sm text-gray-400">
+                <td colSpan={4} className="px-4 py-10 text-center text-gray-400">
                   소속 이용자가 없습니다.
                 </td>
               </tr>
@@ -56,17 +56,17 @@ export default async function InstitutionUsersPage({
                 return (
                   <tr key={row.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
-                      <Link href={`${base}/users/${row.id}`} className="text-sm font-medium text-gray-800">
+                      <Link href={`${base}/users/${row.id}`} className="font-medium text-gray-800">
                         {maskEmail(row.email)}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-500">
+                    <td className="px-4 py-3 tabular-nums text-gray-500">
                       {formatKstDate(row.joinedAt)}
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-500">
+                    <td className="px-4 py-3 tabular-nums text-gray-500">
                       {formatKstDate(usage?.lastSeenAt)}
                     </td>
-                    <td className="px-4 py-3 text-center text-xs tabular-nums">{usage?.video_ai_use ?? 0}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-gray-700">{usage?.video_ai_use ?? 0}</td>
                   </tr>
                 );
               })

@@ -5,6 +5,7 @@ import {
   formatPublishedKnowledgeFacts,
   searchPublishedKnowledge,
 } from "@/lib/console-knowledge/service";
+import { placeNameKey } from "@/lib/geo/place-name";
 import { regionFromCoords } from "@/lib/geo/region";
 import { formatInstitutionFacts, searchInstitutionKnowledge } from "@/lib/institution/search";
 import { learnFromOfficialSourcesOnMiss } from "@/lib/institution/sources";
@@ -33,10 +34,10 @@ function unique(items: string[]): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
   for (const item of items) {
-    const key = item.trim();
+    const key = placeNameKey(item);
     if (!key || seen.has(key)) continue;
     seen.add(key);
-    out.push(key);
+    out.push(item.trim());
   }
   return out;
 }
@@ -196,9 +197,6 @@ export async function runGuidePipeline(input: GuidePipelineInput): Promise<Guide
     },
     sources: [
       ...(reasoned.scenario?.sources ?? []),
-      ...openData.facilities
-        .map((row) => ({ name: `${row.provider} · ${row.dataset}`, url: row.datasetUrl }))
-        .filter((row, idx, arr) => arr.findIndex((item) => item.name === row.name) === idx),
       ...publishedHits.map((hit) => ({
         name: `${hit.providerName} · ${hit.title}`,
         url: hit.sourceUrl ?? undefined,

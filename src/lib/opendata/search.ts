@@ -1,6 +1,12 @@
+import { dedupeByPlaceName } from "@/lib/geo/place-name";
 import { regionFromCoords, type CityRegion, type UserCoords } from "@/lib/geo/region";
 import { fetchNearbyBanks } from "./agencies";
-import { fetchNearbyHospitals, fetchNearbyPharmacies, fetchNearbyPublicHealthCenters } from "./health";
+import {
+  fetchNearbyHospitals,
+  fetchNearbyPharmacies,
+  fetchNearbyPublicHealthCenters,
+  isHumanHealthFacility,
+} from "./health";
 import { recommendPlacesForSituation } from "@/lib/place-recommend";
 import type { OpenDataResult, PublicFacility } from "./types";
 
@@ -26,11 +32,15 @@ export async function fetchOpenDataForScenario(
       fetchNearbyPharmacies(coords, region),
       fetchNearbyPublicHealthCenters(coords, region),
     ]);
-    facilities = [
-      ...hospitals.facilities,
-      ...pharmacies.facilities,
-      ...healthCenters.facilities.slice(0, 2),
-    ];
+    facilities = dedupeByPlaceName(
+      [
+        ...pharmacies.facilities,
+        ...hospitals.facilities,
+        ...healthCenters.facilities.slice(0, 2),
+      ].filter((row) => isHumanHealthFacility(row.name, row.category)),
+      (row) => row.name,
+      (row) => row.distanceMeters,
+    );
     if (hospitals.error) errors.push(`hospital:${hospitals.error}`);
     if (pharmacies.error) errors.push(`pharmacy:${pharmacies.error}`);
     if (healthCenters.error) errors.push(`public-health:${healthCenters.error}`);

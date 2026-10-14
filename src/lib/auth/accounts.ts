@@ -1,9 +1,10 @@
 import { prisma } from "@/lib/db";
 import { SUPER_ADMIN_EMAIL } from "@/lib/auth/access";
 import { STAFF_ROLES, TEMP_ORG_PASSWORD } from "@/lib/auth/issue-org-staff";
-import { getInstitution } from "@/lib/institution/catalog";
+import { setEndUserAffiliation } from "@/lib/auth/tenant";
+import { getInstitution, isNuamiOrganization } from "@/lib/institution/catalog";
 import { ensureOrganization } from "@/lib/institution/seed";
-import { hashPassword, isValidEmail, verifyPassword } from "@/lib/auth/password";
+import { hashPassword, isValidAccountKey, isValidEmail, verifyPassword } from "@/lib/auth/password";
 import { defaultCreditsLimit, resetCreditsUsed, resolveCreditsLimit } from "@/lib/usage/tracker";
 
 export type AccountType = "END_USER" | "ORG_STAFF" | "INTERNAL";
@@ -59,6 +60,18 @@ function assertCanGrantConsole(actorEmail: string, wantsConsole: boolean, alread
   }
 }
 
+async function syncTestAffiliation(email: string, affiliationId: string): Promise<void> {
+  if (!affiliationId) {
+    await setEndUserAffiliation(email, null);
+    return;
+  }
+  if (!getInstitution(affiliationId) || isNuamiOrganization(affiliationId)) {
+    throw new Error("등록되지 않은 대학입니다.");
+  }
+  await ensureOrganization(affiliationId);
+  await setEndUserAffiliation(email, affiliationId);
+}
+
 async function syncOrgMembership(email: string, organizationId: string, orgRole?: string): Promise<void> {
   if (!getInstitution(organizationId)) throw new Error("등록되지 않은 기관입니다.");
   await ensureOrganization(organizationId);
@@ -103,24 +116,25 @@ export function sessionRoleOf(accountType: string | null | undefined): Account["
 }
 
 /** Super-admin console: set temp password 1234 and require change on next login. */
-export async function resetAuthUserPassword(email: string, actorEmail: string): Promise<{ email: string }> {
+export async function resetAuthUserPassword(email: string, actorEmail: string): Promise<{ email: string; tempPassword: string }> {
   const normalized = email.trim().toLowerCase();
   const actor = actorEmail.trim().toLowerCase();
-  if (!isValidEmail(normalized)) throw new Error("올바른 이메일을 입력하세요.");
+  if (!isValidAccountKey(normalized)) throw new Error("올바른 계정을 입력하세요.");
   if (normalized === actor) throw new Error("자기 계정은 초기화할 수 없습니다.");
 
   const user = await prisma.authUser.findUnique({ where: { email: normalized } });
   if (!user) throw new Error("계정을 찾을 수 없습니다.");
   if (user.status !== "ACTIVE") throw new Error("비활성화된 계정은 초기화할 수 없습니다.");
 
+  const tempPassword = user.isTest ? normalized : TEMP_ORG_PASSWORD;
   await prisma.authUser.update({
     where: { email: normalized },
     data: {
-      passwordHash: hashPassword(TEMP_ORG_PASSWORD),
+      passwordHash: hashPassword(tempPassword),
       passwordMustChange: !user.isTest,
     },
   });
-  return { email: user.email };
+  return { email: user.email, tempPassword };
 }
 
 export async function createManagedAccount(input: {
@@ -132,25 +146,31 @@ export async function createManagedAccount(input: {
   orgRole?: string;
   creditsLimit?: unknown;
   isTest?: unknown;
+  affiliationId?: string;
 }): Promise<{ email: string; tempPassword: string; accountType: AccountType }> {
   const email = input.email.trim().toLowerCase();
-  if (!isValidEmail(email)) throw new Error("올바른 이메일을 입력하세요.");
+  const isTest = parseFlag(input.isTest);
+  if (isTest) {
+    if (!isValidAccountKey(email)) throw new Error("아이디를 입력하세요. 공백은 쓸 수 없습니다.");
+  } else if (!isValidEmail(email)) {
+    throw new Error("올바른 이메일을 입력하세요. 이메일이 아니면 테스트용으로 추가하세요.");
+  }
   const kinds = parseKinds({ kinds: input.kinds, accountType: input.accountType });
   assertCanGrantConsole(input.actorEmail, kinds.has("console"), false);
   const accountType = primaryAccountType(kinds);
   const creditsLimit = parseCreditsLimit(input.creditsLimit) ?? defaultCreditsLimit();
-  const isTest = parseFlag(input.isTest);
   const passwordMustChange = !isTest;
   const organizationId = input.organizationId?.trim() ?? "";
   if (kinds.has("org") && !organizationId) throw new Error("기관을 선택하세요.");
 
   const existing = await prisma.authUser.findUnique({ where: { email } });
-  if (existing) throw new Error("이미 등록된 이메일입니다.");
+  if (existing) throw new Error("이미 등록된 계정입니다.");
 
+  const tempPassword = isTest ? email : TEMP_ORG_PASSWORD;
   await prisma.authUser.create({
     data: {
       email,
-      passwordHash: hashPassword(TEMP_ORG_PASSWORD),
+      passwordHash: hashPassword(tempPassword),
       status: "ACTIVE",
       accountType,
       passwordMustChange,
@@ -159,7 +179,8 @@ export async function createManagedAccount(input: {
     },
   });
   if (kinds.has("org")) await syncOrgMembership(email, organizationId, input.orgRole);
-  return { email, tempPassword: TEMP_ORG_PASSWORD, accountType };
+  if (isTest) await syncTestAffiliation(email, input.affiliationId?.trim() ?? "");
+  return { email, tempPassword, accountType };
 }
 
 export async function updateManagedAccount(input: {
@@ -171,9 +192,10 @@ export async function updateManagedAccount(input: {
   orgRole?: string;
   creditsLimit?: unknown;
   isTest?: unknown;
+  affiliationId?: string;
 }): Promise<{ email: string }> {
   const email = input.email.trim().toLowerCase();
-  if (!isValidEmail(email)) throw new Error("올바른 이메일을 입력하세요.");
+  if (!isValidAccountKey(email)) throw new Error("올바른 계정을 입력하세요.");
   const user = await prisma.authUser.findUnique({ where: { email } });
   if (!user) throw new Error("계정을 찾을 수 없습니다.");
   const kinds = parseKinds({
@@ -195,6 +217,9 @@ export async function updateManagedAccount(input: {
 
   if (kinds.has("org")) await syncOrgMembership(email, organizationId, input.orgRole);
   else await prisma.organizationMember.deleteMany({ where: { email } });
+  if (isTest && input.affiliationId !== undefined) {
+    await syncTestAffiliation(email, input.affiliationId.trim());
+  }
 
   await prisma.authUser.update({
     where: { email },
@@ -203,6 +228,7 @@ export async function updateManagedAccount(input: {
       status: "ACTIVE",
       isTest,
       passwordMustChange: isTest ? false : user.passwordMustChange && usingTempPassword,
+      ...(isTest && !user.isTest ? { passwordHash: hashPassword(email) } : {}),
       ...(creditsLimit != null ? { creditsLimit } : {}),
     },
   });
@@ -251,7 +277,7 @@ export async function setManagedAccountCredits(input: {
   resetUsed?: boolean;
 }): Promise<{ email: string; creditsLimit: number; creditsUsed: number }> {
   const email = input.email.trim().toLowerCase();
-  if (!isValidEmail(email)) throw new Error("올바른 이메일을 입력하세요.");
+  if (!isValidAccountKey(email)) throw new Error("올바른 계정을 입력하세요.");
   const user = await prisma.authUser.findUnique({ where: { email } });
   if (!user) throw new Error("계정을 찾을 수 없습니다.");
   const creditsLimit = parseCreditsLimit(input.creditsLimit) ?? defaultCreditsLimit();

@@ -107,7 +107,7 @@ export default function SavedPage() {
   );
 
   return (
-    <PageShell topNav="bookmark" bottomNav="bookmark">
+    <PageShell topNav="mypage" bottomNav="mypage">
       <PageHeader variant="top" title={t("saved.title")} />
       <div className="px-4 py-5 max-w-[1200px] mx-auto pb-24">
         <h1 className="hidden md:block text-[20px] font-bold text-text-primary">{t("saved.title")}</h1>

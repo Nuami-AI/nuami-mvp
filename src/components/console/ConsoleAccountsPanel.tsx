@@ -4,6 +4,8 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode }
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 
+import { AccountKindBadge } from "@/components/admin/AccountKindBadge";
+import { Toast } from "@/components/ui/toast";
 import { formatKstDateTime } from "@/lib/datetime";
 
 export interface ConsoleAccountRow {
@@ -13,6 +15,7 @@ export interface ConsoleAccountRow {
   accountType: "END_USER" | "ORG_STAFF" | "INTERNAL";
   orgs: Array<{ id: string; nameKo: string; logoSrc: string }>;
   organizationId: string;
+  affiliationId: string;
   status: string;
   provider: string;
   passwordMustChange: boolean;
@@ -131,6 +134,7 @@ export function ConsoleAccountsPanel({
   const [email, setEmail] = useState("");
   const [kinds, setKinds] = useState<Set<Kind>>(new Set(["end"]));
   const [organizationId, setOrganizationId] = useState("");
+  const [affiliationId, setAffiliationId] = useState("");
   const [creditsLimit, setCreditsLimit] = useState(String(defaultCredits));
   const [isTest, setIsTest] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
@@ -219,13 +223,15 @@ export function ConsoleAccountsPanel({
         email,
         kinds: orderedKinds(kinds),
         organizationId,
+        affiliationId: isTest ? affiliationId : "",
         creditsLimit: Number(creditsLimit),
         isTest,
       });
-      setNotice(`${data?.email ?? email} 추가됨 · 임시 비밀번호 ${data?.tempPassword ?? "1234"}`);
+      setNotice(`${data?.email ?? email} 추가됨 · 비밀번호 ${data?.tempPassword ?? (isTest ? email.trim().toLowerCase() : "1234")}`);
       setEmail("");
       setKinds(new Set(["end"]));
       setOrganizationId("");
+      setAffiliationId("");
       setCreditsLimit(String(defaultCredits));
       setIsTest(false);
       setAddOpen(false);
@@ -239,7 +245,9 @@ export function ConsoleAccountsPanel({
 
   async function run(action: string, row: ConsoleAccountRow, extra?: Record<string, unknown>) {
     const confirms: Record<string, string> = {
-      reset: `${row.email} 비밀번호를 1234로 초기화할까요?`,
+      reset: row.isTest
+        ? `${row.email} 비밀번호를 계정과 같게 초기화할까요?`
+        : `${row.email} 비밀번호를 1234로 초기화할까요?`,
       deactivate: `${row.email} 계정을 비활성화할까요?`,
       activate: `${row.email} 계정을 다시 활성화할까요?`,
       delete: `${row.email} 계정을 삭제할까요? 되돌릴 수 없습니다.`,
@@ -251,7 +259,11 @@ export function ConsoleAccountsPanel({
     setNotice("");
     try {
       const data = await post({ action, email: row.email, ...extra });
-      if (action === "reset") setNotice(`${data?.email ?? row.email} 비밀번호를 1234로 초기화했습니다.`);
+      if (action === "reset") {
+        setNotice(
+          `${data?.email ?? row.email} 비밀번호를 ${data?.tempPassword ?? (row.isTest ? row.email : "1234")}로 초기화했습니다.`,
+        );
+      }
       else if (action === "deactivate") setNotice(`${row.email} 계정을 비활성화했습니다.`);
       else if (action === "activate") setNotice(`${row.email} 계정을 활성화했습니다.`);
       else if (action === "delete") setNotice(`${row.email} 계정을 삭제했습니다.`);
@@ -273,7 +285,10 @@ export function ConsoleAccountsPanel({
         ? createPortal(
             <button
               type="button"
-              onClick={() => setAddOpen(true)}
+              onClick={() => {
+                setError("");
+                setAddOpen(true);
+              }}
               className="h-10 rounded-lg bg-gray-900 px-4 text-sm font-medium text-white"
             >
               계정 추가
@@ -281,32 +296,34 @@ export function ConsoleAccountsPanel({
             headerActions,
           )
         : null}
-      {error ? <p className="text-[13px] text-red-600">{error}</p> : null}
-      {notice ? <p className="rounded-lg bg-gray-50 px-3 py-2 text-[13px] text-gray-800">{notice}</p> : null}
+      {!addOpen && !editRow && !creditRow && error ? (
+        <p className="text-[13px] text-red-600">{error}</p>
+      ) : null}
+      <Toast message={notice} variant="success" onDismiss={() => setNotice("")} />
 
       <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
         <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 bg-gray-50 px-4 py-3">
           <KindChips selected={kindFilter} counts={kindCounts} onToggle={toggleFilter} />
         </div>
-        <table className="w-full text-sm">
+        <table className="admin-table">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
               <SortTh label="이메일" column="email" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
               <SortTh label="구분" column="kind" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
               <SortTh label="소속 기관" column="org" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
-              <SortTh label="크레딧" column="credits" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+              <SortTh label="크레딧" column="credits" align="right" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
               <SortTh label="상태" column="status" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
               <SortTh label="로그인" column="login" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
               {showLastLogin ? (
                 <SortTh label="마지막 로그인" column="lastLogin" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
               ) : null}
-              <th className="px-4 py-3 text-right text-[11px] font-semibold text-gray-400 uppercase"></th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {visibleRows.length === 0 ? (
               <tr>
-                <td colSpan={showLastLogin ? 8 : 7} className="px-4 py-10 text-center text-sm text-gray-400">
+                <td colSpan={showLastLogin ? 8 : 7} className="px-4 py-10 text-center text-gray-400">
                   {rows.length === 0 ? "계정이 없습니다." : "선택한 구분에 해당하는 계정이 없습니다."}
                 </td>
               </tr>
@@ -315,11 +332,11 @@ export function ConsoleAccountsPanel({
                 const locked = row.email.toLowerCase() === protectedEmail || row.email.toLowerCase() === actorEmail.toLowerCase();
                 return (
                   <tr key={row.email} className={row.status !== "ACTIVE" ? "bg-gray-50" : undefined}>
-                    <td className="px-4 py-3 font-medium text-gray-900">{row.email}</td>
+                    <td className="px-4 py-3 font-medium text-gray-800">{row.email}</td>
                     <td className="px-4 py-3">
                       <span className="inline-flex flex-wrap gap-1">
                         {orderedKinds(row.kinds.length ? row.kinds : [row.kind]).map((kind) => (
-                          <KindBadge key={kind} kind={kind} />
+                          <AccountKindBadge key={kind} kind={kind} />
                         ))}
                       </span>
                       {row.isTest ? (
@@ -340,18 +357,18 @@ export function ConsoleAccountsPanel({
                           ))}
                         </div>
                       ) : (
-                        <span className="text-xs text-gray-400">—</span>
+                        <span className="text-gray-400">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-xs tabular-nums text-gray-700">
+                    <td className="px-4 py-3 text-right tabular-nums text-gray-700">
                       {row.creditsUsed}/{row.creditsLimit}
                     </td>
                     <td className="px-4 py-3">
                       <StatusBadge status={row.status} />
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{row.provider ? row.provider : "이메일"}</td>
+                    <td className="px-4 py-3 text-gray-500">{row.provider ? row.provider : "이메일"}</td>
                     {showLastLogin ? (
-                      <td className="px-4 py-3 text-xs tabular-nums text-gray-500">
+                      <td className="px-4 py-3 tabular-nums text-gray-500">
                         {formatKstDateTime(row.lastLoginAt)}
                       </td>
                     ) : null}
@@ -385,7 +402,13 @@ export function ConsoleAccountsPanel({
       </div>
 
       {addOpen ? (
-        <AccountDialog title="계정 추가" onClose={() => setAddOpen(false)}>
+        <AccountDialog
+          title="계정 추가"
+          onClose={() => {
+            setError("");
+            setAddOpen(false);
+          }}
+        >
           <form
             className="space-y-3"
             onSubmit={(event) => {
@@ -394,19 +417,25 @@ export function ConsoleAccountsPanel({
             }}
           >
             <p className="text-[12px] text-gray-400">
-              임시 비밀번호는 1234입니다. 테스트용이 아니면 다음 로그인에서 바꾸게 됩니다.
+              {isTest
+                ? "비밀번호는 계정과 같습니다. 변경 안내는 하지 않습니다."
+                : "임시 비밀번호는 1234입니다. 다음 로그인에서 바꾸게 됩니다."}
             </p>
             <input
-              type="email"
+              type="text"
+              inputMode={isTest ? "text" : "email"}
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               required
-              placeholder="이메일"
-              aria-label="이메일"
+              placeholder={isTest ? "아이디 또는 이메일" : "이메일"}
+              aria-label={isTest ? "아이디 또는 이메일" : "이메일"}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="h-10 w-full rounded-lg border border-gray-200 px-3 text-sm"
             />
             <div>
-              <p className="mb-1.5 text-[12px] font-medium text-gray-500">구분 · 여러 개 선택 가능</p>
+              <p className="mb-1.5 text-[12px] font-medium text-gray-500">구분</p>
               <KindChips
                 selected={kinds}
                 locked={lockedKinds}
@@ -439,6 +468,13 @@ export function ConsoleAccountsPanel({
                 </select>
               </label>
             ) : null}
+            {isTest ? (
+              <AffiliationField
+                institutions={institutions}
+                value={affiliationId}
+                onChange={setAffiliationId}
+              />
+            ) : null}
             <label className="block text-[12px] font-medium text-gray-500">
               크레딧 한도
               <input
@@ -465,21 +501,35 @@ export function ConsoleAccountsPanel({
       ) : null}
 
       {editRow ? (
-        <AccountDialog title="계정 수정" onClose={() => setEditRow(null)}>
+        <AccountDialog
+          title="계정 수정"
+          onClose={() => {
+            setError("");
+            setEditRow(null);
+          }}
+        >
           <EditForm
             row={editRow}
             institutions={institutions}
             busy={busy === editRow.email + "update"}
+            error={error}
             onSave={(payload) => void run("update", editRow, payload)}
           />
         </AccountDialog>
       ) : null}
 
       {creditRow ? (
-        <AccountDialog title="크레딧 변경" onClose={() => setCreditRow(null)}>
+        <AccountDialog
+          title="크레딧 변경"
+          onClose={() => {
+            setError("");
+            setCreditRow(null);
+          }}
+        >
           <CreditsForm
             row={creditRow}
             busy={busy === creditRow.email + "credits"}
+            error={error}
             onSave={(payload) => void run("credits", creditRow, payload)}
           />
         </AccountDialog>
@@ -492,11 +542,13 @@ function EditForm({
   row,
   institutions,
   busy,
+  error,
   onSave,
 }: {
   row: ConsoleAccountRow;
   institutions: Array<{ id: string; nameKo: string }>;
   busy: boolean;
+  error: string;
   onSave: (payload: Record<string, unknown>) => void;
 }) {
   const [kinds, setKinds] = useState<Set<Kind>>(() => {
@@ -508,6 +560,7 @@ function EditForm({
     return next;
   });
   const [organizationId, setOrganizationId] = useState(row.organizationId);
+  const [affiliationId, setAffiliationId] = useState(row.affiliationId);
   const [creditsLimit, setCreditsLimit] = useState(String(row.creditsLimit));
   const [isTest, setIsTest] = useState(row.isTest);
   const needsOrg = kinds.has("org") || kinds.has("console");
@@ -520,6 +573,7 @@ function EditForm({
         onSave({
           kinds: orderedKinds(kinds),
           organizationId,
+          affiliationId: isTest ? affiliationId : "",
           creditsLimit: Number(creditsLimit),
           isTest,
         });
@@ -527,7 +581,7 @@ function EditForm({
     >
       <p className="text-[13px] text-gray-600">{row.email}</p>
       <div>
-        <p className="mb-1.5 text-[12px] font-medium text-gray-500">구분 · 여러 개 선택 가능</p>
+        <p className="mb-1.5 text-[12px] font-medium text-gray-500">구분</p>
         <KindChips
           selected={kinds}
           locked={lockedKinds}
@@ -559,6 +613,13 @@ function EditForm({
           </select>
         </label>
       ) : null}
+      {isTest ? (
+        <AffiliationField
+          institutions={institutions}
+          value={affiliationId}
+          onChange={setAffiliationId}
+        />
+      ) : null}
       <label className="block text-[12px] font-medium text-gray-500">
         크레딧 한도
         <input
@@ -571,6 +632,7 @@ function EditForm({
         />
       </label>
       <TestAccountCheck checked={isTest} onChange={setIsTest} />
+      {error ? <p className="text-[13px] text-red-600">{error}</p> : null}
       <button
         type="submit"
         disabled={busy || (needsOrg && !organizationId)}
@@ -585,10 +647,12 @@ function EditForm({
 function CreditsForm({
   row,
   busy,
+  error,
   onSave,
 }: {
   row: ConsoleAccountRow;
   busy: boolean;
+  error: string;
   onSave: (payload: Record<string, unknown>) => void;
 }) {
   const [creditsLimit, setCreditsLimit] = useState(String(row.creditsLimit));
@@ -620,6 +684,7 @@ function CreditsForm({
         <input type="checkbox" checked={resetUsed} onChange={(e) => setResetUsed(e.target.checked)} />
         사용 횟수도 0으로 초기화
       </label>
+      {error ? <p className="text-[13px] text-red-600">{error}</p> : null}
       <button
         type="submit"
         disabled={busy}
@@ -658,6 +723,37 @@ function AccountDialog({
   );
 }
 
+function AffiliationField({
+  institutions,
+  value,
+  onChange,
+}: {
+  institutions: Array<{ id: string; nameKo: string }>;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const schools = institutions.filter((row) => row.id !== "nuami");
+  return (
+    <label className="block text-[12px] font-medium text-gray-500">
+      소속 대학
+      <select
+        aria-label="소속 대학"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1 h-10 w-full rounded-lg border border-gray-200 px-3 text-sm text-gray-900"
+      >
+        <option value="">없음</option>
+        {schools.map((row) => (
+          <option key={row.id} value={row.id}>
+            {row.nameKo}
+          </option>
+        ))}
+      </select>
+      <span className="mt-1 block text-[12px] text-gray-400">테스트 계정은 학번 인증 없이 대학을 붙일 수 있습니다.</span>
+    </label>
+  );
+}
+
 function TestAccountCheck({
   checked,
   onChange,
@@ -676,7 +772,7 @@ function TestAccountCheck({
       <span>
         테스트용
         <span className="mt-0.5 block text-[12px] text-gray-400">
-          체크하면 임시 비밀번호로 로그인해도 변경 안내를 하지 않습니다.
+          체크하면 비밀번호가 계정과 같아지고, 변경 안내를 하지 않습니다.
         </span>
       </span>
     </label>
@@ -739,7 +835,7 @@ function OrgMark({ name, src }: { name?: string; src?: string }) {
           {label.slice(0, 1)}
         </span>
       )}
-      <span className="text-xs text-gray-600">{label}</span>
+      <span className="text-gray-600">{label}</span>
     </span>
   );
 }
@@ -749,23 +845,25 @@ function SortTh({
   column,
   sortKey,
   sortDir,
+  align = "left",
   onSort,
 }: {
   label: string;
   column: SortKey;
   sortKey: SortKey;
   sortDir: SortDir;
+  align?: "left" | "right";
   onSort: (key: SortKey) => void;
 }) {
   const active = sortKey === column;
   return (
-    <th className="px-4 py-3 text-left">
+    <th className={`px-4 py-3 ${align === "right" ? "text-right" : "text-left"}`}>
       <button
         type="button"
         onClick={() => onSort(column)}
-        className={`inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide ${
-          active ? "text-gray-800" : "text-gray-400 hover:text-gray-600"
-        }`}
+        className={`inline-flex items-center gap-1 text-xs font-semibold ${
+          align === "right" ? "w-full justify-end" : ""
+        } ${active ? "text-gray-800" : "text-gray-400 hover:text-gray-600"}`}
       >
         {label}
         <span className="text-[10px] tabular-nums" aria-hidden>
@@ -787,15 +885,6 @@ function StatusBadge({ status }: { status: string }) {
       }`}
     >
       {active ? "사용 중" : "비활성"}
-    </span>
-  );
-}
-
-function KindBadge({ kind }: { kind: Kind }) {
-  const chip = KIND_CHIPS.find((row) => row.kind === kind);
-  return (
-    <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${chip?.on ?? ""}`}>
-      {chip?.label ?? kind}
     </span>
   );
 }

@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 
+import { allowProductionDatabase, assertSafeDatabase, DEV_DB_NAME, PROD_DB_NAME } from "@/lib/db-target";
+
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
 };
@@ -62,7 +64,7 @@ function getPoolConfig(): Record<string, unknown> {
       port: Number.isNaN(port) ? 4000 : port,
       user: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
-      database: process.env.DB_DATABASE ?? "nuami",
+      database: process.env.DB_DATABASE ?? (allowProductionDatabase() ? PROD_DB_NAME : DEV_DB_NAME),
       ...poolTuning(),
       ssl: process.env.DB_SSL !== "false" ? { rejectUnauthorized: true } : undefined,
     };
@@ -80,11 +82,25 @@ function getPoolConfig(): Record<string, unknown> {
 
 function createPrisma() {
   const poolConfig = getPoolConfig();
+  assertSafeDatabase(typeof poolConfig.database === "string" ? poolConfig.database : "");
   const adapter = new PrismaMariaDb(
     poolConfig as ConstructorParameters<typeof PrismaMariaDb>[0]
   );
   return new PrismaClient({ adapter });
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrisma();
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+function hasCurrentModels(client: PrismaClient): boolean {
+  return typeof (client as PrismaClient & { llmUsageEvent?: unknown }).llmUsageEvent !== "undefined";
+}
+
+function getPrisma(): PrismaClient {
+  const cached = globalForPrisma.prisma;
+  if (cached && (process.env.NODE_ENV === "production" || hasCurrentModels(cached))) {
+    return cached;
+  }
+  const client = createPrisma();
+  if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = client;
+  return client;
+}
+
+export const prisma = getPrisma();

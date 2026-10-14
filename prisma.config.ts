@@ -1,11 +1,16 @@
 import { config as dotenvConfig } from "dotenv";
 import { defineConfig } from "prisma/config";
 
+import { databaseNameFromUrl, DEV_DB_NAME } from "./src/lib/db-target";
+
 // Next.js uses .env.local but Prisma CLI doesn't — load both
 dotenvConfig({ path: ".env" });
 dotenvConfig({ path: ".env.local", override: true });
 
-const DB_NAME = process.env["DB_DATABASE"] ?? "nuami";
+const DB_NAME =
+  process.env["DB_DATABASE"]?.trim() ||
+  databaseNameFromUrl(process.env["DATABASE_URL"]) ||
+  DEV_DB_NAME;
 
 const SSL_PARAMS = "sslaccept=strict";
 function ensureSsl(urlString: string): string {

@@ -293,3 +293,22 @@ model ExpertOpinion {
   @@index([assetId])
   @@index([receivedAt])
 }
+
+/// 콘솔 조회 전용. LLM 호출 시에만 기록하고, 현황 화면은 DB만 읽습니다.
+model LlmUsageEvent {
+  id        String   @id @default(cuid())
+  /// openai | anthropic
+  provider  String
+  model     String
+  /// guide | ingest | translate
+  task      String
+  tokensIn  Int      @default(0)
+  tokensOut Int      @default(0)
+  ok        Boolean  @default(true)
+  error     String?  @db.VarChar(500)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([provider, createdAt])
+  @@index([task, createdAt])
+}

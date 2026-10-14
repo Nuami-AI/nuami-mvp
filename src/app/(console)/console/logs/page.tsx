@@ -20,20 +20,20 @@ export default async function ConsoleLogsPage() {
       subtitle="계정 발급·권한 변경 이력입니다."
     >
       <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-        <table className="w-full text-sm">
+        <table className="admin-table">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase">시간</th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase">행위자</th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase">유형</th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase">액션</th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase">대상</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">시간</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">행위자</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">유형</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">액션</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">대상</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-10 text-center text-sm text-gray-400">
+                <td colSpan={5} className="px-4 py-10 text-center text-gray-400">
                   아직 로그가 없습니다.
                 </td>
               </tr>
@@ -42,13 +42,13 @@ export default async function ConsoleLogsPage() {
                 const org = row.organizationId ? getInstitution(row.organizationId) : undefined;
                 return (
                   <tr key={row.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-xs tabular-nums text-gray-500 whitespace-nowrap">
+                    <td className="whitespace-nowrap px-4 py-3 tabular-nums text-gray-500">
                       {formatKstDateTime(row.createdAt)}
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-800">{row.actorEmail}</td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{auditActorTypeLabel(row.actorType)}</td>
-                    <td className="px-4 py-3 text-xs font-medium text-gray-800">{auditActionLabel(row.action)}</td>
-                    <td className="px-4 py-3 text-xs text-gray-500">
+                    <td className="px-4 py-3 font-medium text-gray-800">{row.actorEmail}</td>
+                    <td className="px-4 py-3 text-gray-500">{auditActorTypeLabel(row.actorType)}</td>
+                    <td className="px-4 py-3 font-medium text-gray-800">{auditActionLabel(row.action)}</td>
+                    <td className="px-4 py-3 text-gray-500">
                       {org ? org.nameKo : row.organizationId ?? "—"}
                       {row.resourceId ? ` · ${row.resourceId}` : ""}
                     </td>

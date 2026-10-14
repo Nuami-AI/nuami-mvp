@@ -63,7 +63,7 @@ function SortHeader({
       <button
         type="button"
         onClick={() => onSort(column)}
-        className={`inline-flex w-full items-center gap-0.5 text-[11px] font-semibold uppercase tracking-wide transition-colors ${alignClass} ${
+        className={`inline-flex w-full items-center gap-0.5 text-xs font-semibold transition-colors ${alignClass} ${
           active ? "text-gray-800" : "text-gray-400 hover:text-gray-600"
         }`}
         aria-sort={active ? (sortDir === "asc" ? "ascending" : "descending") : "none"}
@@ -191,7 +191,7 @@ export function ConsoleOrganizationsTable({ rows }: { rows: OrgListRow[] }) {
             </p>
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="admin-table">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
                 <SortHeader
@@ -201,7 +201,7 @@ export function ConsoleOrganizationsTable({ rows }: { rows: OrgListRow[] }) {
                   sortDir={sortDir}
                   onSort={onSort}
                 />
-                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase text-gray-400">
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">
                   Slug
                 </th>
                 <SortHeader
@@ -209,7 +209,7 @@ export function ConsoleOrganizationsTable({ rows }: { rows: OrgListRow[] }) {
                   column="docs"
                   sortKey={sortKey}
                   sortDir={sortDir}
-                  align="center"
+                  align="right"
                   onSort={onSort}
                 />
                 <SortHeader
@@ -217,7 +217,7 @@ export function ConsoleOrganizationsTable({ rows }: { rows: OrgListRow[] }) {
                   column="knowledge"
                   sortKey={sortKey}
                   sortDir={sortDir}
-                  align="center"
+                  align="right"
                   onSort={onSort}
                 />
                 <SortHeader
@@ -225,10 +225,10 @@ export function ConsoleOrganizationsTable({ rows }: { rows: OrgListRow[] }) {
                   column="members"
                   sortKey={sortKey}
                   sortDir={sortDir}
-                  align="center"
+                  align="right"
                   onSort={onSort}
                 />
-                <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase text-gray-400" />
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -237,19 +237,19 @@ export function ConsoleOrganizationsTable({ rows }: { rows: OrgListRow[] }) {
                 return (
                   <tr key={row.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
-                      <p className="font-medium text-gray-900">{row.nameKo}</p>
+                      <p className="font-medium text-gray-800">{row.nameKo}</p>
                       <p className="text-[11px] text-gray-400">
                         {region?.officialName ?? row.city} · {row.id}
                       </p>
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-600">{row.slug}</td>
-                    <td className="px-4 py-3 text-center text-xs tabular-nums">{row.documentCount}</td>
-                    <td className="px-4 py-3 text-center text-xs tabular-nums">{row.knowledgeCount}</td>
-                    <td className="px-4 py-3 text-center text-xs tabular-nums">{row.memberCount}</td>
+                    <td className="px-4 py-3 font-mono text-gray-600">{row.slug}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-gray-700">{row.documentCount}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-gray-700">{row.knowledgeCount}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-gray-700">{row.memberCount}</td>
                     <td className="px-4 py-3 text-right">
                       <Link
                         href={`/console/organizations/${row.id}`}
-                        className="text-xs font-medium text-gray-700 hover:text-gray-900"
+                        className="font-medium text-gray-700 hover:text-gray-900"
                       >
                         계정 보기
                       </Link>

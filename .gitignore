@@ -44,6 +44,7 @@ bkit
 claude
 gemini
 .jun_memo
+.dev-journal
 .siri
 .bkit/*
 .claude/*

@@ -1,5 +1,4 @@
-import OpenAI from "openai";
-
+import { createJsonResponse } from "@/lib/llm/json-response";
 import { fetchOpenDataForScenario } from "@/lib/opendata/search";
 import { prisma } from "@/lib/db";
 import type { KnowledgeCategory } from "./catalog";
@@ -14,12 +13,6 @@ export interface ExtractedKnowledgeItem {
   whereTo: string[];
   keywords: string[];
   publicDataHint?: "residence-change" | "bank-account" | "hospital" | null;
-}
-
-function getClient(): OpenAI {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error("OPENAI_API_KEY is not configured");
-  return new OpenAI({ apiKey });
 }
 
 function stripToJson(text: string): string {
@@ -85,20 +78,14 @@ export async function extractKnowledgeFromText(input: {
   focusQuery?: string;
   maxItems?: number;
 }): Promise<ExtractedKnowledgeItem[]> {
-  const client = getClient();
-  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
   const maxItems = input.maxItems ?? (input.focusQuery ? 6 : 8);
   const focus = input.focusQuery?.trim();
   const term = koreaAcademicContext();
-  const response = await client.chat.completions.create({
-    model,
+  const response = await createJsonResponse({
+    task: "ingest",
     temperature: 0.1,
-    max_tokens: 2500,
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content: `You extract official guidance for inbound international students at a Korean institution.
+    maxOutputTokens: 2500,
+    instructions: `You extract official guidance for inbound international students at a Korean institution.
 ${term.promptLine}
 Return STRICT JSON only:
 {"items":[{"title":"","category":"orientation|academic|living-tips|admin","summary":"","facts":[""],"documents":[""],"whereTo":[""],"keywords":[""],"publicDataHint":"residence-change|bank-account|hospital|null"}]}
@@ -112,20 +99,15 @@ Rules:
 - If the document is about alien registration / ARC / Proof of RC, always include: 외국인등록, 외국인등록증, 증빙, ARC.
 - publicDataHint is set only if the item is about address/residence change, bank account, or hospital.
 ${focus ? "- The student asked a specific question. Extract ONLY facts that help answer it. If the source has no relevant official facts, return {\"items\":[]}." : "- Prefer a small set of core facts over exhaustive copying."}`,
-      },
-      {
-        role: "user",
-        content: `Institution: ${input.institutionName}
+    input: `Institution: ${input.institutionName}
 Suggested category: ${input.category}
 File: ${input.fileName}
 ${focus ? `Student question: ${focus}\n` : ""}
 --- DOCUMENT ---
 ${input.text}`,
-      },
-    ],
   });
 
-  const raw = stripToJson(response.choices[0]?.message?.content ?? "");
+  const raw = stripToJson(response.text);
   let parsed: { items?: ExtractedKnowledgeItem[] };
   try {
     parsed = parseExtractedJson(raw);

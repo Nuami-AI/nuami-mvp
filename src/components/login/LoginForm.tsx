@@ -117,7 +117,7 @@ export function LoginForm({ audience }: { audience: LoginAudience }) {
               <input
                 id="email"
                 name="email"
-                type="email"
+                type="text"
                 inputMode="email"
                 autoComplete="username"
                 autoCapitalize="none"

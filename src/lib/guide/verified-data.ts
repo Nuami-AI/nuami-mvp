@@ -86,8 +86,9 @@ export const VERIFIED_SCENARIOS: VerifiedScenario[] = [
   {
     id: "hospital",
     keywords: [
-      "병원", "진료", "약국", "아프", "감기", "건강검진", "원무과",
-      "hospital", "clinic", "pharmacy", "doctor", "sick",
+      "병원", "진료", "약국", "아프", "아픈", "아파", "복통", "약 어떻게", "약 먹",
+      "감기", "건강검진", "원무과",
+      "hospital", "clinic", "pharmacy", "doctor", "sick", "stomachache", "medicine",
       "病院", "診療", "薬局",
       "bệnh viện", "phòng khám", "nhà thuốc",
       "医院", "看病", "药店",

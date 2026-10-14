@@ -1,5 +1,6 @@
 import type { KakaoLocalPlace } from "@/types/kakao";
 import { withDistanceFromUser } from "@/lib/geo/distance";
+import { dedupeByPlaceName } from "@/lib/geo/place-name";
 
 const KAKAO_KEYWORD_URL = "https://dapi.kakao.com/v2/local/search/keyword.json";
 const KAKAO_ADDRESS_URL = "https://dapi.kakao.com/v2/local/search/address.json";
@@ -141,8 +142,13 @@ export async function searchKakaoPlacesMany(
   const sorted = location
     ? withDistanceFromUser(merged, location.lat, location.lng)
     : merged;
+  const unique = dedupeByPlaceName(
+    sorted,
+    (place) => place.placeName,
+    (place) => place.distanceMeters,
+  );
 
-  return { places: sorted.slice(0, 12), error: sorted.length === 0 ? error : undefined };
+  return { places: unique.slice(0, 12), error: unique.length === 0 ? error : undefined };
 }
 
 interface KakaoAddressDocument {

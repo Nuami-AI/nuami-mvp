@@ -1,3 +1,4 @@
+import { AccountKindBadge } from "@/components/admin/AccountKindBadge";
 import AdminShell from "@/components/admin/AdminShell";
 import { isSuperAdmin } from "@/lib/auth/access";
 import { requireConsoleSession } from "@/lib/auth/page-session";
@@ -13,7 +14,7 @@ function CreditBar({ used, limit }: { used: number; limit: number }) {
       <div className="w-16 h-1.5 rounded-full bg-gray-200 overflow-hidden">
         <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
       </div>
-      <span className="text-xs tabular-nums text-gray-500">
+      <span className="tabular-nums text-gray-500">
         {used}/{limit}
       </span>
     </div>
@@ -23,8 +24,8 @@ function CreditBar({ used, limit }: { used: number; limit: number }) {
 function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white px-5 py-4">
-      <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wide">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-gray-900">{value}</p>
+      <p className="text-xs font-medium text-gray-400">{label}</p>
+      <p className="mt-1 text-lg font-bold text-gray-900">{value}</p>
       {sub && <p className="mt-0.5 text-[11px] text-gray-400">{sub}</p>}
     </div>
   );
@@ -59,59 +60,61 @@ export default async function ConsolePage() {
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-        <table className="w-full text-sm">
+        <table className="admin-table">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">이메일</th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">구분</th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">가입일</th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">마지막 사용</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">이메일</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">구분</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">가입일</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">마지막 사용</th>
               {showLastLogin ? (
-                <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">마지막 로그인</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">마지막 로그인</th>
               ) : null}
-              <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase tracking-wide">크래딧</th>
-              <th className="px-4 py-3 text-center text-[11px] font-semibold text-gray-400 uppercase tracking-wide">페이월 노출</th>
-              <th className="px-4 py-3 text-center text-[11px] font-semibold text-gray-400 uppercase tracking-wide">CTA 클릭</th>
-              <th className="px-4 py-3 text-center text-[11px] font-semibold text-gray-400 uppercase tracking-wide">이탈</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400">크래딧</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400">페이월 노출</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400">CTA 클릭</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400">이탈</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {users.length === 0 && (
               <tr>
-                <td colSpan={showLastLogin ? 9 : 8} className="px-4 py-10 text-center text-sm text-gray-400">
+                <td colSpan={showLastLogin ? 9 : 8} className="px-4 py-10 text-center text-gray-400">
                   등록된 이용자가 없습니다.
                 </td>
               </tr>
             )}
             {users.map((u) => (
               <tr key={u.email} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-3 text-gray-800 font-medium text-xs max-w-[180px] truncate">
+                <td className="max-w-[180px] truncate px-4 py-3 font-medium text-gray-800">
                   {u.email}
                 </td>
                 <td className="px-4 py-3">
-                  <KindBadge kind={kindByEmail[u.email.toLowerCase()] ?? "end"} />
+                  <AccountKindBadge kind={kindByEmail[u.email.toLowerCase()] ?? "end"} />
                 </td>
-                <td className="px-4 py-3 text-xs text-gray-500 tabular-nums">
+                <td className="px-4 py-3 tabular-nums text-gray-500">
                   {formatKstDateTime(u.firstSeenAt)}
                 </td>
-                <td className="px-4 py-3 text-xs text-gray-500 tabular-nums">
+                <td className="px-4 py-3 tabular-nums text-gray-500">
                   {formatKstDateTime(u.lastSeenAt)}
                 </td>
                 {showLastLogin ? (
-                  <td className="px-4 py-3 text-xs text-gray-500 tabular-nums">
+                  <td className="px-4 py-3 tabular-nums text-gray-500">
                     {formatKstDateTime(u.lastLoginAt)}
                   </td>
                 ) : null}
                 <td className="px-4 py-3">
-                  <CreditBar used={u.creditsUsed} limit={u.creditsLimit} />
+                  <div className="flex justify-end">
+                    <CreditBar used={u.creditsUsed} limit={u.creditsLimit} />
+                  </div>
                 </td>
-                <td className="px-4 py-3 text-center text-xs tabular-nums text-gray-700">
+                <td className="px-4 py-3 text-right tabular-nums text-gray-700">
                   {u.paywall_shown}
                 </td>
-                <td className="px-4 py-3 text-center text-xs tabular-nums text-gray-700">
+                <td className="px-4 py-3 text-right tabular-nums text-gray-700">
                   {u.paywall_cta_click}
                 </td>
-                <td className="px-4 py-3 text-center text-xs tabular-nums text-gray-500">
+                <td className="px-4 py-3 text-right tabular-nums text-gray-500">
                   {u.paywall_dismiss}
                 </td>
               </tr>
@@ -123,24 +126,3 @@ export default async function ConsolePage() {
   );
 }
 
-function KindBadge({ kind }: { kind: "org" | "end" | "console" }) {
-  if (kind === "console") {
-    return (
-      <span className="inline-flex rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-800">
-        콘솔
-      </span>
-    );
-  }
-  if (kind === "org") {
-    return (
-      <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
-        기관
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-800">
-      엔드유저
-    </span>
-  );
-}

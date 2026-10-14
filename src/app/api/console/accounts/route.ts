@@ -8,7 +8,6 @@ import {
   setManagedAccountStatus,
   updateManagedAccount,
 } from "@/lib/auth/accounts";
-import { TEMP_ORG_PASSWORD } from "@/lib/auth/issue-org-staff";
 import { requireSuperAdmin } from "@/lib/auth/require-admin";
 import { writeAudit } from "@/lib/auth/tenant";
 
@@ -47,6 +46,7 @@ export async function POST(request: Request): Promise<Response> {
         orgRole: typeof body?.orgRole === "string" ? body.orgRole : "",
         creditsLimit: body?.creditsLimit,
         isTest: typeof body?.isTest === "boolean" ? body.isTest : undefined,
+        affiliationId: typeof body?.affiliationId === "string" ? body.affiliationId : "",
       });
       await audit(actorEmail, "auth.user.create", result.email);
       return NextResponse.json({ ok: true, ...result });
@@ -61,6 +61,7 @@ export async function POST(request: Request): Promise<Response> {
         orgRole: typeof body?.orgRole === "string" ? body.orgRole : undefined,
         creditsLimit: body?.creditsLimit,
         isTest: typeof body?.isTest === "boolean" ? body.isTest : undefined,
+        affiliationId: typeof body?.affiliationId === "string" ? body.affiliationId : "",
       });
       await audit(actorEmail, "auth.user.update", result.email);
       return NextResponse.json({ ok: true, ...result });
@@ -68,7 +69,7 @@ export async function POST(request: Request): Promise<Response> {
     if (action === "reset") {
       const result = await resetAuthUserPassword(email, actorEmail);
       await audit(actorEmail, "auth.user.password.reset", result.email);
-      return NextResponse.json({ ok: true, email: result.email, tempPassword: TEMP_ORG_PASSWORD });
+      return NextResponse.json({ ok: true, email: result.email, tempPassword: result.tempPassword });
     }
     if (action === "deactivate") {
       const result = await setManagedAccountStatus({ actorEmail, email, status: "INACTIVE" });

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { isMappableQuery, resolveMapSearchQuery, type ResultVenue } from "@/lib/kakao/query-builder";
 import { getKakaoJsKey, getKakaoRestApiKey, searchKakaoPlacesMany } from "@/lib/kakao/search";
+import { isHumanHealthFacility } from "@/lib/opendata/health";
 import {
   detectAdminTask,
   isImmigrationCheckpoint,
@@ -168,9 +169,11 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   const { places, error } = await searchKakaoPlacesMany(effectiveQueries, 5, location);
-  const filtered = places.filter(
-    (p) => !isImmigrationCheckpoint(p.placeName, p.roadAddress || p.address, p.category),
-  );
+  const filtered = places.filter((p) => {
+    if (isImmigrationCheckpoint(p.placeName, p.roadAddress || p.address, p.category)) return false;
+    if (venue === "hospital" && !isHumanHealthFacility(p.placeName, p.category)) return false;
+    return true;
+  });
 
   return NextResponse.json({
     places: filtered,

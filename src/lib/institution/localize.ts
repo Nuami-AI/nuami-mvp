@@ -1,5 +1,4 @@
-import OpenAI from "openai";
-
+import { createJsonResponse } from "@/lib/llm/json-response";
 import { prisma } from "@/lib/db";
 import type { GuideSection } from "@/lib/guide/adapt-cards";
 import type { InstitutionGuideItem } from "@/lib/institution/search";
@@ -13,12 +12,6 @@ const LANG_NAMES: Record<string, string> = {
 };
 
 const memory = new Map<string, unknown>();
-
-function getClient(): OpenAI | null {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
-  return new OpenAI({ apiKey });
-}
 
 function stripToJson(text: string): string {
   const trimmed = text.trim();
@@ -61,30 +54,24 @@ function blobOfGuide(item: InstitutionGuideItem): string {
 }
 
 async function translateJson<T>(lang: string, payload: T, instruction: string): Promise<T> {
-  const client = getClient();
-  if (!client) return payload;
   const langName = LANG_NAMES[lang] ?? "English";
-  const response = await client.chat.completions.create({
-    model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-    temperature: 0,
-    max_tokens: 2500,
-    response_format: { type: "json_object" },
-    messages: [
-      {
-        role: "system",
-        content: `You translate campus guide cards for international students.
+  let response;
+  try {
+    response = await createJsonResponse({
+      task: "translate",
+      temperature: 0,
+      maxOutputTokens: 2500,
+      instructions: `You translate campus guide cards for international students.
 Return STRICT JSON with the same keys as the input.
 Write title and summary in ${langName}. Keep each "id" exactly unchanged.
 Keep Korean university/building names and add a short ${langName} gloss in parentheses.
 No markdown, no commentary.`,
-      },
-      {
-        role: "user",
-        content: `${instruction}\n\n${JSON.stringify(payload)}`,
-      },
-    ],
-  });
-  const raw = stripToJson(response.choices[0]?.message?.content ?? "");
+      input: `${instruction}\n\n${JSON.stringify(payload)}`,
+    });
+  } catch {
+    return payload;
+  }
+  const raw = stripToJson(response.text);
   try {
     return JSON.parse(raw) as T;
   } catch {

@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useLocationPreference } from "@/hooks/useLocationPreference";
 import { useUserLocation } from "@/hooks/useUserLocation";
 import { formatDistanceMeters, withDistanceFromUser } from "@/lib/geo/distance";
+import { dedupeByPlaceName } from "@/lib/geo/place-name";
 import { useLanguage } from "@/lib/i18n";
 import type { KakaoLocalPlace } from "@/types/kakao";
 
@@ -97,7 +99,10 @@ export default function KakaoMap({
   className = "",
 }: Props) {
   const { t } = useLanguage();
-  const { coords: userCoords, status: locationStatus, request: requestLocation } = useUserLocation();
+  const { enabled: locationEnabled } = useLocationPreference();
+  const { coords: userCoords, status: locationStatus, request: requestLocation } = useUserLocation({
+    enabled: locationEnabled,
+  });
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapInstance | null>(null);
   const [places, setPlaces] = useState<KakaoLocalPlace[]>([]);
@@ -113,8 +118,14 @@ export default function KakaoMap({
   const [mapInitKey, setMapInitKey] = useState(0);
 
   const displayPlaces = useMemo(() => {
-    if (!userCoords) return places;
-    return withDistanceFromUser(places, userCoords.lat, userCoords.lng);
+    const located = userCoords
+      ? withDistanceFromUser(places, userCoords.lat, userCoords.lng)
+      : places;
+    return dedupeByPlaceName(
+      located,
+      (place) => place.placeName,
+      (place) => place.distanceMeters,
+    );
   }, [places, userCoords]);
 
   const situationForSearch = useMemo(
@@ -421,13 +432,6 @@ export default function KakaoMap({
               {place.hours ? (
                 <p className="text-[11px] text-text-tertiary mt-0.5">{place.hours}</p>
               ) : null}
-              {(place.provider || place.dataset || place.asOf) && (
-                <p className="text-[10px] text-text-disabled mt-0.5">
-                  {[place.provider, place.dataset, place.asOf ? `기준 ${place.asOf}` : null]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </p>
-              )}
               {!place.processableTasks?.length && place.category ? (
                 <p className="text-[11px] text-text-disabled mt-0.5">{place.category}</p>
               ) : null}

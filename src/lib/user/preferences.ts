@@ -10,6 +10,7 @@ export interface UserPreferences {
   toneStyle: ToneStyle;
   lifeStage: LifeStage;
   stayType: StayType;
+  locationEnabled: boolean;
   universityId: string | null;
   universityName: string | null;
   universityAsked: boolean;
@@ -20,6 +21,7 @@ const DEFAULT: UserPreferences = {
   toneStyle: "default",
   lifeStage: "arrived",
   stayType: "D-2",
+  locationEnabled: true,
   universityId: null,
   universityName: null,
   universityAsked: false,

@@ -35,15 +35,15 @@ export default async function InstitutionDashboardPage({
     >
       <div className="grid grid-cols-2 gap-3 max-w-xl">
         <Link href={`${base}/logs`} className="rounded-xl border border-gray-200 bg-white px-5 py-4 hover:border-gray-300">
-          <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wide">수집 로그</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900">{documentCount}</p>
+          <p className="text-xs font-medium text-gray-400">수집 로그</p>
+          <p className="mt-1 text-lg font-bold text-gray-900">{documentCount}</p>
         </Link>
         <Link href={`${base}/knowledge`} className="rounded-xl border border-gray-200 bg-white px-5 py-4 hover:border-gray-300">
-          <p className="text-[11px] text-gray-400 font-medium uppercase tracking-wide">안내 지식</p>
-          <p className="mt-1 text-2xl font-bold text-gray-900">{knowledgeCount}</p>
+          <p className="text-xs font-medium text-gray-400">안내 지식</p>
+          <p className="mt-1 text-lg font-bold text-gray-900">{knowledgeCount}</p>
         </Link>
       </div>
-      <p className="mt-6 text-sm text-gray-400">
+      <p className="mt-6 text-gray-400">
         자료 등록은 콘텐츠, 검수는 안내 지식, 파일·페이지 이력은 로그에서 봅니다.
       </p>
     </InstitutionShell>

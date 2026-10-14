@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { HelpTip } from "@/components/ui/help-tip";
+import { Toast } from "@/components/ui/toast";
 import { orgRoleHelp, orgRoleLabel, orgStatusLabel } from "@/lib/auth/roles";
 
 interface Member {
@@ -192,7 +193,7 @@ export function OrgStaffMembersPanel({
           </button>
         </div>
         {error ? <p className="mt-2 text-[13px] text-red-600">{error}</p> : null}
-        {notice ? <p className="mt-2 text-[13px] text-gray-700">{notice}</p> : null}
+        <Toast message={notice} variant="success" onDismiss={() => setNotice("")} />
         {issued ? (
           <p className="mt-3 rounded-lg bg-gray-50 px-3 py-2 text-[13px] text-gray-800">
             추가됨: <span className="font-medium">{issued.email}</span>
@@ -202,19 +203,19 @@ export function OrgStaffMembersPanel({
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white">
-        <table className="w-full text-sm">
+        <table className="admin-table">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase text-gray-400">이메일</th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase text-gray-400">역할</th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase text-gray-400">상태</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">이메일</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">역할</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">상태</th>
               <th className="w-12 px-4 py-3" />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {members.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-sm text-gray-400">
+                <td colSpan={4} className="px-4 py-10 text-center text-gray-400">
                   아직 기관 계정이 없습니다.
                 </td>
               </tr>
@@ -229,8 +230,8 @@ export function OrgStaffMembersPanel({
                     : (["ORG_ADMIN", "ORG_EDITOR", "ORG_VIEWER"] as const);
                 return (
                   <tr key={row.id}>
-                    <td className="px-4 py-3 font-medium text-gray-900">{row.email}</td>
-                    <td className="overflow-visible px-4 py-3 text-xs text-gray-600">
+                    <td className="px-4 py-3 font-medium text-gray-800">{row.email}</td>
+                    <td className="overflow-visible px-4 py-3 text-gray-600">
                       <span className="inline-flex items-center gap-1.5">
                         {orgRoleLabel(row.role)}
                         <HelpTip
@@ -240,7 +241,7 @@ export function OrgStaffMembersPanel({
                         />
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-xs text-gray-600">{orgStatusLabel(row.status)}</td>
+                    <td className="px-4 py-3 text-gray-600">{orgStatusLabel(row.status)}</td>
                     <td className="relative px-2 py-2 text-right">
                       <button
                         type="button"

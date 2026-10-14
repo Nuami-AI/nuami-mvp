@@ -62,7 +62,7 @@ function HomeContent() {
       window.localStorage.setItem(lastSearchKey, trimmedSituation);
 
       const coords = await new Promise<{ lat: number; lng: number } | null>((resolve) => {
-        if (!navigator.geolocation) {
+        if (!prefs.locationEnabled || !navigator.geolocation) {
           resolve(null);
           return;
         }

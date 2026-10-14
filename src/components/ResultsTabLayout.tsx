@@ -8,7 +8,6 @@ import ActionMemoPanel from "@/components/ActionMemoPanel";
 import GuideHero from "@/components/GuideHero";
 import OliveYoungProducts from "@/components/OliveYoungProducts";
 import PlacesMap from "@/components/PlacesMap";
-import SaveableItemCard from "@/components/SaveableItemCard";
 import { SectionCard } from "@/components/ui/section-card";
 import { detectDestinationCountry, usesKakaoMap } from "@/lib/geo/destination-country";
 import { isPhysicalPlaceName } from "@/lib/geo/region";
@@ -57,7 +56,6 @@ export default function ResultsTabLayout({
   const oliveYoungQueries = products.map((p) => p.searchQuery ?? p.name).filter(Boolean);
   const destination = detectDestinationCountry(situationLabel, destinationCountry);
   const showKakaoLinks = usesKakaoMap(destination);
-  const videoTitle = data.video.title;
   const visitPlaces = sc.whereTo.filter((place) => isPhysicalPlaceName(place));
 
   return (
@@ -163,22 +161,6 @@ export default function ResultsTabLayout({
                     {t("results.mapGoogle")}
                   </a>
                 </div>
-                {visitPlaces.length > 0 && (
-                  <div className="bg-white rounded-2xl border-2 border-line-neutral shadow-sm p-3 space-y-2">
-                    {visitPlaces.map((place, i) => (
-                      <SaveableItemCard
-                        key={i}
-                        type="place"
-                        title={place}
-                        situation={situationLabel}
-                        sourceUrl={sourceUrl}
-                        videoTitle={videoTitle}
-                        emoji="📍"
-                        saveable
-                      />
-                    ))}
-                  </div>
-                )}
               </>
             ) : (
               <div className="bg-infoBox rounded-2xl border-2 border-line-neutral p-5 text-[13px] text-text-secondary text-center">

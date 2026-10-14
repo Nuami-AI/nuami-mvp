@@ -149,20 +149,20 @@ export function KnowledgeProvidersPanel() {
       </div>
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
-        <table className="w-full text-sm">
+        <table className="admin-table">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase text-gray-400">제공처</th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase text-gray-400">유형</th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase text-gray-400">분야·지역</th>
-              <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase text-gray-400">상태</th>
-              <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase text-gray-400" />
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">제공처</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">유형</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">분야·지역</th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">상태</th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-400" />
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
+                <td colSpan={5} className="px-4 py-10 text-center text-gray-400">
                   등록된 제공처가 없습니다.
                 </td>
               </tr>
@@ -170,9 +170,9 @@ export function KnowledgeProvidersPanel() {
               rows.map((row) => (
                 <tr key={row.id}>
                   <td className="px-4 py-3">
-                    <p className="font-medium text-gray-900">{row.name}</p>
+                    <p className="font-medium text-gray-800">{row.name}</p>
                     {row.description ? (
-                      <p className="mt-0.5 line-clamp-1 text-[12px] text-gray-400">{row.description}</p>
+                      <p className="mt-0.5 line-clamp-1 text-gray-400">{row.description}</p>
                     ) : null}
                   </td>
                   <td className="px-4 py-3 text-gray-600">
@@ -183,27 +183,27 @@ export function KnowledgeProvidersPanel() {
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                      className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${
                         row.status === "ACTIVE"
-                          ? "bg-emerald-50 text-emerald-700"
-                          : "bg-gray-100 text-gray-500"
+                          ? "bg-emerald-50 text-emerald-800 ring-emerald-200"
+                          : "bg-gray-100 text-gray-500 ring-gray-200"
                       }`}
                     >
                       {row.status === "ACTIVE" ? "활성" : "비활성"}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right space-x-2">
+                  <td className="space-x-2 px-4 py-3 text-right">
                     <button
                       type="button"
                       onClick={() => void toggleStatus(row)}
-                      className="text-[12px] text-gray-500 hover:text-gray-800"
+                      className="text-gray-500 hover:text-gray-800"
                     >
                       {row.status === "ACTIVE" ? "비활성" : "활성"}
                     </button>
                     <button
                       type="button"
                       onClick={() => void remove(row)}
-                      className="text-[12px] text-red-500 hover:text-red-700"
+                      className="text-red-500 hover:text-red-700"
                     >
                       삭제
                     </button>

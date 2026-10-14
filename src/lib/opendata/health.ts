@@ -13,16 +13,25 @@ import type { PublicFacility } from "./types";
 const HIRA_LIST = "https://apis.data.go.kr/B551182/hospInfoServicev2/getHospBasisList";
 const PHARMACY_LIST = "https://apis.data.go.kr/B552657/ErmctInsttInfoInqireService/getParmacyListInfoInqire";
 
+/** 사람 진료·조제와 무관한 동물병원·동물약국 등. */
+const NON_HUMAN_HEALTH =
+  /동물병원|동물의료|동물클리닉|동물약국|수의과|수의학|펫병원|애견병원|고양이병원|veterinary|animal\s*hospital|\bvet(?:erinary)?\b/i;
+
+export function isHumanHealthFacility(name: string, category?: string): boolean {
+  return !NON_HUMAN_HEALTH.test(`${name} ${category ?? ""}`);
+}
+
 function toHospital(item: Record<string, string>, live: boolean): PublicFacility | null {
   const name = item.yadmNm ?? item.dutyName;
-  if (!name) return null;
+  const category = item.clCdNm ?? "병원";
+  if (!name || !isHumanHealthFacility(name, category)) return null;
   return {
     name,
     address: item.addr ?? item.dutyAddr,
     phone: item.telno ?? item.dutyTel1,
     lat: item.YPos ? Number(item.YPos) : undefined,
     lng: item.XPos ? Number(item.XPos) : undefined,
-    category: item.clCdNm ?? "병원",
+    category,
     provider: "건강보험심사평가원",
     dataset: "병원정보서비스",
     datasetUrl: "https://www.data.go.kr/data/15001698/openapi.do",
@@ -32,7 +41,7 @@ function toHospital(item: Record<string, string>, live: boolean): PublicFacility
 
 function toPharmacy(item: Record<string, string>, live: boolean): PublicFacility | null {
   const name = item.dutyName ?? item.yadmNm;
-  if (!name) return null;
+  if (!name || !isHumanHealthFacility(name, "약국")) return null;
   return {
     name,
     address: item.dutyAddr ?? item.addr,
@@ -55,19 +64,21 @@ async function kakaoNearby(
   dataset = "지도/주소 Open API",
   datasetUrl?: string,
 ): Promise<PublicFacility[]> {
-  const kakao = await searchKakaoPlaces(query, 5, coords ? { ...coords, radius: 20000 } : undefined);
-  return kakao.places.map((place) => ({
-    name: place.placeName,
-    address: place.roadAddress || place.address,
-    phone: place.phone,
-    lat: place.lat,
-    lng: place.lng,
-    category,
-    provider,
-    dataset,
-    datasetUrl,
-    live: true,
-  }));
+  const kakao = await searchKakaoPlaces(query, 8, coords ? { ...coords, radius: 20000 } : undefined);
+  return kakao.places
+    .filter((place) => isHumanHealthFacility(place.placeName, place.category || category))
+    .map((place) => ({
+      name: place.placeName,
+      address: place.roadAddress || place.address,
+      phone: place.phone,
+      lat: place.lat,
+      lng: place.lng,
+      category,
+      provider,
+      dataset,
+      datasetUrl,
+      live: true,
+    }));
 }
 
 export async function fetchNearbyHospitals(
@@ -75,7 +86,7 @@ export async function fetchNearbyHospitals(
   region: CityRegion = "other",
 ): Promise<{ facilities: PublicFacility[]; error?: string }> {
   const sidoCd = hiraSidoCd(region);
-  const params: Record<string, string> = { pageNo: "1", numOfRows: "8" };
+  const params: Record<string, string> = { pageNo: "1", numOfRows: "30" };
   if (sidoCd) params.sidoCd = sidoCd;
   if (coords) {
     params.xPos = String(coords.lng);

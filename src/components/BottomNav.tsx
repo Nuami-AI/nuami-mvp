@@ -5,11 +5,10 @@ import { useCampusAffiliation } from "@/hooks/useCampusAffiliation";
 import { useLanguage } from "@/lib/i18n";
 import type { NavTabId } from "./nav-tabs";
 
-const BASE_TABS: { id: NavTabId; labelKey: "nav.home" | "nav.guide" | "nav.culture" | "nav.bookmarks" | "nav.mypage"; href: string }[] = [
+const BASE_TABS: { id: NavTabId; labelKey: "nav.home" | "nav.guide" | "nav.culture" | "nav.mypage"; href: string }[] = [
   { id: "home",     labelKey: "nav.home",      href: "/" },
   { id: "guide",    labelKey: "nav.guide",     href: "/guide" },
   { id: "culture",  labelKey: "nav.culture",   href: "/content" },
-  { id: "bookmark", labelKey: "nav.bookmarks", href: "/saved" },
   { id: "mypage",   labelKey: "nav.mypage",    href: "/mypage" },
 ];
 
@@ -49,12 +48,6 @@ function TabIcon({ id, active }: { id: NavTabId; active: boolean }) {
         <rect x="14" y="3"  width="7" height="7" rx="1.5" />
         <rect x="3"  y="14" width="7" height="7" rx="1.5" />
         <rect x="14" y="14" width="7" height="7" rx="1.5" />
-      </svg>
-    );
-  if (id === "bookmark")
-    return (
-      <svg width="20" height="20" fill={fill} stroke={stroke} strokeWidth="2" viewBox="0 0 24 24">
-        <path d="M19 21 12 16l-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
       </svg>
     );
   if (id === "mypage")

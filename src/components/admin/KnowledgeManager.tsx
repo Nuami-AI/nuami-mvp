@@ -513,14 +513,14 @@ export default function KnowledgeManager({
             <p className="px-5 py-8 text-sm text-gray-400">아직 이력이 없습니다.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="admin-table">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50">
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase">시각</th>
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase">유형</th>
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase">제목</th>
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase">출처</th>
-                    <th className="px-4 py-3 text-left text-[11px] font-semibold text-gray-400 uppercase">상태</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">시각</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">유형</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">제목</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">출처</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-400">상태</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -529,9 +529,9 @@ export default function KnowledgeManager({
                     const href = row.fileName.startsWith("http") ? row.fileName : null;
                     return (
                       <tr key={row.id} className="border-b border-gray-50 align-top">
-                        <td className="whitespace-nowrap px-4 py-3 text-[12px] text-gray-500">{formatWhen(row.createdAt)}</td>
+                        <td className="whitespace-nowrap px-4 py-3 text-gray-500">{formatWhen(row.createdAt)}</td>
                         <td className="px-4 py-3">
-                          <span className={`text-[10px] font-semibold rounded-full px-2 py-0.5 ${kind.className}`}>
+                          <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${kind.className}`}>
                             {kind.label}
                           </span>
                         </td>
@@ -540,7 +540,7 @@ export default function KnowledgeManager({
                           <p className="text-[11px] text-gray-400">{categoryLabel(row.category)}</p>
                           {row.errorMessage ? <p className="mt-1 text-[11px] text-red-500">{row.errorMessage}</p> : null}
                         </td>
-                        <td className="max-w-xs px-4 py-3 text-[12px] text-gray-500">
+                        <td className="max-w-xs px-4 py-3 text-gray-500">
                           {href ? (
                             <a href={href} target="_blank" rel="noreferrer" className="break-all text-sky-700 hover:underline">
                               {href}
@@ -549,7 +549,7 @@ export default function KnowledgeManager({
                             <span className="break-all">{row.fileName}</span>
                           )}
                         </td>
-                        <td className="whitespace-nowrap px-4 py-3 text-[12px] text-gray-600">{row.status}</td>
+                        <td className="whitespace-nowrap px-4 py-3 text-gray-600">{row.status}</td>
                       </tr>
                     );
                   })}

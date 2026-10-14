@@ -8,11 +8,10 @@ import { useLanguage } from "@/lib/i18n";
 import { clearActiveUserEmail } from "@/lib/user/storage-scope";
 import type { NavTabId } from "./nav-tabs";
 
-const BASE_LINKS: { id: NavTabId; labelKey: "nav.home" | "nav.guide" | "nav.culture" | "nav.bookmarks" | "nav.mypage"; href: string }[] = [
+const BASE_LINKS: { id: NavTabId; labelKey: "nav.home" | "nav.guide" | "nav.culture" | "nav.mypage"; href: string }[] = [
   { id: "home",     labelKey: "nav.home",      href: "/" },
   { id: "guide",    labelKey: "nav.guide",     href: "/guide" },
   { id: "culture",  labelKey: "nav.culture",   href: "/content" },
-  { id: "bookmark", labelKey: "nav.bookmarks", href: "/saved" },
   { id: "mypage",   labelKey: "nav.mypage",    href: "/mypage" },
 ];
 

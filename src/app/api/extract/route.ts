@@ -10,7 +10,7 @@ import { ClaudeParseError, truncateTranscript } from "@/lib/extract/claude/clien
 import { logEvent } from "@/lib/extract/logger";
 import { parseUrl } from "@/lib/extract/parse-url";
 import { checkRateLimit } from "@/lib/extract/rate-limit";
-import { extractionSchema } from "@/lib/extract/schema";
+import { coerceExtractionPayload, extractionSchema } from "@/lib/extract/schema";
 import {
   TranscriptTooShortError,
   TranscriptUnavailableError,
@@ -274,8 +274,9 @@ export async function POST(request: Request): Promise<Response> {
       );
     }
 
-    const zodResult = extractionSchema.safeParse(parsedJson);
+    const zodResult = extractionSchema.safeParse(coerceExtractionPayload(parsedJson));
     if (!zodResult.success) {
+      console.warn("[extract] schema", zodResult.error.flatten());
       return emitError(
         requestId,
         url,

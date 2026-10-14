@@ -115,6 +115,14 @@ a {
   }
 }
 
+@layer components {
+  /* Console / institution lists inherit the 14px shell default.
+     Headers stay 12px; numeric cells are right-aligned in markup. */
+  .admin-table {
+    @apply w-full text-left;
+  }
+}
+
 /* Hide scrollbar but keep functionality */
 .scrollbar-hide {
   -ms-overflow-style: none;
@@ -122,4 +130,60 @@ a {
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+@keyframes toast-in-top {
+  from {
+    transform: translateY(-140%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes toast-out-top {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-140%);
+    opacity: 0;
+  }
+}
+@keyframes toast-in-bottom {
+  from {
+    transform: translateY(140%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes toast-out-bottom {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(140%);
+    opacity: 0;
+  }
+}
+
+.toast-enter {
+  animation: toast-in-bottom 300ms ease-out both;
+}
+.toast-leave {
+  animation: toast-out-bottom 300ms ease-in both;
+}
+@media (min-width: 768px) {
+  .toast-enter {
+    animation: toast-in-top 300ms ease-out both;
+  }
+  .toast-leave {
+    animation: toast-out-top 300ms ease-in both;
+  }
 }

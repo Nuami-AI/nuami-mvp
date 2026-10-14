@@ -1,7 +1,7 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { isValidEmail, isValidPassword } from "@/lib/auth/validation";
+import { isValidAccountKey, isValidEmail, isValidPassword } from "@/lib/auth/validation";
 
-export { isValidEmail, isValidPassword };
+export { isValidAccountKey, isValidEmail, isValidPassword };
 
 const CODE_TTL_MS = 10 * 60 * 1000;
 

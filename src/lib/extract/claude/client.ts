@@ -1,9 +1,9 @@
-import OpenAI from "openai";
+import { coerceExtractionPayload, extractionSchema } from "@/lib/extract/schema";
+import { createJsonResponse, stripToJson } from "@/lib/llm/json-response";
 
 import { buildSystemPrompt, buildUserMessage, type PromptInput } from "./prompt";
 
 const MAX_TRANSCRIPT_CHARS = 12_000;
-const DEFAULT_MODEL = "gpt-4o-mini";
 const MAX_OUTPUT_TOKENS = 1800;
 
 // Design Ref: §4.2 platform-pivot — situation added to PromptInput (required).
@@ -21,18 +21,6 @@ export class ClaudeParseError extends Error {
   }
 }
 
-let cachedClient: OpenAI | null = null;
-
-function getClient(): OpenAI {
-  if (cachedClient) return cachedClient;
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error("OPENAI_API_KEY is not configured");
-  }
-  cachedClient = new OpenAI({ apiKey });
-  return cachedClient;
-}
-
 export function truncateTranscript(text: string): { text: string; truncated: boolean } {
   if (text.length <= MAX_TRANSCRIPT_CHARS) {
     return { text, truncated: false };
@@ -44,57 +32,45 @@ export function truncateTranscript(text: string): { text: string; truncated: boo
 }
 
 export async function claudeExtract(input: PromptInput): Promise<ClaudeExtractResult> {
-  const client = getClient();
-  const model = process.env.OPENAI_MODEL || DEFAULT_MODEL;
-
   const systemPrompt = buildSystemPrompt(input.userLanguage, input.toneStyle, input.lifeStage);
 
-  let response;
+  let text: string;
+  let tokensIn = 0;
+  let tokensOut = 0;
   try {
-    response = await client.chat.completions.create({
-      model,
-      max_tokens: MAX_OUTPUT_TOKENS,
+    const response = await createJsonResponse({
+      task: "guide",
+      instructions: systemPrompt,
+      input: buildUserMessage(input),
       temperature: 0.2,
-      seed: 42,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: buildUserMessage(input) },
-      ],
+      maxOutputTokens: MAX_OUTPUT_TOKENS,
+      accept: acceptsExtractionSchema,
     });
+    text = response.text;
+    tokensIn = response.tokensIn;
+    tokensOut = response.tokensOut;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error("[claudeExtract] OpenAI API error:", msg);
+    console.error("[claudeExtract] LLM API error:", msg);
     throw err;
   }
 
-  const text = response.choices[0]?.message?.content;
   if (!text) {
-    throw new ClaudeParseError("OpenAI returned no text content");
+    throw new ClaudeParseError("LLM returned no text content");
   }
 
-  const raw = stripToJson(text);
-
   return {
-    rawJson: raw,
-    tokensIn: response.usage?.prompt_tokens ?? 0,
-    tokensOut: response.usage?.completion_tokens ?? 0,
+    rawJson: stripToJson(text),
+    tokensIn,
+    tokensOut,
   };
 }
 
-function stripToJson(text: string): string {
-  const trimmed = text.trim();
-
-  const fenced = /^```(?:json)?\s*([\s\S]*?)\s*```$/m.exec(trimmed);
-  if (fenced?.[1]) {
-    return fenced[1].trim();
+function acceptsExtractionSchema(text: string): boolean {
+  try {
+    const parsed = JSON.parse(stripToJson(text)) as unknown;
+    return extractionSchema.safeParse(coerceExtractionPayload(parsed)).success;
+  } catch {
+    return false;
   }
-
-  const first = trimmed.indexOf("{");
-  const last = trimmed.lastIndexOf("}");
-  if (first !== -1 && last > first) {
-    return trimmed.slice(first, last + 1);
-  }
-
-  return trimmed;
 }

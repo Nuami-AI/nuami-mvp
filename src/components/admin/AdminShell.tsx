@@ -13,6 +13,7 @@ type ConsoleNavId =
   | "assets"
   | "opinions"
   | "opendata"
+  | "llm"
   | "accounts";
 
 interface Props {
@@ -27,13 +28,13 @@ interface Props {
 export default function AdminShell({ email, active, title, subtitle, actions, children }: Props) {
   const superAdmin = isSuperAdmin(email);
   return (
-    <div className="flex h-svh overflow-hidden bg-gray-50">
+    <div className="flex h-svh overflow-hidden bg-gray-50 text-sm">
       <aside className="flex h-full w-52 shrink-0 flex-col border-r border-gray-200 bg-white">
         <div className="px-5 py-5 border-b border-gray-100">
           <Link href="/console" className="inline-flex">
             <BrandLogo className="h-7" />
           </Link>
-          <p className="mt-2 truncate text-sm font-bold text-gray-900" title={email}>
+          <p className="mt-2 truncate font-bold text-gray-900" title={email}>
             {email}
           </p>
           <div className="mt-1.5">
@@ -50,6 +51,7 @@ export default function AdminShell({ email, active, title, subtitle, actions, ch
               <SidebarItem href="/console/logs" label="로그" active={active === "logs"} />
             ) : null}
             <SidebarItem href="/console/opendata" label="공공데이터 연동" active={active === "opendata"} />
+            <SidebarItem href="/console/llm" label="AI 사용량" active={active === "llm"} />
           </NavGroup>
           <NavGroup label="기관">
             <SidebarItem href="/console/organizations" label="기관 목록" active={active === "organizations"} />
@@ -83,8 +85,8 @@ export default function AdminShell({ email, active, title, subtitle, actions, ch
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-[120px] shrink-0 items-center justify-between gap-4 border-b border-gray-200 bg-white px-8">
           <div className="min-w-0">
-            <h1 className="truncate text-xl font-bold text-gray-900">{title}</h1>
-            <p className="mt-0.5 truncate text-sm text-gray-400">{subtitle}</p>
+            <h1 className="truncate text-base font-bold text-gray-900">{title}</h1>
+            <p className="mt-0.5 truncate text-gray-400">{subtitle}</p>
           </div>
           <div id="admin-shell-actions" className="shrink-0">
             {actions}
@@ -109,7 +111,7 @@ function SidebarItem({ href, label, active }: { href: string; label: string; act
   return (
     <Link
       href={href}
-      className={`flex items-center rounded-lg px-3 py-2 text-sm transition-colors ${
+      className={`flex items-center rounded-lg px-3 py-2 transition-colors ${
         active
           ? "bg-gray-100 text-gray-900 font-medium"
           : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"

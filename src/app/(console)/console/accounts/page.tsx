@@ -13,7 +13,7 @@ export default async function ConsoleAccountsPage() {
   if (!isSuperAdmin(session.email)) redirect("/console");
   await healOrgStaffAccountTypes();
 
-  const [rows, members, usage] = await Promise.all([
+  const [rows, members, affiliations, usage] = await Promise.all([
     prisma.authUser.findMany({
       select: {
         email: true,
@@ -29,6 +29,10 @@ export default async function ConsoleAccountsPage() {
       orderBy: { createdAt: "asc" },
     }),
     prisma.organizationMember.findMany({
+      where: { status: "ACTIVE" },
+      select: { email: true, organizationId: true },
+    }),
+    prisma.endUserOrganization.findMany({
       where: { status: "ACTIVE" },
       select: { email: true, organizationId: true },
     }),
@@ -54,21 +58,35 @@ export default async function ConsoleAccountsPage() {
       orgIdByEmail.set(member.email.toLowerCase(), member.organizationId);
     }
   }
+  const affiliationByEmail = new Map<string, { id: string; nameKo: string; logoSrc: string }>();
+  for (const row of affiliations) {
+    const org = getInstitution(row.organizationId);
+    affiliationByEmail.set(row.email.toLowerCase(), {
+      id: row.organizationId,
+      nameKo: org?.nameKo ?? row.organizationId,
+      logoSrc: org ? institutionLogoSrc(org.city, org.logoFile ?? org.id) : "",
+    });
+  }
   const usedByEmail = new Map(usage.map((row) => [row.userEmail.toLowerCase(), row._count.id]));
 
   const accounts = rows.map((row) => {
     const key = row.email.toLowerCase();
-    const orgs = orgsByEmail.get(key) ?? [];
+    const staffOrgs = orgsByEmail.get(key) ?? [];
+    const affiliation = affiliationByEmail.get(key);
+    const orgs = affiliation && !staffOrgs.some((org) => org.id === affiliation.id)
+      ? [...staffOrgs, affiliation]
+      : staffOrgs;
     const accountType = (row.accountType === "ORG_STAFF" || row.accountType === "INTERNAL"
       ? row.accountType
       : "END_USER") as "END_USER" | "ORG_STAFF" | "INTERNAL";
     return {
       email: row.email,
-      kind: accountKindOf(row.accountType, orgs.length > 0),
-      kinds: kindsOfAccount(row.accountType, orgs.length > 0),
+      kind: accountKindOf(row.accountType, staffOrgs.length > 0),
+      kinds: kindsOfAccount(row.accountType, staffOrgs.length > 0),
       accountType,
       orgs,
       organizationId: orgIdByEmail.get(key) ?? "",
+      affiliationId: affiliation?.id ?? "",
       status: row.status,
       provider: row.provider ?? "",
       passwordMustChange: row.passwordMustChange,
