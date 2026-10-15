@@ -53,7 +53,7 @@ export default async function ConsoleLlmUsagePage({
       email={session.email}
       active="llm"
       title="AI 사용량"
-      subtitle="OpenAI·Claude 호출은 실제 안내 생성 시에만 기록됩니다. 이 화면은 DB만 조회합니다."
+      subtitle="로컬·실서버 호출을 한곳에 모아 표시합니다. 실제 안내 생성 시에만 기록되고, 이 화면은 DB만 조회합니다."
     >
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {RANGES.map((item) => (

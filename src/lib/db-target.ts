@@ -35,6 +35,14 @@ export function allowProductionDatabase(): boolean {
   return process.env.ALLOW_PROD_DB === "1" || process.env.VERCEL === "1";
 }
 
+/** MySQL identifier — only [A-Za-z0-9_]. */
+export function sqlIdent(name: string): string {
+  if (!/^[A-Za-z0-9_]+$/.test(name)) {
+    throw new Error(`Unsafe identifier: ${name}`);
+  }
+  return `\`${name}\``;
+}
+
 export function assertSafeDatabase(database = resolveDatabaseName()): string {
   if (database === PROD_DB_NAME && !allowProductionDatabase()) {
     throw new Error(

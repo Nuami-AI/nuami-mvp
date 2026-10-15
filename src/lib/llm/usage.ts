@@ -3,6 +3,53 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { anthropicModel } from "@/lib/anthropic/client";
 import { openaiModel } from "@/lib/openai/client";
+import { DEV_DB_NAME, PROD_DB_NAME, sqlIdent } from "@/lib/db-target";
+
+/** 로컬·실서버가 같은 API 키로 토큰을 쓰므로 기록은 실서버 DB 한곳만 본다. */
+function llmUsageTable(): string {
+  return `${sqlIdent(PROD_DB_NAME)}.\`LlmUsageEvent\``;
+}
+
+let sharedReady: Promise<void> | null = null;
+
+async function ensureSharedLlmUsage(): Promise<void> {
+  if (!sharedReady) {
+    sharedReady = ensureSharedLlmUsageOnce().catch((err) => {
+      sharedReady = null;
+      throw err;
+    });
+  }
+  await sharedReady;
+}
+
+async function ensureSharedLlmUsageOnce(): Promise<void> {
+  const shared = llmUsageTable();
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS ${shared} (
+      \`id\` VARCHAR(191) NOT NULL,
+      \`provider\` VARCHAR(191) NOT NULL,
+      \`model\` VARCHAR(191) NOT NULL,
+      \`task\` VARCHAR(191) NOT NULL,
+      \`tokensIn\` INTEGER NOT NULL DEFAULT 0,
+      \`tokensOut\` INTEGER NOT NULL DEFAULT 0,
+      \`ok\` BOOLEAN NOT NULL DEFAULT true,
+      \`error\` VARCHAR(500) NULL,
+      \`createdAt\` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+      INDEX \`LlmUsageEvent_createdAt_idx\`(\`createdAt\`),
+      INDEX \`LlmUsageEvent_provider_createdAt_idx\`(\`provider\`, \`createdAt\`),
+      INDEX \`LlmUsageEvent_task_createdAt_idx\`(\`task\`, \`createdAt\`),
+      PRIMARY KEY (\`id\`)
+    ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+  `);
+  if (DEV_DB_NAME === PROD_DB_NAME) return;
+  try {
+    await prisma.$executeRawUnsafe(
+      `INSERT IGNORE INTO ${shared} SELECT * FROM ${sqlIdent(DEV_DB_NAME)}.\`LlmUsageEvent\``,
+    );
+  } catch {
+    /* 로컬 테이블이 아직 없으면 건너뜀 */
+  }
+}
 
 function toNum(value: unknown): number {
   if (value == null) return 0;
@@ -29,22 +76,20 @@ export async function recordLlmUsage(input: {
   error?: string;
 }): Promise<void> {
   try {
-    await prisma.$executeRaw`
-      INSERT INTO \`LlmUsageEvent\`
+    await ensureSharedLlmUsage();
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO ${llmUsageTable()}
         (\`id\`, \`provider\`, \`model\`, \`task\`, \`tokensIn\`, \`tokensOut\`, \`ok\`, \`error\`, \`createdAt\`)
-      VALUES
-        (
-          ${randomUUID()},
-          ${input.provider},
-          ${input.provider === "openai" ? openaiModel() : anthropicModel()},
-          ${input.task},
-          ${input.tokensIn ?? 0},
-          ${input.tokensOut ?? 0},
-          ${input.ok},
-          ${input.error?.slice(0, 500) ?? null},
-          NOW(3)
-        )
-    `;
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(3))`,
+      randomUUID(),
+      input.provider,
+      input.provider === "openai" ? openaiModel() : anthropicModel(),
+      input.task,
+      input.tokensIn ?? 0,
+      input.tokensOut ?? 0,
+      input.ok ? 1 : 0,
+      input.error?.slice(0, 500) ?? null,
+    );
   } catch (err) {
     console.warn("[llm-usage] persist failed:", err instanceof Error ? err.message : err);
   }
@@ -160,46 +205,52 @@ export async function getLlmUsageDashboard(range: LlmUsageRange = "7"): Promise<
   const empty = emptyDashboard(range, since);
 
   try {
+    await ensureSharedLlmUsage();
+    const table = llmUsageTable();
     const [totalsRows, byProviderRows, byTaskRows, recent] = await Promise.all([
-      prisma.$queryRaw<TotalsRow[]>`
-        SELECT
+      prisma.$queryRawUnsafe<TotalsRow[]>(
+        `SELECT
           COUNT(*) AS calls,
           COALESCE(SUM(CASE WHEN \`ok\` = 1 THEN 1 ELSE 0 END), 0) AS ok,
           COALESCE(SUM(\`tokensIn\`), 0) AS tokensIn,
           COALESCE(SUM(\`tokensOut\`), 0) AS tokensOut
-        FROM \`LlmUsageEvent\`
-        WHERE \`createdAt\` >= ${since}
-      `,
-      prisma.$queryRaw<ProviderRow[]>`
-        SELECT
+        FROM ${table}
+        WHERE \`createdAt\` >= ?`,
+        since,
+      ),
+      prisma.$queryRawUnsafe<ProviderRow[]>(
+        `SELECT
           \`provider\`,
           COUNT(*) AS calls,
           COALESCE(SUM(CASE WHEN \`ok\` = 1 THEN 1 ELSE 0 END), 0) AS ok,
           COALESCE(SUM(\`tokensIn\`), 0) AS tokensIn,
           COALESCE(SUM(\`tokensOut\`), 0) AS tokensOut
-        FROM \`LlmUsageEvent\`
-        WHERE \`createdAt\` >= ${since}
-        GROUP BY \`provider\`
-      `,
-      prisma.$queryRaw<TaskRow[]>`
-        SELECT
+        FROM ${table}
+        WHERE \`createdAt\` >= ?
+        GROUP BY \`provider\``,
+        since,
+      ),
+      prisma.$queryRawUnsafe<TaskRow[]>(
+        `SELECT
           \`task\`,
           COUNT(*) AS calls,
           COALESCE(SUM(\`tokensIn\`), 0) AS tokensIn,
           COALESCE(SUM(\`tokensOut\`), 0) AS tokensOut
-        FROM \`LlmUsageEvent\`
-        WHERE \`createdAt\` >= ${since}
-        GROUP BY \`task\`
-      `,
-      prisma.$queryRaw<RecentRow[]>`
-        SELECT
+        FROM ${table}
+        WHERE \`createdAt\` >= ?
+        GROUP BY \`task\``,
+        since,
+      ),
+      prisma.$queryRawUnsafe<RecentRow[]>(
+        `SELECT
           \`id\`, \`provider\`, \`model\`, \`task\`,
           \`tokensIn\`, \`tokensOut\`, \`ok\`, \`createdAt\`
-        FROM \`LlmUsageEvent\`
-        WHERE \`createdAt\` >= ${since}
+        FROM ${table}
+        WHERE \`createdAt\` >= ?
         ORDER BY \`createdAt\` DESC
-        LIMIT 80
-      `,
+        LIMIT 80`,
+        since,
+      ),
     ]);
 
     const totals = totalsRows[0];
