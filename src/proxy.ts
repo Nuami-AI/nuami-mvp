@@ -24,6 +24,7 @@ export const config = {
     "/password",
     "/history",
     "/saved/:path*",
+    "/pricing",
     "/guide/:path*",
     "/campus",
     "/campus/:path*",
@@ -107,6 +108,7 @@ export async function proxy(request: NextRequest) {
     pathname === "/console/login" ||
     pathname === "/login" ||
     pathname === "/signup" ||
+    pathname === "/pricing" ||
     pathname.startsWith("/login/");
 
   if (isPublicLogin) {

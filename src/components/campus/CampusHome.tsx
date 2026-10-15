@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import PaywallModal from "@/components/PaywallModal";
+import PaywallModal, { readPaywallState } from "@/components/PaywallModal";
 import PageShell from "@/components/PageShell";
 import CampusAdaptTrack from "@/components/campus/CampusAdaptTrack";
 import CampusGate from "@/components/campus/CampusGate";
@@ -64,6 +64,8 @@ export default function CampusHome({ slug }: { slug?: string }) {
   const [error, setError] = useState<ExtractError | null>(null);
   const [matches, setMatches] = useState<GuideCard[]>([]);
   const [showPaywall, setShowPaywall] = useState(false);
+  const [paywallLimit, setPaywallLimit] = useState<number | null>(null);
+  const [paywallDaily, setPaywallDaily] = useState(false);
   const [pipelineStep, setPipelineStep] = useState<"search" | "reason" | "generate">("search");
 
   const redirectedTo = useRef<string | null>(null);
@@ -175,6 +177,9 @@ export default function CampusHome({ slug }: { slug?: string }) {
       });
 
       if (res.status === 402) {
+        const paywall = await readPaywallState(res);
+        setPaywallLimit(paywall.limit);
+        setPaywallDaily(paywall.daily);
         setStatus("idle");
         setShowPaywall(true);
         return;
@@ -336,6 +341,8 @@ export default function CampusHome({ slug }: { slug?: string }) {
         <PaywallModal
           onSubscribe={() => router.push("/pricing")}
           onDismiss={() => setShowPaywall(false)}
+          limit={paywallLimit}
+          daily={paywallDaily}
         />
       )}
     </>

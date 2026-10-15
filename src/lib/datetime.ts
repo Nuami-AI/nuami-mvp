@@ -1,4 +1,18 @@
 export const KST = "Asia/Seoul";
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+
+/** 한국시간 오늘 0시 (UTC Date). daysBack=1 이면 어제 0시. */
+export function kstDayStart(daysBack = 0): Date {
+  const kst = new Date(Date.now() + KST_OFFSET_MS);
+  kst.setUTCHours(0, 0, 0, 0);
+  kst.setUTCDate(kst.getUTCDate() - daysBack);
+  return new Date(kst.getTime() - KST_OFFSET_MS);
+}
+
+/** 한국시간 다음 날 0시. */
+export function kstNextMidnight(): Date {
+  return new Date(kstDayStart(0).getTime() + 24 * 60 * 60 * 1000);
+}
 
 const DATE_TIME: Intl.DateTimeFormatOptions = {
   timeZone: KST,

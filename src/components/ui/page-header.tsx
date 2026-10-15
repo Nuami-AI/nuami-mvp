@@ -18,12 +18,12 @@ interface PageHeaderProps {
   className?: string;
 }
 
-export function RemainingBadge({ count }: { count: number }) {
+export function RemainingBadge({ count, daily }: { count: number; daily?: boolean }) {
   const { t } = useLanguage();
   return (
     <span className="relative inline-flex items-center justify-center rounded px-1 py-[3px]">
       <span className="relative z-10 text-[11px] font-semibold leading-[1.27] tracking-[0.275px] text-accent-700 whitespace-nowrap">
-        {t("input.remaining").replace("{count}", String(count))}
+        {t(daily ? "input.remainingDaily" : "input.remaining").replace("{count}", String(count))}
       </span>
       <span className="absolute inset-0 rounded bg-accent-700 opacity-[0.08]" aria-hidden />
     </span>

@@ -6,7 +6,7 @@ export const CONSOLE_HOST = process.env.NEXT_PUBLIC_CONSOLE_HOST?.trim() ?? "";
 
 export type HostKind = "app" | "admin" | "console" | "local";
 
-const APP_ONLY_PREFIXES = ["/mypage", "/guide", "/content", "/history", "/saved", "/campus"];
+const APP_ONLY_PREFIXES = ["/mypage", "/guide", "/content", "/history", "/saved", "/campus", "/pricing"];
 
 export function hostnameOf(hostHeader: string): string {
   return hostHeader.split(":")[0]?.toLowerCase() ?? "";

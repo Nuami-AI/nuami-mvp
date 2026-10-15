@@ -1,6 +1,8 @@
 // Design Ref: §8 lib/usage/tracker.ts — UsageEvent DB helpers
 // Plan SC: FR-04, FR-05, FR-06, FR-09, FR-10
 import { prisma, prismaAccounts } from "@/lib/db";
+import { kstDayStart, kstNextMidnight } from "@/lib/datetime";
+import { FREE_CREDITS, resolveAppPlan, type AppPlanId } from "@/lib/usage/limits";
 
 export type UsageAction =
   | "video_ai_use"
@@ -12,14 +14,14 @@ export type UsageAction =
   | "guide_rated"
   | "guide_researched";
 
-const USAGE_LIMIT = parseInt(process.env.USAGE_LIMIT ?? "100", 10);
+export { DAILY_USAGE_LIMIT } from "@/lib/usage/limits";
 
 export function defaultCreditsLimit(): number {
-  return Number.isFinite(USAGE_LIMIT) && USAGE_LIMIT > 0 ? USAGE_LIMIT : 100;
+  return FREE_CREDITS;
 }
 
 export function resolveCreditsLimit(stored: number | null | undefined): number {
-  return stored != null && stored > 0 ? stored : defaultCreditsLimit();
+  return resolveAppPlan(stored).storedLimit;
 }
 
 export async function getCount(userEmail: string, action: UsageAction): Promise<number> {
@@ -47,21 +49,50 @@ export interface GateResult {
   used: number;
   limit: number;
   remaining: number;
+  resetsAt: Date | null;
+  daily: boolean;
+  plan: AppPlanId;
+}
+
+export async function getTodayCount(userEmail: string, action: UsageAction): Promise<number> {
+  return prisma.usageEvent.count({
+    where: { userEmail, action, createdAt: { gte: kstDayStart(0) } },
+  });
+}
+
+export async function loadAppPlan(userEmail: string) {
+  const user = await prismaAccounts.authUser.findUnique({
+    where: { email: userEmail.trim().toLowerCase() },
+    select: { creditsLimit: true },
+  });
+  return resolveAppPlan(user?.creditsLimit);
 }
 
 export async function checkGate(userEmail: string): Promise<GateResult> {
-  const [used, bonusCount, user] = await Promise.all([
-    getCount(userEmail, "video_ai_use"),
-    getCount(userEmail, "guide_bonus_claimed"),
-    prismaAccounts.authUser.findUnique({ where: { email: userEmail }, select: { creditsLimit: true } }),
-  ]);
-  const effectiveLimit = resolveCreditsLimit(user?.creditsLimit) + bonusCount * 2;
-  const allowed = used < effectiveLimit;
-  return { allowed, used, limit: effectiveLimit, remaining: Math.max(0, effectiveLimit - used) };
+  const plan = await loadAppPlan(userEmail);
+  const used = plan.daily
+    ? await getTodayCount(userEmail, "video_ai_use")
+    : await getCount(userEmail, "video_ai_use");
+  return {
+    allowed: used < plan.limit,
+    used,
+    limit: plan.limit,
+    remaining: Math.max(0, plan.limit - used),
+    resetsAt: plan.daily ? kstNextMidnight() : null,
+    daily: plan.daily,
+    plan: plan.id,
+  };
 }
 
 export async function resetCreditsUsed(userEmail: string): Promise<void> {
-  await prisma.usageEvent.deleteMany({ where: { userEmail, action: "video_ai_use" } });
+  const plan = await loadAppPlan(userEmail);
+  await prisma.usageEvent.deleteMany({
+    where: {
+      userEmail,
+      action: "video_ai_use",
+      ...(plan.daily ? { createdAt: { gte: kstDayStart(0) } } : {}),
+    },
+  });
 }
 
 export async function claimGuideBonus(
@@ -125,9 +156,15 @@ export async function getAdminStats(testerEmails: string[]): Promise<TesterStats
 export async function getAdminUserDetails(emails: string[]): Promise<AdminUserDetail[]> {
   if (emails.length === 0) return [];
 
+  const todayStart = kstDayStart(0);
   const rows = await prisma.usageEvent.groupBy({
     by: ["userEmail", "action"],
     where: { userEmail: { in: emails }, action: { in: [...TESTER_STAT_ACTIONS] } },
+    _count: { id: true },
+  });
+  const todayUse = await prisma.usageEvent.groupBy({
+    by: ["userEmail"],
+    where: { userEmail: { in: emails }, action: "video_ai_use", createdAt: { gte: todayStart } },
     _count: { id: true },
   });
   const usageWindows = await prisma.usageEvent.groupBy({
@@ -137,9 +174,8 @@ export async function getAdminUserDetails(emails: string[]): Promise<AdminUserDe
   });
   const creditRows = await prismaAccounts.authUser.findMany({
     where: { email: { in: emails } },
-    select: { email: true, creditsLimit: true, createdAt: true, lastLoginAt: true },
+    select: { email: true, createdAt: true, lastLoginAt: true, creditsLimit: true },
   });
-  const creditsByEmail = new Map(creditRows.map((row) => [row.email.toLowerCase(), row.creditsLimit]));
   const joinedByEmail = new Map(creditRows.map((row) => [row.email.toLowerCase(), row.createdAt]));
   const lastLoginByEmail = new Map(creditRows.map((row) => [row.email.toLowerCase(), row.lastLoginAt]));
   const lastUsedByEmail = new Map(
@@ -149,6 +185,7 @@ export async function getAdminUserDetails(emails: string[]): Promise<AdminUserDe
   for (const row of rows) {
     counts.set(`${row.userEmail.toLowerCase()}:${row.action}`, row._count.id);
   }
+  const todayByEmail = new Map(todayUse.map((row) => [row.userEmail.toLowerCase(), row._count.id]));
 
   return emails.map((email) => {
     const key = email.toLowerCase();
@@ -159,8 +196,9 @@ export async function getAdminUserDetails(emails: string[]): Promise<AdminUserDe
       paywall_cta_click: counts.get(`${key}:paywall_cta_click`) ?? 0,
       paywall_dismiss: counts.get(`${key}:paywall_dismiss`) ?? 0,
     };
-    const creditsUsed = stat.video_ai_use;
-    const creditsLimit = resolveCreditsLimit(creditsByEmail.get(key));
+    const plan = resolveAppPlan(creditRows.find((row) => row.email.toLowerCase() === key)?.creditsLimit);
+    const creditsUsed = plan.daily ? (todayByEmail.get(key) ?? 0) : (counts.get(`${key}:video_ai_use`) ?? 0);
+    const creditsLimit = plan.limit;
     return {
       ...stat,
       firstSeenAt: joinedByEmail.get(key) ?? null,

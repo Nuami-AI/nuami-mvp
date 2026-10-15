@@ -5,7 +5,8 @@ import { setEndUserAffiliation } from "@/lib/auth/tenant";
 import { getInstitution, isNuamiOrganization } from "@/lib/institution/catalog";
 import { ensureOrganization } from "@/lib/institution/seed";
 import { hashPassword, isValidAccountKey, isValidEmail, verifyPassword } from "@/lib/auth/password";
-import { defaultCreditsLimit, resetCreditsUsed, resolveCreditsLimit } from "@/lib/usage/tracker";
+import { resolveAppPlan, storedPlanLimit } from "@/lib/usage/limits";
+import { defaultCreditsLimit, getCount, getTodayCount, resetCreditsUsed } from "@/lib/usage/tracker";
 
 export type AccountType = "END_USER" | "ORG_STAFF" | "INTERNAL";
 export type AccountKind = "end" | "org" | "console";
@@ -158,7 +159,7 @@ export async function createManagedAccount(input: {
   const kinds = parseKinds({ kinds: input.kinds, accountType: input.accountType });
   assertCanGrantConsole(input.actorEmail, kinds.has("console"), false);
   const accountType = primaryAccountType(kinds);
-  const creditsLimit = parseCreditsLimit(input.creditsLimit) ?? defaultCreditsLimit();
+  const creditsLimit = storedPlanLimit(parseCreditsLimit(input.creditsLimit) ?? defaultCreditsLimit());
   const passwordMustChange = !isTest;
   const organizationId = input.organizationId?.trim() ?? "";
   if (kinds.has("org") && !organizationId) throw new Error("기관을 선택하세요.");
@@ -208,7 +209,9 @@ export async function updateManagedAccount(input: {
   assertCanGrantConsole(input.actorEmail, kinds.has("console"), user.accountType === "INTERNAL");
   const accountType = primaryAccountType(kinds);
   const creditsLimit =
-    input.creditsLimit === undefined ? undefined : parseCreditsLimit(input.creditsLimit) ?? defaultCreditsLimit();
+    input.creditsLimit === undefined
+      ? undefined
+      : storedPlanLimit(parseCreditsLimit(input.creditsLimit) ?? defaultCreditsLimit());
   const isTest = input.isTest === undefined ? user.isTest : parseFlag(input.isTest);
   const passwordHash = user.passwordHash;
   const usingTempPassword = passwordHash ? verifyPassword(TEMP_ORG_PASSWORD, passwordHash) : false;
@@ -280,13 +283,16 @@ export async function setManagedAccountCredits(input: {
   if (!isValidAccountKey(email)) throw new Error("올바른 계정을 입력하세요.");
   const user = await prismaAccounts.authUser.findUnique({ where: { email } });
   if (!user) throw new Error("계정을 찾을 수 없습니다.");
-  const creditsLimit = parseCreditsLimit(input.creditsLimit) ?? defaultCreditsLimit();
+  const creditsLimit = storedPlanLimit(parseCreditsLimit(input.creditsLimit) ?? defaultCreditsLimit());
   if (input.resetUsed) {
     await resetCreditsUsed(email);
   }
   await prismaAccounts.authUser.update({ where: { email }, data: { creditsLimit } });
-  const creditsUsed = await prisma.usageEvent.count({ where: { userEmail: email, action: "video_ai_use" } });
-  return { email, creditsLimit: resolveCreditsLimit(creditsLimit), creditsUsed };
+  const plan = resolveAppPlan(creditsLimit);
+  const creditsUsed = plan.daily
+    ? await getTodayCount(email, "video_ai_use")
+    : await getCount(email, "video_ai_use");
+  return { email, creditsLimit: plan.storedLimit, creditsUsed };
 }
 
 export type LoginLookup =

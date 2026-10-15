@@ -8,6 +8,8 @@ import { useLanguage } from "@/lib/i18n";
 interface Props {
   onSubscribe: () => void;
   onDismiss: () => void;
+  limit?: number | null;
+  daily?: boolean;
 }
 
 function LockIcon() {
@@ -19,8 +21,32 @@ function LockIcon() {
   );
 }
 
-export default function PaywallModal({ onSubscribe, onDismiss }: Props) {
+export async function readPaywallLimit(res: Response): Promise<number | null> {
+  const state = await readPaywallState(res);
+  return state.limit;
+}
+
+export async function readPaywallState(res: Response): Promise<{ limit: number | null; daily: boolean }> {
+  const body = (await res.json().catch(() => null)) as {
+    error?: { limit?: unknown; daily?: unknown };
+  } | null;
+  const limit = Number(body?.error?.limit);
+  return {
+    limit: Number.isFinite(limit) && limit > 0 ? limit : null,
+    daily: body?.error?.daily === true,
+  };
+}
+
+export default function PaywallModal({ onSubscribe, onDismiss, limit, daily }: Props) {
   const { t } = useLanguage();
+  const title = daily ? t("paywall.dailyTitle") : t("paywall.title");
+  const desc = daily
+    ? limit != null && limit > 0
+      ? t("paywall.dailyDesc").replaceAll("{count}", String(limit))
+      : t("paywall.dailyDescGeneric")
+    : limit != null && limit > 0
+      ? t("paywall.desc").replaceAll("{count}", String(limit))
+      : t("paywall.descGeneric");
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -39,10 +65,10 @@ export default function PaywallModal({ onSubscribe, onDismiss }: Props) {
         </div>
 
         <h2 className="text-[18px] font-bold text-text-primary text-center leading-snug whitespace-pre-line">
-          {t("paywall.title")}
+          {title}
         </h2>
         <p className="mt-2.5 text-[13px] text-text-secondary text-center leading-relaxed whitespace-pre-line">
-          {t("paywall.desc")}
+          {desc}
         </p>
 
         <div className="mt-7 space-y-3">

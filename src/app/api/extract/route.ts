@@ -112,10 +112,13 @@ export async function POST(request: Request): Promise<Response> {
       const body: ExtractResponse = {
         error: {
           code: "LIMIT_EXCEEDED",
-          message: "무료 체험 횟수를 모두 사용했습니다.",
+          message: gate.daily
+            ? "오늘 이용 횟수를 모두 사용했습니다. 내일 0시(한국시간)부터 다시 이용할 수 있어요."
+            : "무료 이용 횟수를 모두 사용했습니다. 안내를 더 받으려면 플랜을 확인해주세요.",
           requestId,
           used: gate.used,
           limit: gate.limit,
+          daily: gate.daily,
         },
       };
       return NextResponse.json(body, { status: 402 });

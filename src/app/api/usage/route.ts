@@ -16,5 +16,9 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   const gate = await checkGate(session.email);
-  return NextResponse.json({ ...gate, role: "tester" });
+  return NextResponse.json({
+    ...gate,
+    resetsAt: gate.resetsAt?.toISOString() ?? null,
+    role: "tester",
+  });
 }

@@ -5,8 +5,10 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 
 import { AccountKindBadge } from "@/components/admin/AccountKindBadge";
+import { CreditsMark, isUnlimitedCredits } from "@/components/console/CreditsMark";
 import { Toast } from "@/components/ui/toast";
 import { formatKstDateTime } from "@/lib/datetime";
+import { PLAN_SELECT_OPTIONS, resolveAppPlan, storedPlanLimit } from "@/lib/usage/limits";
 
 export interface ConsoleAccountRow {
   email: string;
@@ -361,8 +363,12 @@ export function ConsoleAccountsPanel({
                         <span className="text-gray-400">—</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-gray-700">
-                      {row.creditsUsed}/{row.creditsLimit}
+                    <td className="px-4 py-3 text-right">
+                      <CreditsMark
+                        used={row.creditsUsed}
+                        limit={resolveAppPlan(row.creditsLimit).limit}
+                        unlimited={isUnlimitedCredits(row)}
+                      />
                     </td>
                     <td className="px-4 py-3">
                       <StatusBadge status={row.status} />
@@ -477,18 +483,11 @@ export function ConsoleAccountsPanel({
                 onChange={setAffiliationId}
               />
             ) : null}
-            <label className="block text-[12px] font-medium text-gray-500">
-              크레딧 한도
-              <input
-                type="number"
-                min={1}
-                max={10000}
-                aria-label="크레딧 한도"
-                value={creditsLimit}
-                onChange={(e) => setCreditsLimit(e.target.value)}
-                className="mt-1 h-10 w-full rounded-lg border border-gray-200 px-3 text-sm text-gray-900"
-              />
-            </label>
+            <CreditsLimitField
+              unlimited={kinds.has("console")}
+              value={creditsLimit}
+              onChange={setCreditsLimit}
+            />
             <TestAccountCheck checked={isTest} onChange={setIsTest} />
             {error ? <p className="text-[13px] text-red-600">{error}</p> : null}
             <button
@@ -622,17 +621,11 @@ function EditForm({
           onChange={setAffiliationId}
         />
       ) : null}
-      <label className="block text-[12px] font-medium text-gray-500">
-        크레딧 한도
-        <input
-          type="number"
-          min={1}
-          max={10000}
-          value={creditsLimit}
-          onChange={(e) => setCreditsLimit(e.target.value)}
-          className="mt-1 h-10 w-full rounded-lg border border-gray-200 px-3 text-sm text-gray-900"
-        />
-      </label>
+      <CreditsLimitField
+        unlimited={kinds.has("console")}
+        value={creditsLimit}
+        onChange={setCreditsLimit}
+      />
       <TestAccountCheck checked={isTest} onChange={setIsTest} />
       {error ? <p className="text-[13px] text-red-600">{error}</p> : null}
       <button
@@ -669,19 +662,19 @@ function CreditsForm({
     >
       <p className="text-[13px] text-gray-600">
         {row.email}
-        <span className="ml-2 text-gray-400">사용 {row.creditsUsed} / 한도 {row.creditsLimit}</span>
+        <span className="ml-2 inline-block align-middle">
+          <CreditsMark
+            used={row.creditsUsed}
+            limit={resolveAppPlan(row.creditsLimit).limit}
+            unlimited={isUnlimitedCredits(row)}
+          />
+        </span>
       </p>
-      <label className="block text-[12px] font-medium text-gray-500">
-        크레딧 한도
-        <input
-          type="number"
-          min={1}
-          max={10000}
-          value={creditsLimit}
-          onChange={(e) => setCreditsLimit(e.target.value)}
-          className="mt-1 h-10 w-full rounded-lg border border-gray-200 px-3 text-sm text-gray-900"
-        />
-      </label>
+      <CreditsLimitField
+        unlimited={isUnlimitedCredits(row)}
+        value={creditsLimit}
+        onChange={setCreditsLimit}
+      />
       <label className="flex items-center gap-2 text-[13px] text-gray-700">
         <input type="checkbox" checked={resetUsed} onChange={(e) => setResetUsed(e.target.checked)} />
         사용 횟수도 0으로 초기화
@@ -752,6 +745,40 @@ function AffiliationField({
         ))}
       </select>
       <span className="mt-1 block text-[12px] text-gray-400">테스트 계정은 학번 인증 없이 대학을 붙일 수 있습니다.</span>
+    </label>
+  );
+}
+
+function CreditsLimitField({
+  unlimited,
+  value,
+  onChange,
+}: {
+  unlimited: boolean;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const selected = storedPlanLimit(Number(value) || undefined);
+  return (
+    <label className="block text-[12px] font-medium text-gray-500">
+      {unlimited ? "플랜 한도 (콘솔 해제 시)" : "플랜 한도"}
+      {unlimited ? (
+        <p className="mt-1 mb-1.5 text-[12px] font-normal text-violet-800">
+          콘솔 권한은 한도가 없습니다. <span className="font-semibold">∞ 무한</span>
+        </p>
+      ) : null}
+      <select
+        aria-label="플랜 한도"
+        value={String(selected)}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1 h-10 w-full rounded-lg border border-gray-200 px-3 text-sm text-gray-900"
+      >
+        {PLAN_SELECT_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
     </label>
   );
 }

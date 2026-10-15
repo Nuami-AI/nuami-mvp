@@ -145,7 +145,7 @@ export default function InputScreen({
 
   const remainingBadge =
     usageInfo?.role === "tester" && usageInfo.remaining !== null ? (
-      <RemainingBadge count={usageInfo.remaining} />
+      <RemainingBadge count={usageInfo.remaining} daily={usageInfo.daily} />
     ) : null;
 
   function friendlyError(err: ExtractError): { title: string; hint?: string } {

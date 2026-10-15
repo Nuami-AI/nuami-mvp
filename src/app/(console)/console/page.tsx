@@ -1,12 +1,20 @@
 import { AccountKindBadge } from "@/components/admin/AccountKindBadge";
 import AdminShell from "@/components/admin/AdminShell";
+import { CreditsMark } from "@/components/console/CreditsMark";
 import { isSuperAdmin } from "@/lib/auth/access";
 import { requireConsoleSession } from "@/lib/auth/page-session";
 import { listUsageAccounts } from "@/lib/auth/accounts";
 import { formatKstDateTime } from "@/lib/datetime";
 import { getAdminUserDetails } from "@/lib/usage/tracker";
 
-function CreditBar({ used, limit }: { used: number; limit: number }) {
+function CreditBar({ used, limit, unlimited }: { used: number; limit: number; unlimited?: boolean }) {
+  if (unlimited) {
+    return (
+      <div className="flex justify-end">
+        <CreditsMark used={used} limit={limit} unlimited />
+      </div>
+    );
+  }
   const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
   const color = pct >= 100 ? "bg-red-400" : pct >= 66 ? "bg-amber-400" : "bg-emerald-400";
   return (
@@ -14,9 +22,7 @@ function CreditBar({ used, limit }: { used: number; limit: number }) {
       <div className="w-16 h-1.5 rounded-full bg-gray-200 overflow-hidden">
         <div className={`h-full rounded-full ${color}`} style={{ width: `${pct}%` }} />
       </div>
-      <span className="tabular-nums text-gray-500">
-        {used}/{limit}
-      </span>
+      <CreditsMark used={used} limit={limit} />
     </div>
   );
 }
@@ -106,7 +112,11 @@ export default async function ConsolePage() {
                 ) : null}
                 <td className="px-4 py-3">
                   <div className="flex justify-end">
-                    <CreditBar used={u.creditsUsed} limit={u.creditsLimit} />
+                    <CreditBar
+                      used={u.creditsUsed}
+                      limit={u.creditsLimit}
+                      unlimited={kindByEmail[u.email.toLowerCase()] === "console"}
+                    />
                   </div>
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums text-gray-700">

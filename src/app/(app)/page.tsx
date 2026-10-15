@@ -7,7 +7,7 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import InputScreen from "@/components/InputScreen";
-import PaywallModal from "@/components/PaywallModal";
+import PaywallModal, { readPaywallState } from "@/components/PaywallModal";
 import ResultsScreen from "@/components/ResultsScreen";
 import UniversityAffiliation from "@/components/affiliation/UniversityAffiliation";
 import { useLanguage, getUserLanguageCode } from "@/lib/i18n";
@@ -26,7 +26,8 @@ function HomeContent() {
   const [data, setData] = useState<ExtractionResult | null>(null);
   const [error, setError] = useState<ExtractError | null>(null);
   const [showPaywall, setShowPaywall] = useState(false);
-  const [usageInfo, setUsageInfo] = useState<UsageInfo>({ used: null, limit: null, remaining: null, role: null });
+  const [usageInfo, setUsageInfo] = useState<UsageInfo>({ used: null, limit: null, remaining: null, role: null, daily: false });
+  const [paywallDaily, setPaywallDaily] = useState(false);
   const { lang } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -91,6 +92,9 @@ function HomeContent() {
       });
 
       if (res.status === 402) {
+        const paywall = await readPaywallState(res);
+        if (paywall.limit) setUsageInfo((prev) => ({ ...prev, limit: paywall.limit, remaining: 0, daily: paywall.daily }));
+        setPaywallDaily(paywall.daily);
         setStatus("idle");
         setShowPaywall(true);
         return;
@@ -185,7 +189,7 @@ function HomeContent() {
   };
 
   const handleSubscribe = async () => {
-    await logPaywallEvent("paywall_cta_click", { ctaLabel: "구독 시작하기" });
+    await logPaywallEvent("paywall_cta_click", { ctaLabel: "플랜 보기" });
     router.push("/pricing");
   };
 
@@ -226,6 +230,8 @@ function HomeContent() {
         <PaywallModal
           onSubscribe={handleSubscribe}
           onDismiss={handlePaywallDismiss}
+          limit={usageInfo.limit}
+          daily={paywallDaily}
         />
       )}
     </>

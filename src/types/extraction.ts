@@ -139,6 +139,7 @@ export interface ExtractError {
   requestId: string;
   used?: number;
   limit?: number;
+  daily?: boolean;
 }
 
 export type ExtractResponse =

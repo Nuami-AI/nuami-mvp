@@ -5,7 +5,9 @@ import { accountKindOf, healOrgStaffAccountTypes, kindsOfAccount } from "@/lib/a
 import { requireConsoleSession } from "@/lib/auth/page-session";
 import { INSTITUTION_CATALOG, getInstitution, institutionLogoSrc } from "@/lib/institution/catalog";
 import { prisma, prismaAccounts } from "@/lib/db";
-import { defaultCreditsLimit, resolveCreditsLimit } from "@/lib/usage/tracker";
+import { defaultCreditsLimit } from "@/lib/usage/tracker";
+import { resolveAppPlan, storedPlanLimit } from "@/lib/usage/limits";
+import { kstDayStart } from "@/lib/datetime";
 import { redirect } from "next/navigation";
 
 export default async function ConsoleAccountsPage() {
@@ -13,7 +15,7 @@ export default async function ConsoleAccountsPage() {
   if (!isSuperAdmin(session.email)) redirect("/console");
   await healOrgStaffAccountTypes();
 
-  const [rows, members, affiliations, usage] = await Promise.all([
+  const [rows, members, affiliations, todayUsage, totalUsage] = await Promise.all([
     prismaAccounts.authUser.findMany({
       select: {
         email: true,
@@ -35,6 +37,11 @@ export default async function ConsoleAccountsPage() {
     prismaAccounts.endUserOrganization.findMany({
       where: { status: "ACTIVE" },
       select: { email: true, organizationId: true },
+    }),
+    prisma.usageEvent.groupBy({
+      by: ["userEmail"],
+      where: { action: "video_ai_use", createdAt: { gte: kstDayStart(0) } },
+      _count: { id: true },
     }),
     prisma.usageEvent.groupBy({
       by: ["userEmail"],
@@ -67,7 +74,8 @@ export default async function ConsoleAccountsPage() {
       logoSrc: org ? institutionLogoSrc(org.city, org.logoFile ?? org.id) : "",
     });
   }
-  const usedByEmail = new Map(usage.map((row) => [row.userEmail.toLowerCase(), row._count.id]));
+  const todayByEmail = new Map(todayUsage.map((row) => [row.userEmail.toLowerCase(), row._count.id]));
+  const totalByEmail = new Map(totalUsage.map((row) => [row.userEmail.toLowerCase(), row._count.id]));
 
   const accounts = rows.map((row) => {
     const key = row.email.toLowerCase();
@@ -79,6 +87,7 @@ export default async function ConsoleAccountsPage() {
     const accountType = (row.accountType === "ORG_STAFF" || row.accountType === "INTERNAL"
       ? row.accountType
       : "END_USER") as "END_USER" | "ORG_STAFF" | "INTERNAL";
+    const plan = resolveAppPlan(row.creditsLimit);
     return {
       email: row.email,
       kind: accountKindOf(row.accountType, staffOrgs.length > 0),
@@ -91,8 +100,8 @@ export default async function ConsoleAccountsPage() {
       provider: row.provider ?? "",
       passwordMustChange: row.passwordMustChange,
       isTest: row.isTest,
-      creditsUsed: usedByEmail.get(key) ?? 0,
-      creditsLimit: resolveCreditsLimit(row.creditsLimit),
+      creditsUsed: plan.daily ? (todayByEmail.get(key) ?? 0) : (totalByEmail.get(key) ?? 0),
+      creditsLimit: storedPlanLimit(row.creditsLimit),
       lastLoginAt: row.lastLoginAt?.toISOString() ?? null,
       createdAt: row.createdAt.toISOString(),
     };

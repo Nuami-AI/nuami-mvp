@@ -42,12 +42,16 @@ export default function MypagePage() {
   useEffect(() => {
     fetch("/api/usage")
       .then((r) => (r.ok ? r.json() : null))
-      .then((d: { remaining?: number | null; role?: string } | null) => {
+      .then((d: { remaining?: number | null; role?: string; daily?: boolean } | null) => {
         if (!d || d.remaining == null) {
           setUsageLabel(t("mypage.usage.unlimited"));
           return;
         }
-        setUsageLabel(interp(t("mypage.usage.remaining"), { count: String(d.remaining) }));
+        setUsageLabel(
+          interp(t(d.daily ? "mypage.usage.remainingDaily" : "mypage.usage.remaining"), {
+            count: String(d.remaining),
+          }),
+        );
       })
       .catch(() => {});
   }, [t]);
@@ -96,6 +100,7 @@ export default function MypagePage() {
         <SettingsRow href="/history" label={t("mypage.history.title")} />
         <SettingsRow href="/saved" label={t("mypage.saved")} />
         <SettingsRow href="/mypage/usage" label={t("mypage.usage.title")} value={usageLabel} />
+        <SettingsRow href="/pricing" label={t("mypage.plans.title")} />
       </SettingsGroup>
 
       <div className="h-2 bg-[#F4F4F1]" />

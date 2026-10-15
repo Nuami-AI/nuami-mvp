@@ -45,7 +45,12 @@ function HelpBody() {
 
 function UsageBody() {
   const { t } = useLanguage();
-  const [info, setInfo] = useState<{ used: number | null; limit: number | null; remaining: number | null } | null>(null);
+  const [info, setInfo] = useState<{
+    used: number | null;
+    limit: number | null;
+    remaining: number | null;
+    daily?: boolean;
+  } | null>(null);
 
   useEffect(() => {
     fetch("/api/usage")
@@ -59,19 +64,32 @@ function UsageBody() {
   const unlimited = info.remaining == null;
   return (
     <div>
-      <p className="text-[13px] text-text-tertiary mb-4">{t("mypage.usage.desc")}</p>
+      <p className="text-[13px] text-text-tertiary mb-4">
+        {t(info.daily ? "mypage.usage.descDaily" : "mypage.usage.desc")}
+      </p>
       <div className="rounded-xl border border-line-normal bg-white px-4 py-4">
         <p className="text-[20px] font-bold text-text-primary">
           {unlimited
             ? t("mypage.usage.unlimited")
-            : interp(t("mypage.usage.remaining"), { count: String(info.remaining) })}
+            : interp(t(info.daily ? "mypage.usage.remainingDaily" : "mypage.usage.remaining"), {
+                count: String(info.remaining),
+              })}
         </p>
         {!unlimited ? (
           <p className="mt-1 text-[13px] text-text-tertiary">
-            {interp(t("mypage.usage.used"), { used: String(info.used ?? 0), limit: String(info.limit ?? 0) })}
+            {interp(t(info.daily ? "mypage.usage.usedDaily" : "mypage.usage.used"), {
+              used: String(info.used ?? 0),
+              limit: String(info.limit ?? 0),
+            })}
           </p>
         ) : null}
       </div>
+      <Link
+        href="/pricing"
+        className="mt-4 flex h-12 items-center justify-center rounded-xl bg-accent-700 text-[14px] font-semibold text-white"
+      >
+        {t("mypage.usage.plans")}
+      </Link>
     </div>
   );
 }
