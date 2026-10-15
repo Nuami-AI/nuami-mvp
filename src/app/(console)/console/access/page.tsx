@@ -7,7 +7,7 @@ import {
   policyForEmail,
 } from "@/lib/auth/console-ip";
 import { requireSuperAdminSession } from "@/lib/auth/page-session";
-import { prisma } from "@/lib/db";
+import { prismaAccounts } from "@/lib/db";
 import { getRequestAccessContext } from "@/lib/request-ip";
 
 function serializePolicy(policy: ReturnType<typeof policyForEmail>) {
@@ -27,7 +27,7 @@ export default async function ConsoleAccessPage() {
   const [{ ip, country }, policies, users] = await Promise.all([
     getRequestAccessContext(),
     listConsoleIpPolicies(),
-    prisma.authUser.findMany({
+    prismaAccounts.authUser.findMany({
       where: { accountType: "INTERNAL" },
       select: { email: true, status: true },
       orderBy: { email: "asc" },

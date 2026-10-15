@@ -1,9 +1,9 @@
-import { prisma } from "@/lib/db";
+import { prisma, prismaAccounts } from "@/lib/db";
 import { hasOrgPermission, isSuperAdmin, type OrgPermission } from "@/lib/auth/access";
 import { getInstitution, NUAMI_ORG_ID, organizationSlugOf } from "@/lib/institution/catalog";
 
 export async function getActiveStaffMembership(email: string, organizationId: string) {
-  return prisma.organizationMember.findFirst({
+  return prismaAccounts.organizationMember.findFirst({
     where: {
       organizationId,
       email: email.toLowerCase(),
@@ -13,7 +13,7 @@ export async function getActiveStaffMembership(email: string, organizationId: st
 }
 
 export async function listActiveStaffOrganizations(email: string) {
-  return prisma.organizationMember.findMany({
+  return prismaAccounts.organizationMember.findMany({
     where: { email: email.toLowerCase(), status: "ACTIVE" },
     select: { organizationId: true, role: true },
   });
@@ -25,7 +25,7 @@ export async function hasNuamiOrgAccess(email: string): Promise<boolean> {
 }
 
 export async function hasInactiveStaffMembership(email: string): Promise<boolean> {
-  const row = await prisma.organizationMember.findFirst({
+  const row = await prismaAccounts.organizationMember.findFirst({
     where: { email: email.toLowerCase(), status: "INACTIVE" },
     select: { id: true },
   });
@@ -43,14 +43,14 @@ export async function adminLandingPath(email: string): Promise<string> {
 }
 
 export async function listActiveEndUsersByOrganization(organizationId: string) {
-  return prisma.endUserOrganization.findMany({
+  return prismaAccounts.endUserOrganization.findMany({
     where: { organizationId, status: "ACTIVE" },
     orderBy: { joinedAt: "desc" },
   });
 }
 
 export async function getActiveEndUserInOrganization(membershipId: string, organizationId: string) {
-  return prisma.endUserOrganization.findFirst({
+  return prismaAccounts.endUserOrganization.findFirst({
     where: {
       id: membershipId,
       organizationId,
@@ -61,12 +61,12 @@ export async function getActiveEndUserInOrganization(membershipId: string, organ
 
 export async function setEndUserAffiliation(email: string, organizationId: string | null) {
   const normalized = email.toLowerCase();
-  await prisma.endUserOrganization.updateMany({
+  await prismaAccounts.endUserOrganization.updateMany({
     where: { email: normalized, status: "ACTIVE" },
     data: { status: "INACTIVE", leftAt: new Date() },
   });
   if (!organizationId) return;
-  await prisma.endUserOrganization.upsert({
+  await prismaAccounts.endUserOrganization.upsert({
     where: { email_organizationId: { email: normalized, organizationId } },
     create: {
       email: normalized,

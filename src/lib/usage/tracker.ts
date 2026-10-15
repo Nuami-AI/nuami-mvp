@@ -1,6 +1,6 @@
 // Design Ref: §8 lib/usage/tracker.ts — UsageEvent DB helpers
 // Plan SC: FR-04, FR-05, FR-06, FR-09, FR-10
-import { prisma } from "@/lib/db";
+import { prisma, prismaAccounts } from "@/lib/db";
 
 export type UsageAction =
   | "video_ai_use"
@@ -53,7 +53,7 @@ export async function checkGate(userEmail: string): Promise<GateResult> {
   const [used, bonusCount, user] = await Promise.all([
     getCount(userEmail, "video_ai_use"),
     getCount(userEmail, "guide_bonus_claimed"),
-    prisma.authUser.findUnique({ where: { email: userEmail }, select: { creditsLimit: true } }),
+    prismaAccounts.authUser.findUnique({ where: { email: userEmail }, select: { creditsLimit: true } }),
   ]);
   const effectiveLimit = resolveCreditsLimit(user?.creditsLimit) + bonusCount * 2;
   const allowed = used < effectiveLimit;
@@ -135,7 +135,7 @@ export async function getAdminUserDetails(emails: string[]): Promise<AdminUserDe
     where: { userEmail: { in: emails } },
     _max: { createdAt: true },
   });
-  const creditRows = await prisma.authUser.findMany({
+  const creditRows = await prismaAccounts.authUser.findMany({
     where: { email: { in: emails } },
     select: { email: true, creditsLimit: true, createdAt: true, lastLoginAt: true },
   });

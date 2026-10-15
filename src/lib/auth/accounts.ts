@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { prisma, prismaAccounts } from "@/lib/db";
 import { SUPER_ADMIN_EMAIL } from "@/lib/auth/access";
 import { STAFF_ROLES, TEMP_ORG_PASSWORD } from "@/lib/auth/issue-org-staff";
 import { setEndUserAffiliation } from "@/lib/auth/tenant";
@@ -76,10 +76,10 @@ async function syncOrgMembership(email: string, organizationId: string, orgRole?
   if (!getInstitution(organizationId)) throw new Error("등록되지 않은 기관입니다.");
   await ensureOrganization(organizationId);
   const role = orgRole && STAFF_ROLES.has(orgRole) ? orgRole : "ORG_ADMIN";
-  await prisma.organizationMember.deleteMany({
+  await prismaAccounts.organizationMember.deleteMany({
     where: { email, organizationId: { not: organizationId } },
   });
-  await prisma.organizationMember.upsert({
+  await prismaAccounts.organizationMember.upsert({
     where: { organizationId_email: { organizationId, email } },
     create: { organizationId, email, role, status: "ACTIVE" },
     update: { status: "ACTIVE", ...(orgRole && STAFF_ROLES.has(orgRole) ? { role } : {}) },
@@ -122,12 +122,12 @@ export async function resetAuthUserPassword(email: string, actorEmail: string): 
   if (!isValidAccountKey(normalized)) throw new Error("올바른 계정을 입력하세요.");
   if (normalized === actor) throw new Error("자기 계정은 초기화할 수 없습니다.");
 
-  const user = await prisma.authUser.findUnique({ where: { email: normalized } });
+  const user = await prismaAccounts.authUser.findUnique({ where: { email: normalized } });
   if (!user) throw new Error("계정을 찾을 수 없습니다.");
   if (user.status !== "ACTIVE") throw new Error("비활성화된 계정은 초기화할 수 없습니다.");
 
   const tempPassword = user.isTest ? normalized : TEMP_ORG_PASSWORD;
-  await prisma.authUser.update({
+  await prismaAccounts.authUser.update({
     where: { email: normalized },
     data: {
       passwordHash: hashPassword(tempPassword),
@@ -163,11 +163,11 @@ export async function createManagedAccount(input: {
   const organizationId = input.organizationId?.trim() ?? "";
   if (kinds.has("org") && !organizationId) throw new Error("기관을 선택하세요.");
 
-  const existing = await prisma.authUser.findUnique({ where: { email } });
+  const existing = await prismaAccounts.authUser.findUnique({ where: { email } });
   if (existing) throw new Error("이미 등록된 계정입니다.");
 
   const tempPassword = isTest ? email : TEMP_ORG_PASSWORD;
-  await prisma.authUser.create({
+  await prismaAccounts.authUser.create({
     data: {
       email,
       passwordHash: hashPassword(tempPassword),
@@ -196,7 +196,7 @@ export async function updateManagedAccount(input: {
 }): Promise<{ email: string }> {
   const email = input.email.trim().toLowerCase();
   if (!isValidAccountKey(email)) throw new Error("올바른 계정을 입력하세요.");
-  const user = await prisma.authUser.findUnique({ where: { email } });
+  const user = await prismaAccounts.authUser.findUnique({ where: { email } });
   if (!user) throw new Error("계정을 찾을 수 없습니다.");
   const kinds = parseKinds({
     kinds: input.kinds,
@@ -216,12 +216,12 @@ export async function updateManagedAccount(input: {
   if (kinds.has("org") && !organizationId) throw new Error("기관을 선택하세요.");
 
   if (kinds.has("org")) await syncOrgMembership(email, organizationId, input.orgRole);
-  else await prisma.organizationMember.deleteMany({ where: { email } });
+  else await prismaAccounts.organizationMember.deleteMany({ where: { email } });
   if (isTest && input.affiliationId !== undefined) {
     await syncTestAffiliation(email, input.affiliationId.trim());
   }
 
-  await prisma.authUser.update({
+  await prismaAccounts.authUser.update({
     where: { email },
     data: {
       accountType,
@@ -242,10 +242,10 @@ export async function setManagedAccountStatus(input: {
 }): Promise<{ email: string; status: string }> {
   const email = input.email.trim().toLowerCase();
   assertNotProtected(email, input.actorEmail, input.status === "INACTIVE" ? "비활성화" : "변경");
-  const user = await prisma.authUser.findUnique({ where: { email } });
+  const user = await prismaAccounts.authUser.findUnique({ where: { email } });
   if (!user) throw new Error("계정을 찾을 수 없습니다.");
-  await prisma.authUser.update({ where: { email }, data: { status: input.status } });
-  await prisma.organizationMember.updateMany({
+  await prismaAccounts.authUser.update({ where: { email }, data: { status: input.status } });
+  await prismaAccounts.organizationMember.updateMany({
     where: { email },
     data: { status: input.status },
   });
@@ -258,15 +258,15 @@ export async function deleteManagedAccount(input: {
 }): Promise<{ email: string }> {
   const email = input.email.trim().toLowerCase();
   assertNotProtected(email, input.actorEmail, "삭제");
-  const user = await prisma.authUser.findUnique({ where: { email } });
+  const user = await prismaAccounts.authUser.findUnique({ where: { email } });
   if (!user) throw new Error("계정을 찾을 수 없습니다.");
-  await prisma.$transaction([
-    prisma.organizationMember.deleteMany({ where: { email } }),
-    prisma.endUserOrganization.deleteMany({ where: { email } }),
-    prisma.usageEvent.deleteMany({ where: { userEmail: email } }),
-    prisma.authChallenge.deleteMany({ where: { email } }),
-    prisma.authUser.delete({ where: { email } }),
+  await prismaAccounts.$transaction([
+    prismaAccounts.organizationMember.deleteMany({ where: { email } }),
+    prismaAccounts.endUserOrganization.deleteMany({ where: { email } }),
+    prismaAccounts.authUser.delete({ where: { email } }),
   ]);
+  await prisma.usageEvent.deleteMany({ where: { userEmail: email } });
+  await prisma.authChallenge.deleteMany({ where: { email } });
   return { email };
 }
 
@@ -278,13 +278,13 @@ export async function setManagedAccountCredits(input: {
 }): Promise<{ email: string; creditsLimit: number; creditsUsed: number }> {
   const email = input.email.trim().toLowerCase();
   if (!isValidAccountKey(email)) throw new Error("올바른 계정을 입력하세요.");
-  const user = await prisma.authUser.findUnique({ where: { email } });
+  const user = await prismaAccounts.authUser.findUnique({ where: { email } });
   if (!user) throw new Error("계정을 찾을 수 없습니다.");
   const creditsLimit = parseCreditsLimit(input.creditsLimit) ?? defaultCreditsLimit();
   if (input.resetUsed) {
     await resetCreditsUsed(email);
   }
-  await prisma.authUser.update({ where: { email }, data: { creditsLimit } });
+  await prismaAccounts.authUser.update({ where: { email }, data: { creditsLimit } });
   const creditsUsed = await prisma.usageEvent.count({ where: { userEmail: email, action: "video_ai_use" } });
   return { email, creditsLimit: resolveCreditsLimit(creditsLimit), creditsUsed };
 }
@@ -295,14 +295,14 @@ export type LoginLookup =
 
 export async function loginAccount(email: string, password: string): Promise<LoginLookup> {
   const normalized = email.trim().toLowerCase();
-  const user = await prisma.authUser.findUnique({ where: { email: normalized } });
+  const user = await prismaAccounts.authUser.findUnique({ where: { email: normalized } });
   if (!user) return { ok: false, reason: "unknown_email" };
   if (user.status !== "ACTIVE") return { ok: false, reason: "deactivated" };
   if (!user.passwordHash) return { ok: false, reason: "social_only" };
   if (!verifyPassword(password, user.passwordHash)) return { ok: false, reason: "wrong_password" };
   const usingTempPassword = verifyPassword(TEMP_ORG_PASSWORD, user.passwordHash);
   const mustChangePassword = user.passwordMustChange && !user.isTest && usingTempPassword;
-  await prisma.authUser.update({
+  await prismaAccounts.authUser.update({
     where: { email: normalized },
     data: {
       lastLoginAt: new Date(),
@@ -331,7 +331,7 @@ export function accountKindOf(accountType: string, hasOrgStaff: boolean): "conso
 }
 
 async function activeOrgStaffEmails(): Promise<Set<string>> {
-  const staff = await prisma.organizationMember.findMany({
+  const staff = await prismaAccounts.organizationMember.findMany({
     where: { status: "ACTIVE" },
     select: { email: true },
   });
@@ -342,7 +342,7 @@ async function activeOrgStaffEmails(): Promise<Set<string>> {
 export async function healOrgStaffAccountTypes(): Promise<void> {
   const emails = [...(await activeOrgStaffEmails())];
   if (emails.length === 0) return;
-  await prisma.authUser.updateMany({
+  await prismaAccounts.authUser.updateMany({
     where: { email: { in: emails }, accountType: "END_USER" },
     data: { accountType: "ORG_STAFF" },
   });
@@ -350,7 +350,7 @@ export async function healOrgStaffAccountTypes(): Promise<void> {
 
 export async function listUsageAccounts(): Promise<Array<{ email: string; kind: UsageAccountKind }>> {
   await healOrgStaffAccountTypes();
-  const users = await prisma.authUser.findMany({
+  const users = await prismaAccounts.authUser.findMany({
     select: { email: true, accountType: true },
     orderBy: { createdAt: "asc" },
   });

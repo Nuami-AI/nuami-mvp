@@ -4,7 +4,7 @@ import { getSessionFromRequest } from "@/lib/auth/session";
 import { setEndUserAffiliation } from "@/lib/auth/tenant";
 import { getInstitution } from "@/lib/institution/catalog";
 import { isVerifiedStudentId } from "@/lib/institution/verify";
-import { prisma } from "@/lib/db";
+import { prismaAccounts as prisma } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

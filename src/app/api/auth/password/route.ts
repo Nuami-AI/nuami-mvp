@@ -10,7 +10,7 @@ import {
   requestIsHttps,
   sessionCookieOptions,
 } from "@/lib/auth/session";
-import { prisma } from "@/lib/db";
+import { prismaAccounts as prisma } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

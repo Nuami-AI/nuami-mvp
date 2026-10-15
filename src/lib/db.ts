@@ -5,6 +5,7 @@ import { allowProductionDatabase, assertSafeDatabase, DEV_DB_NAME, PROD_DB_NAME 
 
 const globalForPrisma = globalThis as unknown as {
   prisma?: PrismaClient;
+  prismaAccounts?: PrismaClient;
 };
 
 function parseDatabaseUrl(url: string): Record<string, unknown> {
@@ -80,9 +81,11 @@ function getPoolConfig(): Record<string, unknown> {
   return config;
 }
 
-function createPrisma() {
-  const poolConfig = getPoolConfig();
-  assertSafeDatabase(typeof poolConfig.database === "string" ? poolConfig.database : "");
+function createPrisma(database?: string, skipProdGuard = false) {
+  const poolConfig = { ...getPoolConfig() };
+  if (database) poolConfig.database = database;
+  const dbName = typeof poolConfig.database === "string" ? poolConfig.database : "";
+  if (!skipProdGuard) assertSafeDatabase(dbName);
   const adapter = new PrismaMariaDb(
     poolConfig as ConstructorParameters<typeof PrismaMariaDb>[0]
   );
@@ -104,3 +107,16 @@ function getPrisma(): PrismaClient {
 }
 
 export const prisma = getPrisma();
+
+/** 계정·멤버십은 로컬/실서버가 같은 실서버 DB를 봅니다. */
+export function getPrismaAccounts(): PrismaClient {
+  const current = String(getPoolConfig().database ?? "");
+  if (current === PROD_DB_NAME) return prisma;
+  const cached = globalForPrisma.prismaAccounts;
+  if (cached) return cached;
+  const client = createPrisma(PROD_DB_NAME, true);
+  if (process.env.NODE_ENV !== "production") globalForPrisma.prismaAccounts = client;
+  return client;
+}
+
+export const prismaAccounts = getPrismaAccounts();

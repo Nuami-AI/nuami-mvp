@@ -1,7 +1,7 @@
 import AdminShell from "@/components/admin/AdminShell";
 import { ConsoleOrganizationsTable } from "@/components/console/ConsoleOrganizationsTable";
 import { requireConsoleSession } from "@/lib/auth/page-session";
-import { prisma } from "@/lib/db";
+import { prisma, prismaAccounts } from "@/lib/db";
 import {
   INSTITUTION_CATALOG,
   organizationSlugOf,
@@ -15,7 +15,7 @@ export default async function ConsoleOrganizationsPage() {
   const [docCounts, knowledgeCounts, memberCounts] = await Promise.all([
     prisma.institutionDocument.groupBy({ by: ["institutionId"], _count: { _all: true } }),
     prisma.institutionKnowledge.groupBy({ by: ["institutionId"], _count: { _all: true } }),
-    prisma.organizationMember.groupBy({ by: ["organizationId"], _count: { _all: true } }),
+    prismaAccounts.organizationMember.groupBy({ by: ["organizationId"], _count: { _all: true } }),
   ]);
 
   const docs = Object.fromEntries(docCounts.map((row) => [row.institutionId, row._count._all]));

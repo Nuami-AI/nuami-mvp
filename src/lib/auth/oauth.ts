@@ -5,7 +5,7 @@ import { sessionRoleOf } from "@/lib/auth/accounts";
 import { isOAuthProvider, OAUTH_PROVIDERS, type OAuthProvider } from "@/lib/auth/oauth-providers";
 import { createSession, requestIsHttps, sessionCookieOptions } from "@/lib/auth/session";
 import { publicOrigin } from "@/lib/hosts";
-import { prisma } from "@/lib/db";
+import { prismaAccounts as prisma } from "@/lib/db";
 
 export type { OAuthProvider } from "@/lib/auth/oauth-providers";
 export { isOAuthProvider, OAUTH_PROVIDERS } from "@/lib/auth/oauth-providers";

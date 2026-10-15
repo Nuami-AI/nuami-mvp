@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { prisma, prismaAccounts } from "@/lib/db";
 import { getInstitution, INSTITUTION_CATALOG } from "./catalog";
 import { KOREA_UNIVERSITY_SAMPLE } from "./samples";
 
@@ -17,14 +17,14 @@ export function ensureInstitutions(): Promise<void> {
   return seedPromise;
 }
 
-/** 카탈로그에 있는 기관 한 건을 DB에 없으면 넣습니다. 계정 발급 시 FK를 맞춥니다. */
-export async function ensureOrganization(id: string): Promise<void> {
-  const row = getInstitution(id);
-  if (!row) return;
-  const exists = await prisma.institution.findUnique({ where: { id }, select: { id: true } });
+async function insertInstitutionIfMissing(
+  client: typeof prisma,
+  row: NonNullable<ReturnType<typeof getInstitution>>,
+): Promise<void> {
+  const exists = await client.institution.findUnique({ where: { id: row.id }, select: { id: true } });
   if (exists) return;
   try {
-    await prisma.institution.create({
+    await client.institution.create({
       data: {
         id: row.id,
         nameKo: row.nameKo,
@@ -39,24 +39,35 @@ export async function ensureOrganization(id: string): Promise<void> {
   }
 }
 
-async function seedOnce(): Promise<void> {
-  const existing = await prisma.institution.findMany({ select: { id: true } });
+/** 카탈로그에 있는 기관 한 건을 DB에 없으면 넣습니다. 계정 발급 시 FK를 맞춥니다. */
+export async function ensureOrganization(id: string): Promise<void> {
+  const row = getInstitution(id);
+  if (!row) return;
+  await insertInstitutionIfMissing(prisma, row);
+  if (prismaAccounts !== prisma) await insertInstitutionIfMissing(prismaAccounts, row);
+}
+
+async function seedCatalogInstitutions(client: typeof prisma): Promise<void> {
+  const existing = await client.institution.findMany({ select: { id: true } });
   const have = new Set(existing.map((row) => row.id));
   const missing = INSTITUTION_CATALOG.filter((row) => !have.has(row.id));
+  if (missing.length === 0) return;
+  await client.institution.createMany({
+    data: missing.map((row) => ({
+      id: row.id,
+      nameKo: row.nameKo,
+      nameEn: row.nameEn,
+      aliases: JSON.stringify(row.aliases),
+      city: row.city,
+      type: row.type,
+    })),
+    skipDuplicates: true,
+  });
+}
 
-  if (missing.length > 0) {
-    await prisma.institution.createMany({
-      data: missing.map((row) => ({
-        id: row.id,
-        nameKo: row.nameKo,
-        nameEn: row.nameEn,
-        aliases: JSON.stringify(row.aliases),
-        city: row.city,
-        type: row.type,
-      })),
-      skipDuplicates: true,
-    });
-  }
+async function seedOnce(): Promise<void> {
+  await seedCatalogInstitutions(prisma);
+  if (prismaAccounts !== prisma) await seedCatalogInstitutions(prismaAccounts);
 
   await seedStaffFromEnv();
 
@@ -88,13 +99,13 @@ async function seedStaffFromEnv(): Promise<void> {
   const role = process.env.ORG_STAFF_ROLE?.trim() || "ORG_ADMIN";
   if (!email) return;
   if (!INSTITUTION_CATALOG.some((row) => row.id === organizationId)) return;
-  const user = await prisma.authUser.findUnique({ where: { email }, select: { accountType: true } });
+  const user = await prismaAccounts.authUser.findUnique({ where: { email }, select: { accountType: true } });
   if (!user || user.accountType !== "ORG_STAFF") return;
-  const existing = await prisma.organizationMember.findUnique({
+  const existing = await prismaAccounts.organizationMember.findUnique({
     where: { organizationId_email: { organizationId, email } },
   });
   if (existing) return;
-  await prisma.organizationMember.create({
+  await prismaAccounts.organizationMember.create({
     data: { organizationId, email, role, status: "ACTIVE" },
   });
 }

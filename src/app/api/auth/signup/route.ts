@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { consumeChallenge, issueChallenge, verifyChallenge } from "@/lib/auth/challenge";
 import { hashPassword, isValidEmail, isValidPassword } from "@/lib/auth/password";
-import { prisma } from "@/lib/db";
+import { prismaAccounts as prisma } from "@/lib/db";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

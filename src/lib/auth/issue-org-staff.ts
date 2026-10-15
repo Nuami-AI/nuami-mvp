@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/db";
+import { prismaAccounts as prisma } from "@/lib/db";
 import { hashPassword, isValidEmail } from "@/lib/auth/password";
 import { getInstitution } from "@/lib/institution/catalog";
 import { ensureInstitutions } from "@/lib/institution/seed";

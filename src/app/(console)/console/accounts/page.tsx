@@ -4,7 +4,7 @@ import { isSuperAdmin, SUPER_ADMIN_EMAIL } from "@/lib/auth/access";
 import { accountKindOf, healOrgStaffAccountTypes, kindsOfAccount } from "@/lib/auth/accounts";
 import { requireConsoleSession } from "@/lib/auth/page-session";
 import { INSTITUTION_CATALOG, getInstitution, institutionLogoSrc } from "@/lib/institution/catalog";
-import { prisma } from "@/lib/db";
+import { prisma, prismaAccounts } from "@/lib/db";
 import { defaultCreditsLimit, resolveCreditsLimit } from "@/lib/usage/tracker";
 import { redirect } from "next/navigation";
 
@@ -14,7 +14,7 @@ export default async function ConsoleAccountsPage() {
   await healOrgStaffAccountTypes();
 
   const [rows, members, affiliations, usage] = await Promise.all([
-    prisma.authUser.findMany({
+    prismaAccounts.authUser.findMany({
       select: {
         email: true,
         accountType: true,
@@ -28,11 +28,11 @@ export default async function ConsoleAccountsPage() {
       },
       orderBy: { createdAt: "asc" },
     }),
-    prisma.organizationMember.findMany({
+    prismaAccounts.organizationMember.findMany({
       where: { status: "ACTIVE" },
       select: { email: true, organizationId: true },
     }),
-    prisma.endUserOrganization.findMany({
+    prismaAccounts.endUserOrganization.findMany({
       where: { status: "ACTIVE" },
       select: { email: true, organizationId: true },
     }),
