@@ -10,6 +10,8 @@ export interface InstitutionSeed {
   type: InstitutionType;
   /** public/university/{seoul|busan}/{logoFile}.svg */
   logoFile?: string;
+  contractStart?: string;
+  contractEnd?: string;
 }
 
 export const CITY_DIR: Record<string, string> = {
@@ -25,7 +27,7 @@ export function isNuamiOrganization(id: string | null | undefined): boolean {
 
 export function institutionLogoSrc(city: string, logoFile: string): string {
   if (logoFile === NUAMI_ORG_ID || isNuamiOrganization(city)) {
-    return "/brand/nuami-logo-color.svg";
+    return "/brand/nuami-logo.png";
   }
   const dir = CITY_DIR[city] ?? city.toLowerCase();
   return `/university/${dir}/${logoFile}.svg`;

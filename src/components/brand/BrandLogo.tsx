@@ -3,8 +3,8 @@ import { cn } from "@/lib/utils";
 type LogoVariant = "black" | "color";
 
 const SRC: Record<LogoVariant, string> = {
-  black: "/brand/nuami-logo-black.svg",
-  color: "/brand/nuami-logo-color.svg",
+  black: "/brand/nuami-logo.png",
+  color: "/brand/nuami-logo.png",
 };
 
 interface Props {

@@ -3,9 +3,11 @@ import { NextResponse } from "next/server";
 
 import { loginAccount } from "@/lib/auth/accounts";
 import { canAccessInstitutionAdmin, isInternalAccount, type LoginAudience } from "@/lib/auth/access";
+import { assertConsoleIpAccess } from "@/lib/auth/console-ip";
 import { publicOrigin } from "@/lib/hosts";
 import { adminLandingPath, hasInactiveStaffMembership, listActiveStaffOrganizations } from "@/lib/auth/tenant";
 import { createSession, requestIsHttps, sessionCookieOptions } from "@/lib/auth/session";
+import { getRequestAccessContext } from "@/lib/request-ip";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -171,6 +173,18 @@ export async function POST(request: Request): Promise<Response> {
   });
   if (typeof dest !== "string") {
     return fail(viaForm, request, audience, dest.error, dest.message, 403);
+  }
+
+  if (audience === "console") {
+    const { ip, country } = await getRequestAccessContext();
+    const access = await assertConsoleIpAccess(result.account.email, ip, country);
+    if (!access.ok) {
+      const message =
+        access.reason === "OVERSEAS_BLOCKED"
+          ? "해외 IP에서는 콘솔에 접속할 수 없습니다."
+          : "허용되지 않은 IP에서는 콘솔에 접속할 수 없습니다.";
+      return fail(viaForm, request, audience, access.reason, message, 403);
+    }
   }
 
   try {

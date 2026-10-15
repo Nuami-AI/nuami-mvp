@@ -59,7 +59,8 @@ export default async function ConsolePage() {
         <StatCard label="CTA 전환율" value={totalPaywall > 0 ? `${Math.round((totalCta / totalPaywall) * 100)}%` : "—"} sub={`${totalCta}건 클릭`} />
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className="admin-scroll">
         <table className="admin-table">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
@@ -121,6 +122,7 @@ export default async function ConsolePage() {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </AdminShell>
   );

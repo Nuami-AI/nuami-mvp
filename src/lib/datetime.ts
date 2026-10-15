@@ -52,3 +52,24 @@ export function formatKstCompact(value: Date | string | number | null | undefine
   if (!date) return empty;
   return date.toLocaleString("ko-KR", COMPACT);
 }
+
+/** 2026.03.01 — 계약기간 표시. 없으면 0000.00.00 */
+export function formatDotDate(value: Date | string | number | null | undefined): string | null {
+  const date = toDate(value);
+  if (!date) return null;
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: KST,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  })
+    .format(date)
+    .replace(/-/g, ".");
+}
+
+export function formatContractPeriod(
+  start?: Date | string | number | null,
+  end?: Date | string | number | null,
+): string {
+  return `${formatDotDate(start) ?? "0000.00.00"}-${formatDotDate(end) ?? "0000.00.00"}`;
+}

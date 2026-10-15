@@ -1,7 +1,10 @@
+import { redirect } from "next/navigation";
+
 import InstitutionShell from "@/components/admin/InstitutionShell";
 import KnowledgeManager from "@/components/admin/KnowledgeManager";
-import { hasOrgPermission } from "@/lib/auth/access";
+import { hasOrgPermission, isSuperAdmin } from "@/lib/auth/access";
 import { resolveOrgAccess } from "@/lib/auth/page-session";
+import { institutionAdminPath } from "@/lib/institution/catalog";
 
 export default async function InstitutionLogsPage({
   params,
@@ -10,6 +13,7 @@ export default async function InstitutionLogsPage({
 }) {
   const { orgSlug } = await params;
   const { session, institution, membershipRole } = await resolveOrgAccess(orgSlug);
+  if (!isSuperAdmin(session.email)) redirect(institutionAdminPath(institution));
 
   return (
     <InstitutionShell

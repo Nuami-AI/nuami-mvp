@@ -202,7 +202,8 @@ export function OrgStaffMembersPanel({
         ) : null}
       </div>
 
-      <div className="rounded-xl border border-gray-200 bg-white">
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className="admin-scroll">
         <table className="admin-table">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
@@ -302,6 +303,7 @@ export function OrgStaffMembersPanel({
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

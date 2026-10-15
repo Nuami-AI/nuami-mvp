@@ -119,7 +119,18 @@ a {
   /* Console / institution lists inherit the 14px shell default.
      Headers stay 12px; numeric cells are right-aligned in markup. */
   .admin-table {
-    @apply w-full text-left;
+    @apply min-w-full text-left;
+    width: max-content;
+  }
+  .admin-table th,
+  .admin-table td {
+    @apply whitespace-nowrap;
+  }
+  .admin-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
   }
 }
 

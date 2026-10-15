@@ -191,6 +191,7 @@ export function ConsoleOrganizationsTable({ rows }: { rows: OrgListRow[] }) {
             </p>
           </div>
         ) : (
+          <div className="admin-scroll">
           <table className="admin-table">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
@@ -259,6 +260,7 @@ export function ConsoleOrganizationsTable({ rows }: { rows: OrgListRow[] }) {
               })}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

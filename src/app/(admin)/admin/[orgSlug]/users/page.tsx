@@ -33,7 +33,8 @@ export default async function InstitutionUsersPage({
       title="사용자"
       subtitle="이 기관에 소속된 이용자입니다."
     >
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className="admin-scroll">
         <table className="admin-table">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
@@ -73,6 +74,7 @@ export default async function InstitutionUsersPage({
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </InstitutionShell>
   );

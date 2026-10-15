@@ -305,6 +305,7 @@ export function ConsoleAccountsPanel({
         <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 bg-gray-50 px-4 py-3">
           <KindChips selected={kindFilter} counts={kindCounts} onToggle={toggleFilter} />
         </div>
+        <div className="admin-scroll">
         <table className="admin-table">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
@@ -399,6 +400,7 @@ export function ConsoleAccountsPanel({
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {addOpen ? (

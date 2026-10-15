@@ -312,3 +312,17 @@ model LlmUsageEvent {
   @@index([provider, createdAt])
   @@index([task, createdAt])
 }
+
+/// 콘솔 접속 IP 정책. targetEmail=* 은 전체 콘솔 계정 기본값.
+model ConsoleIpPolicy {
+  id            String   @id @default(cuid())
+  targetEmail   String   @unique
+  /// allow_all | allowlist
+  mode          String   @default("allow_all")
+  allowOverseas Boolean  @default(true)
+  /// JSON string[] of IPv4 / CIDR
+  allowedIps    String   @db.Text
+  updatedBy     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

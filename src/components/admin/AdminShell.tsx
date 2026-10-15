@@ -1,8 +1,7 @@
-import Link from "next/link";
-
 import { BrandLogo } from "@/components/brand/BrandLogo";
-import { StatusBubble } from "@/components/ui/status-bubble";
+import { DashboardChrome, type DashboardNavGroup } from "@/components/admin/DashboardChrome";
 import { isSuperAdmin } from "@/lib/auth/access";
+import { getRequestClientIp } from "@/lib/request-ip";
 
 type ConsoleNavId =
   | "users"
@@ -14,7 +13,8 @@ type ConsoleNavId =
   | "opinions"
   | "opendata"
   | "llm"
-  | "accounts";
+  | "accounts"
+  | "access";
 
 interface Props {
   email: string;
@@ -25,99 +25,65 @@ interface Props {
   children: React.ReactNode;
 }
 
-export default function AdminShell({ email, active, title, subtitle, actions, children }: Props) {
+export default async function AdminShell({ email, active, title, subtitle, actions, children }: Props) {
   const superAdmin = isSuperAdmin(email);
+  const clientIp = await getRequestClientIp();
+  const groups: DashboardNavGroup[] = [
+    {
+      label: "운영",
+      items: [
+        { href: "/console", label: "이용 현황", icon: "usage", active: active === "users" },
+        ...(superAdmin
+          ? [{ href: "/console/logs", label: "로그", icon: "logs" as const, active: active === "logs" }]
+          : []),
+        { href: "/console/opendata", label: "공공데이터 연동", icon: "opendata", active: active === "opendata" },
+        { href: "/console/llm", label: "AI 사용량", icon: "llm", active: active === "llm" },
+      ],
+    },
+    {
+      label: "기관",
+      items: [
+        { href: "/console/organizations", label: "기관 목록", icon: "organizations", active: active === "organizations" },
+        { href: "/console/knowledge", label: "기관 자료 검수", icon: "knowledge", active: active === "knowledge" },
+      ],
+    },
+    {
+      label: "지식베이스",
+      items: [
+        { href: "/console/providers", label: "자료 제공처", icon: "providers", active: active === "providers" },
+        { href: "/console/assets", label: "지식자료", icon: "assets", active: active === "assets" },
+        { href: "/console/opinions", label: "전문가 의견", icon: "opinions", active: active === "opinions" },
+      ],
+    },
+    ...(superAdmin
+      ? [
+          {
+            label: "계정",
+            items: [
+              { href: "/console/accounts", label: "전체 계정", icon: "accounts" as const, active: active === "accounts" },
+              { href: "/console/access", label: "접속 제한", icon: "access" as const, active: active === "access" },
+            ],
+          },
+        ]
+      : []),
+  ];
+
   return (
-    <div className="flex h-svh overflow-hidden bg-gray-50 text-sm">
-      <aside className="flex h-full w-52 shrink-0 flex-col border-r border-gray-200 bg-white">
-        <div className="px-5 py-5 border-b border-gray-100">
-          <Link href="/console" className="inline-flex">
-            <BrandLogo className="h-7" />
-          </Link>
-          <p className="mt-2 truncate font-bold text-gray-900" title={email}>
-            {email}
-          </p>
-          <div className="mt-1.5">
-            <StatusBubble tone={superAdmin ? "done" : "progress"}>
-              {superAdmin ? "슈퍼 어드민" : "콘솔 접근자"}
-            </StatusBubble>
-          </div>
-        </div>
-
-        <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4 space-y-4">
-          <NavGroup label="운영">
-            <SidebarItem href="/console" label="이용 현황" active={active === "users"} />
-            {superAdmin ? (
-              <SidebarItem href="/console/logs" label="로그" active={active === "logs"} />
-            ) : null}
-            <SidebarItem href="/console/opendata" label="공공데이터 연동" active={active === "opendata"} />
-            <SidebarItem href="/console/llm" label="AI 사용량" active={active === "llm"} />
-          </NavGroup>
-          <NavGroup label="기관">
-            <SidebarItem href="/console/organizations" label="기관 목록" active={active === "organizations"} />
-            <SidebarItem href="/console/knowledge" label="기관 자료 검수" active={active === "knowledge"} />
-          </NavGroup>
-          <NavGroup label="지식베이스">
-            <SidebarItem href="/console/providers" label="자료 제공처" active={active === "providers"} />
-            <SidebarItem href="/console/assets" label="지식자료" active={active === "assets"} />
-            <SidebarItem href="/console/opinions" label="전문가 의견" active={active === "opinions"} />
-          </NavGroup>
-          {superAdmin ? (
-            <NavGroup label="계정">
-              <SidebarItem href="/console/accounts" label="전체 계정" active={active === "accounts"} />
-            </NavGroup>
-          ) : null}
-        </nav>
-
-        <div className="px-5 py-4 border-t border-gray-100">
-          <Link href="/console/password" className="block text-xs text-gray-400 hover:text-gray-600 mb-2">
-            비밀번호 변경
-          </Link>
-          <form action="/api/auth/logout" method="POST">
-            <input type="hidden" name="audience" value="console" />
-            <button type="submit" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
-              로그아웃
-            </button>
-          </form>
-        </div>
-      </aside>
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-[120px] shrink-0 items-center justify-between gap-4 border-b border-gray-200 bg-white px-8">
-          <div className="min-w-0">
-            <h1 className="truncate text-base font-bold text-gray-900">{title}</h1>
-            <p className="mt-0.5 truncate text-gray-400">{subtitle}</p>
-          </div>
-          <div id="admin-shell-actions" className="shrink-0">
-            {actions}
-          </div>
-        </header>
-        <main className="min-h-0 flex-1 overflow-auto px-8 py-6">{children}</main>
-      </div>
-    </div>
-  );
-}
-
-function NavGroup({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400">{label}</p>
-      <div className="space-y-0.5">{children}</div>
-    </div>
-  );
-}
-
-function SidebarItem({ href, label, active }: { href: string; label: string; active: boolean }) {
-  return (
-    <Link
-      href={href}
-      className={`flex items-center rounded-lg px-3 py-2 transition-colors ${
-        active
-          ? "bg-gray-100 text-gray-900 font-medium"
-          : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
-      }`}
+    <DashboardChrome
+      homeHref="/console"
+      brand={<BrandLogo className="h-7" />}
+      email={email}
+      roleLabel={superAdmin ? "슈퍼 어드민" : "콘솔 접근자"}
+      roleTone={superAdmin ? "done" : "progress"}
+      title={title}
+      subtitle={subtitle}
+      actions={actions}
+      groups={groups}
+      passwordHref="/console/password"
+      logoutAudience="console"
+      sidebarCaption={clientIp}
     >
-      {label}
-    </Link>
+      {children}
+    </DashboardChrome>
   );
 }

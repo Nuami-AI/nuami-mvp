@@ -19,7 +19,8 @@ export default async function ConsoleLogsPage() {
       title="로그"
       subtitle="계정 발급·권한 변경 이력입니다."
     >
-      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className="admin-scroll">
         <table className="admin-table">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
@@ -58,6 +59,7 @@ export default async function ConsoleLogsPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </AdminShell>
   );

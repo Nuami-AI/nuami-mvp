@@ -18,6 +18,8 @@ const ERROR_COPY: Record<string, string> = {
   ACCOUNT_INACTIVE: "비활성화된 계정입니다.",
   NOT_INTERNAL: "이 계정은 내부 운영 권한이 없습니다.",
   SOCIAL_ONLY: "이 계정은 소셜 로그인을 사용해주세요.",
+  IP_BLOCKED: "허용되지 않은 IP에서는 콘솔에 접속할 수 없습니다.",
+  OVERSEAS_BLOCKED: "해외 IP에서는 콘솔에 접속할 수 없습니다.",
 };
 
 const DEFAULT_REDIRECT: Record<LoginAudience, string> = {

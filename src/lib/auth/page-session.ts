@@ -2,8 +2,10 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { hasOrgPermission, isInternalAccount, isSuperAdmin } from "@/lib/auth/access";
-import { getSessionFromRequest, type SessionPayload } from "@/lib/auth/session";
+import { assertConsoleIpAccess } from "@/lib/auth/console-ip";
+import { getSessionFromRequest, sessionCookieOptions, type SessionPayload } from "@/lib/auth/session";
 import { getActiveStaffMembership, hasNuamiOrgAccess, listActiveStaffOrganizations } from "@/lib/auth/tenant";
+import { getRequestAccessContext } from "@/lib/request-ip";
 import {
   findInstitutionByOrgSlug,
   isNuamiOrganization,
@@ -25,6 +27,13 @@ export async function requireConsoleSession(): Promise<SessionPayload> {
   const session = await getSessionFromCookies();
   if (!session) redirect("/console/login?redirect=/console");
   if (!isInternalAccount(session.role)) redirect("/console/login?error=NOT_INTERNAL");
+  const { ip, country } = await getRequestAccessContext();
+  const access = await assertConsoleIpAccess(session.email, ip, country);
+  if (!access.ok) {
+    const cookieStore = await cookies();
+    cookieStore.set(sessionCookieOptions("", true));
+    redirect(`/console/login?error=${access.reason}`);
+  }
   return session;
 }
 

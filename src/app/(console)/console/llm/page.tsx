@@ -94,6 +94,7 @@ export default async function ConsoleLlmUsagePage({
 
       {data.byTask.length > 0 ? (
         <div className="mb-7 overflow-hidden rounded-xl border border-gray-200 bg-white">
+          <div className="admin-scroll">
           <table className="admin-table">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
@@ -114,10 +115,12 @@ export default async function ConsoleLlmUsagePage({
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       ) : null}
 
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+        <div className="admin-scroll">
         <table className="admin-table">
           <thead>
             <tr className="border-b border-gray-100 bg-gray-50">
@@ -154,6 +157,7 @@ export default async function ConsoleLlmUsagePage({
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </AdminShell>
   );

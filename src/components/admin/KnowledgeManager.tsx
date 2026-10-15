@@ -512,7 +512,7 @@ export default function KnowledgeManager({
           {documents.length === 0 ? (
             <p className="px-5 py-8 text-sm text-gray-400">아직 이력이 없습니다.</p>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="admin-scroll">
               <table className="admin-table">
                 <thead>
                   <tr className="border-b border-gray-100 bg-gray-50">

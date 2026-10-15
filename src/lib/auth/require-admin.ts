@@ -1,17 +1,32 @@
 import { NextResponse } from "next/server";
 
 import { isInternalAccount, isSuperAdmin, staffCan, type OrgPermission } from "@/lib/auth/access";
+import { assertConsoleIpAccess } from "@/lib/auth/console-ip";
 import { getActiveStaffMembership, hasNuamiOrgAccess, listActiveStaffOrganizations, writeAudit } from "@/lib/auth/tenant";
 import { isNuamiOrganization } from "@/lib/institution/catalog";
 import { getSessionFromRequest, type SessionPayload } from "@/lib/auth/session";
+import { getRequestAccessContext } from "@/lib/request-ip";
 
 const FORBIDDEN = NextResponse.json({ error: "FORBIDDEN", message: "접근 권한이 없습니다." }, { status: 403 });
 const UNAUTHORIZED = NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+const IP_BLOCKED = NextResponse.json(
+  { error: "IP_BLOCKED", message: "허용되지 않은 IP에서는 콘솔에 접속할 수 없습니다." },
+  { status: 403 },
+);
+const OVERSEAS_BLOCKED = NextResponse.json(
+  { error: "OVERSEAS_BLOCKED", message: "해외 IP에서는 콘솔에 접속할 수 없습니다." },
+  { status: 403 },
+);
 
 export async function requireNuamiOperator(request: Request) {
   const session = await getSessionFromRequest(request);
   if (!session) return { session: null, error: UNAUTHORIZED };
   if (!isInternalAccount(session.role)) return { session: null, error: FORBIDDEN };
+  const { ip, country } = await getRequestAccessContext();
+  const access = await assertConsoleIpAccess(session.email, ip, country);
+  if (!access.ok) {
+    return { session: null, error: access.reason === "OVERSEAS_BLOCKED" ? OVERSEAS_BLOCKED : IP_BLOCKED };
+  }
   return { session, error: null };
 }
 
