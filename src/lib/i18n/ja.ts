@@ -68,7 +68,7 @@ export const ja: TranslationDict = {
   "error.transcriptUnavailable": "この動画の字幕を読み取れません。",
   "error.transcriptTooShort":    "字幕が短すぎて要約できません。",
   "error.claudeParseFailed":     "抽出結果を解析できませんでした。",
-  "error.rateLimited":           "リクエスト制限に達しました。",
+  "error.rateLimited":           "リクエストが多すぎます。しばらくしてから再試行してください。",
   "error.internal":              "エラーが発生しました。",
   "error.tryAgain":              "しばらくしてから再試行してください。",
   "error.tryYouTube":            "現在はYouTube URLをお使いください。",

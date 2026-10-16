@@ -66,7 +66,7 @@ export const vi: TranslationDict = {
   "error.transcriptUnavailable": "Video này không có phụ đề để đọc.",
   "error.transcriptTooShort": "Phụ đề quá ngắn để tóm tắt video.",
   "error.claudeParseFailed": "Không thể phân tích kết quả trích xuất.",
-  "error.rateLimited": "Bạn đã vượt giới hạn yêu cầu.",
+  "error.rateLimited": "Quá nhiều yêu cầu. Vui lòng thử lại sau.",
   "error.internal": "Đã xảy ra lỗi.",
   "error.tryAgain": "Vui lòng thử lại sau.",
   "error.tryYouTube": "Hãy dùng URL YouTube tạm thời.",

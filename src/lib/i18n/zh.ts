@@ -66,7 +66,7 @@ export const zh: TranslationDict = {
   "error.transcriptUnavailable": "无法读取此视频字幕。",
   "error.transcriptTooShort": "字幕太短，无法总结。",
   "error.claudeParseFailed": "无法解析提取结果。",
-  "error.rateLimited": "已超过请求限制。",
+  "error.rateLimited": "请求过于频繁，请稍后再试。",
   "error.internal": "发生错误。",
   "error.tryAgain": "请稍后再试。",
   "error.tryYouTube": "请暂时使用 YouTube URL。",

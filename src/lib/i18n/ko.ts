@@ -71,7 +71,7 @@ export const ko = {
   "error.transcriptUnavailable": "이 영상의 자막을 읽을 수 없습니다.",
   "error.transcriptTooShort":    "자막이 너무 짧아 요약할 수 없습니다.",
   "error.claudeParseFailed":     "추출 결과를 파싱할 수 없습니다.",
-  "error.rateLimited":           "요청 한도를 초과했습니다.",
+  "error.rateLimited":           "요청이 너무 많아요. 잠시 후 다시 시도해주세요.",
   "error.internal":              "오류가 발생했습니다.",
   "error.tryAgain":              "잠시 후 다시 시도해주세요.",
   "error.tryYouTube":            "지금은 YouTube URL을 사용해주세요.",

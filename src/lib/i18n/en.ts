@@ -68,7 +68,7 @@ export const en: TranslationDict = {
   "error.transcriptUnavailable": "This video has no captions we can read.",
   "error.transcriptTooShort":    "Not enough captions to summarize this video.",
   "error.claudeParseFailed":     "We couldn't parse the extraction result.",
-  "error.rateLimited":           "You've hit the rate limit.",
+  "error.rateLimited":           "Too many requests. Please try again in a moment.",
   "error.internal":              "Something went wrong.",
   "error.tryAgain":              "Please try again in a moment.",
   "error.tryYouTube":            "Try a YouTube URL for now.",

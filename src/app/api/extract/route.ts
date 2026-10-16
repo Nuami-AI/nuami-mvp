@@ -125,16 +125,18 @@ export async function POST(request: Request): Promise<Response> {
     }
   }
 
-  // --- 3. Rate limit ---------------------------------------------------------
-  const limit = checkRateLimit(ip);
-  if (!limit.allowed) {
-    const errResp = emitError(requestId, url, "unparsed", startedAt, {
-      code: "RATE_LIMITED",
-      message: "Too many requests.",
-      hint: `Try again in ${limit.retryAfterSeconds}s.`,
-    });
-    errResp.headers.set("Retry-After", String(limit.retryAfterSeconds));
-    return errResp;
+  // --- 3. Burst guard (IP). Console/admin skip; credits are the real quota. --
+  if (session.role !== "admin") {
+    const limit = checkRateLimit(ip);
+    if (!limit.allowed) {
+      const errResp = emitError(requestId, url, "unparsed", startedAt, {
+        code: "RATE_LIMITED",
+        message: "Too many requests.",
+        hint: `Try again in ${limit.retryAfterSeconds}s.`,
+      });
+      errResp.headers.set("Retry-After", String(limit.retryAfterSeconds));
+      return errResp;
+    }
   }
 
   const acceptLang = request.headers.get("accept-language") ?? "ko";

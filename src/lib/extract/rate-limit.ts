@@ -1,9 +1,9 @@
 // Design Ref: §7 Rate limiting + Plan FR-06.
-// In-memory per-IP limiter: 10 requests/hour, 3 requests/minute.
-// Cold-start caveat documented in Plan §5 (Risks).
+// In-memory per-IP burst guard. Product quota is credits (checkGate), not this.
+// Defaults sit above Premium (100/day) so testers hit the paywall first.
 
-const HOURLY_LIMIT = Number(process.env.RATE_LIMIT_HOURLY ?? 10);
-const MINUTE_LIMIT = Number(process.env.RATE_LIMIT_MINUTE ?? 3);
+const HOURLY_LIMIT = Number(process.env.RATE_LIMIT_HOURLY ?? 120);
+const MINUTE_LIMIT = Number(process.env.RATE_LIMIT_MINUTE ?? 10);
 
 const HOUR_MS = 60 * 60 * 1000;
 const MINUTE_MS = 60 * 1000;
