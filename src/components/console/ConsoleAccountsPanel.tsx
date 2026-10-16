@@ -761,10 +761,10 @@ function CreditsLimitField({
   const selected = storedPlanLimit(Number(value) || undefined);
   return (
     <label className="block text-[12px] font-medium text-gray-500">
-      {unlimited ? "플랜 한도 (콘솔 해제 시)" : "플랜 한도"}
+      {unlimited ? "플랜 한도 (한도 미적용)" : "플랜 한도"}
       {unlimited ? (
         <p className="mt-1 mb-1.5 text-[12px] font-normal text-violet-800">
-          콘솔 권한은 한도가 없습니다. <span className="font-semibold">∞ 무한</span>
+          이 계정은 한도가 없습니다. <span className="font-semibold">∞ 무한</span>
         </p>
       ) : null}
       <select

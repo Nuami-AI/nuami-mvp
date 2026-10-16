@@ -354,10 +354,10 @@ export async function healOrgStaffAccountTypes(): Promise<void> {
   });
 }
 
-export async function listUsageAccounts(): Promise<Array<{ email: string; kind: UsageAccountKind }>> {
+export async function listUsageAccounts(): Promise<Array<{ email: string; kind: UsageAccountKind; isTest: boolean }>> {
   await healOrgStaffAccountTypes();
   const users = await prismaAccounts.authUser.findMany({
-    select: { email: true, accountType: true },
+    select: { email: true, accountType: true, isTest: true },
     orderBy: { createdAt: "asc" },
   });
   if (users.length === 0) return [];
@@ -365,5 +365,6 @@ export async function listUsageAccounts(): Promise<Array<{ email: string; kind: 
   return users.map((row) => ({
     email: row.email,
     kind: accountKindOf(row.accountType, staffEmails.has(row.email.toLowerCase())),
+    isTest: row.isTest,
   }));
 }

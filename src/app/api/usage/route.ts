@@ -16,6 +16,15 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   const gate = await checkGate(session.email);
+  if (gate.unlimited) {
+    return NextResponse.json({
+      used: null,
+      limit: null,
+      remaining: null,
+      role: "tester",
+      unlimited: true,
+    });
+  }
   return NextResponse.json({
     ...gate,
     resetsAt: gate.resetsAt?.toISOString() ?? null,

@@ -105,37 +105,35 @@ export async function POST(request: Request): Promise<Response> {
       message: "로그인이 필요합니다.",
     });
   }
-  if (session.role === "tester") {
-    const gate = await checkGate(session.email);
-    if (!gate.allowed) {
-      await logUsageEvent(session.email, "paywall_shown", { url });
-      const body: ExtractResponse = {
-        error: {
-          code: "LIMIT_EXCEEDED",
-          message: gate.daily
-            ? "오늘 이용 횟수를 모두 사용했습니다. 내일 0시(한국시간)부터 다시 이용할 수 있어요."
-            : "무료 이용 횟수를 모두 사용했습니다. 안내를 더 받으려면 플랜을 확인해주세요.",
-          requestId,
-          used: gate.used,
-          limit: gate.limit,
-          daily: gate.daily,
-        },
-      };
-      return NextResponse.json(body, { status: 402 });
-    }
-  }
-
-  // --- 3. Burst guard (IP). Console/admin skip; credits are the real quota. --
   if (session.role !== "admin") {
-    const limit = checkRateLimit(ip);
-    if (!limit.allowed) {
-      const errResp = emitError(requestId, url, "unparsed", startedAt, {
-        code: "RATE_LIMITED",
-        message: "Too many requests.",
-        hint: `Try again in ${limit.retryAfterSeconds}s.`,
-      });
-      errResp.headers.set("Retry-After", String(limit.retryAfterSeconds));
-      return errResp;
+    const gate = await checkGate(session.email);
+    if (!gate.unlimited) {
+      if (!gate.allowed) {
+        await logUsageEvent(session.email, "paywall_shown", { url });
+        const body: ExtractResponse = {
+          error: {
+            code: "LIMIT_EXCEEDED",
+            message: gate.daily
+              ? "오늘 이용 횟수를 모두 사용했습니다. 내일 0시(한국시간)부터 다시 이용할 수 있어요."
+              : "무료 이용 횟수를 모두 사용했습니다. 안내를 더 받으려면 플랜을 확인해주세요.",
+            requestId,
+            used: gate.used,
+            limit: gate.limit,
+            daily: gate.daily,
+          },
+        };
+        return NextResponse.json(body, { status: 402 });
+      }
+      const limit = checkRateLimit(ip);
+      if (!limit.allowed) {
+        const errResp = emitError(requestId, url, "unparsed", startedAt, {
+          code: "RATE_LIMITED",
+          message: "Too many requests.",
+          hint: `Try again in ${limit.retryAfterSeconds}s.`,
+        });
+        errResp.headers.set("Retry-After", String(limit.retryAfterSeconds));
+        return errResp;
+      }
     }
   }
 

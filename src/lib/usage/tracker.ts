@@ -52,6 +52,7 @@ export interface GateResult {
   resetsAt: Date | null;
   daily: boolean;
   plan: AppPlanId;
+  unlimited: boolean;
 }
 
 export async function getTodayCount(userEmail: string, action: UsageAction): Promise<number> {
@@ -60,19 +61,38 @@ export async function getTodayCount(userEmail: string, action: UsageAction): Pro
   });
 }
 
-export async function loadAppPlan(userEmail: string) {
+export async function loadUsageAccount(userEmail: string) {
   const user = await prismaAccounts.authUser.findUnique({
     where: { email: userEmail.trim().toLowerCase() },
-    select: { creditsLimit: true },
+    select: { creditsLimit: true, isTest: true },
   });
-  return resolveAppPlan(user?.creditsLimit);
+  return {
+    plan: resolveAppPlan(user?.creditsLimit),
+    unlimited: Boolean(user?.isTest),
+  };
+}
+
+export async function loadAppPlan(userEmail: string) {
+  return (await loadUsageAccount(userEmail)).plan;
 }
 
 export async function checkGate(userEmail: string): Promise<GateResult> {
-  const plan = await loadAppPlan(userEmail);
+  const { plan, unlimited } = await loadUsageAccount(userEmail);
   const used = plan.daily
     ? await getTodayCount(userEmail, "video_ai_use")
     : await getCount(userEmail, "video_ai_use");
+  if (unlimited) {
+    return {
+      allowed: true,
+      used,
+      limit: plan.limit,
+      remaining: plan.limit,
+      resetsAt: null,
+      daily: plan.daily,
+      plan: plan.id,
+      unlimited: true,
+    };
+  }
   return {
     allowed: used < plan.limit,
     used,
@@ -81,6 +101,7 @@ export async function checkGate(userEmail: string): Promise<GateResult> {
     resetsAt: plan.daily ? kstNextMidnight() : null,
     daily: plan.daily,
     plan: plan.id,
+    unlimited: false,
   };
 }
 

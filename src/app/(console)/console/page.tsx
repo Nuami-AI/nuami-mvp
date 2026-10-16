@@ -42,6 +42,9 @@ export default async function ConsolePage() {
   const showLastLogin = isSuperAdmin(session.email);
   const accounts = await listUsageAccounts();
   const kindByEmail = Object.fromEntries(accounts.map((row) => [row.email.toLowerCase(), row.kind]));
+  const unlimitedByEmail = Object.fromEntries(
+    accounts.map((row) => [row.email.toLowerCase(), row.isTest || row.kind === "console"]),
+  );
   const testerEmails = accounts.map((row) => row.email);
   const users = (await getAdminUserDetails(testerEmails)).map((user) =>
     showLastLogin ? user : { ...user, lastLoginAt: null },
@@ -115,7 +118,7 @@ export default async function ConsolePage() {
                     <CreditBar
                       used={u.creditsUsed}
                       limit={u.creditsLimit}
-                      unlimited={kindByEmail[u.email.toLowerCase()] === "console"}
+                      unlimited={Boolean(unlimitedByEmail[u.email.toLowerCase()])}
                     />
                   </div>
                 </td>
